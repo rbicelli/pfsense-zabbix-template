@@ -11,7 +11,7 @@ Tested with pfSense 2.4 and Zabbix 4.0
  - OpenVPN Server Monitoring (Server Status/Tunnel Status with discovery)
  - CARP Monitoring (Global CARP State)
  - Basic service monitoring (Service Status with discovery)
- 
+
 
 ## Configuration
 
