@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>4.0</version>
-    <date>2019-12-12T15:46:50Z</date>
+    <date>2019-12-14T08:17:57Z</date>
     <groups>
         <group>
             <name>Templates</name>
@@ -11,7 +11,7 @@
         <template>
             <template>Template pfSense Active</template>
             <name>Template pfSense Active</name>
-            <description/>
+            <description>Active template for pfsense, requires pfsense_zbx.php installed to pfSense Box</description>
             <groups>
                 <group>
                     <name>Templates</name>
@@ -4771,11 +4771,7 @@ or&#13;
                     <value>0</value>
                 </macro>
             </macros>
-            <templates>
-                <template>
-                    <name>Template App Zabbix Agent</name>
-                </template>
-            </templates>
+            <templates/>
             <screens>
                 <screen>
                     <name>System performance</name>
