@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>4.0</version>
-    <date>2019-12-14T08:17:57Z</date>
+    <date>2020-01-07T08:11:29Z</date>
     <groups>
         <group>
             <name>Templates</name>
@@ -3627,7 +3627,7 @@
                                     <drawtype>0</drawtype>
                                     <color>199C0D</color>
                                     <yaxisside>0</yaxisside>
-                                    <calc_fnc>2</calc_fnc>
+                                    <calc_fnc>7</calc_fnc>
                                     <type>0</type>
                                     <item>
                                         <host>Template pfSense Active</host>
@@ -3639,11 +3639,43 @@
                                     <drawtype>0</drawtype>
                                     <color>FF5722</color>
                                     <yaxisside>0</yaxisside>
-                                    <calc_fnc>2</calc_fnc>
+                                    <calc_fnc>7</calc_fnc>
                                     <type>0</type>
                                     <item>
                                         <host>Template pfSense Active</host>
                                         <key>pfsense.value[gw_value,{#GATEWAY},loss]</key>
+                                    </item>
+                                </graph_item>
+                            </graph_items>
+                        </graph_prototype>
+                        <graph_prototype>
+                            <name>Gateway {#GATEWAY} Status</name>
+                            <width>640</width>
+                            <height>480</height>
+                            <yaxismin>0.0000</yaxismin>
+                            <yaxismax>5.0000</yaxismax>
+                            <show_work_period>1</show_work_period>
+                            <show_triggers>1</show_triggers>
+                            <type>0</type>
+                            <show_legend>1</show_legend>
+                            <show_3d>0</show_3d>
+                            <percent_left>0.0000</percent_left>
+                            <percent_right>0.0000</percent_right>
+                            <ymin_type_1>1</ymin_type_1>
+                            <ymax_type_1>1</ymax_type_1>
+                            <ymin_item_1>0</ymin_item_1>
+                            <ymax_item_1>0</ymax_item_1>
+                            <graph_items>
+                                <graph_item>
+                                    <sortorder>0</sortorder>
+                                    <drawtype>0</drawtype>
+                                    <color>199C0D</color>
+                                    <yaxisside>0</yaxisside>
+                                    <calc_fnc>7</calc_fnc>
+                                    <type>0</type>
+                                    <item>
+                                        <host>Template pfSense Active</host>
+                                        <key>pfsense.value[gw_value,{#GATEWAY},status]</key>
                                     </item>
                                 </graph_item>
                             </graph_items>
@@ -3744,11 +3776,11 @@
                                 <step>
                                     <type>5</type>
                                     <params>(.*)
-\1:up=1:down=0:none=0</params>
+\1:up=1:down=0:none=0:reconnecting; ping-restart=2</params>
                                 </step>
                                 <step>
                                     <type>5</type>
-                                    <params>(up|down|none)(?=.*:\1=(\d))
+                                    <params>(up|down|none|reconnecting; ping-restart)(?=.*:\1=(\d))
 \2</params>
                                 </step>
                             </preprocessing>
@@ -5858,6 +5890,14 @@ or&#13;
                 <mapping>
                     <value>1</value>
                     <newvalue>Up</newvalue>
+                </mapping>
+                <mapping>
+                    <value>2</value>
+                    <newvalue>None</newvalue>
+                </mapping>
+                <mapping>
+                    <value>3</value>
+                    <newvalue>Reconnecting</newvalue>
                 </mapping>
             </mappings>
         </value_map>
