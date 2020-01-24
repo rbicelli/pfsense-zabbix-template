@@ -156,7 +156,7 @@ function pfz_services_discovery(){
                //id for OpenVPN               
                if (!empty($service['id'])) $id = "." . $service["id"];
                //zone for Captive Portal
-               if (!empty($service['zone')) $id = "." . $service["zone"];
+               if (!empty($service['zone'])) $id = "." . $service["zone"];
                               
                $json_string .= '{"{#SERVICE}":"' . $service['name'] . $id . '"';          
                $json_string .= ',"{#DESCRIPTION}":"' . $service['description'] . '"';
