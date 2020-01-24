@@ -152,9 +152,12 @@ function pfz_services_discovery(){
                $status = get_service_status($service);
                if ($status="") $status = 0;
 
-               if (empty($service['id'])) $id=""; 
-                    else $id = "." . $service["id"];
-
+               $id="";               
+               //id for OpenVPN               
+               if (!empty($service['id'])) $id = "." . $service["id"];
+               //zone for Captive Portal
+               if (!empty($service['zone')) $id = "." . $service["zone"];
+                              
                $json_string .= '{"{#SERVICE}":"' . $service['name'] . $id . '"';          
                $json_string .= ',"{#DESCRIPTION}":"' . $service['description'] . '"';
                $json_string .= '},';
@@ -177,14 +180,21 @@ function pfz_service_value($name,$value){
      $stopped_on_carp_slave = array("haproxy","openvpn.");
      
      foreach ($services as $service){
-          if (empty($service['id'])) { 
-               $namecfr=$service["name"];
-               $carpcfr=$service["name"]; 
-          } else {
+          $namecfr=$service["name"];
+          $carpcfr=$service["name"];          
+
+          //OpenVPN          
+          if (!empty($service['id'])) {                           
                $namecfr = $service['name'] . "." . $service["id"];
                $carpcfr = $service['name'] . ".";          
           }
-                    
+
+          //Captive Portal
+          if (!empty($service['zone'])) {                           
+               $namecfr = $service['name'] . "." . $service["zone"];
+               $carpcfr = $service['name'] . ".";          
+          }          
+
           if ($namecfr == $name){
                switch ($value) {
                
