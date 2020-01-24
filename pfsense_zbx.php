@@ -24,6 +24,38 @@ require_once("service-utils.inc");
 require_once('pkg-utils.inc'); 
 
 
+//Testing function, for template creating purpose
+function pfz_test(){
+
+        $ovpn_servers = pfz_openvpn_get_all_servers();
+        echo "OPENVPN Servers:\n";
+        print_r($ovpn_servers);
+        echo "-------------------\n";
+
+        $ovpn_clients = openvpn_get_active_clients();
+        echo "OPENVPN Servers:\n";
+        print_r($ovpn_clients);
+        echo "-------------------\n";
+
+        echo "Network Interfaces:\n";        
+        $ifdescrs = get_configured_interface_with_descr(true);
+        $ifaces=array();
+        foreach ($ifdescrs as $ifdescr => $ifname){	     
+          $ifinfo = get_interface_info($ifdescr);
+          $ifaces[$ifname] = $ifinfo;
+        }
+        print_r($ifaces);
+
+        print_r(get_interface_arr());
+        print_r(get_configured_interface_list());
+
+       echo "Services: \n";
+       $services = get_services();
+       print_r($services);
+       
+}
+
+
 function pfz_get_if_name($hwif){
     
      $ifdescrs = get_configured_interface_with_descr(true); 
