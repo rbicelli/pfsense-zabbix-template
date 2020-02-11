@@ -57,16 +57,38 @@ function pfz_test(){
 
 
 function pfz_get_if_name($hwif){
-    
-     $ifdescrs = get_configured_interface_with_descr(true); 
-     foreach ($ifdescrs as $ifdescr => $ifname){	     
+
+     $ifdescrs = get_configured_interface_with_descr(true);
+     foreach ($ifdescrs as $ifdescr => $ifname){
           $ifinfo = get_interface_info($ifdescr);
           if($ifinfo["hwif"]==$hwif){
-               echo $ifname;
-               return true;          
+               return $ifname;
           }
      }
-    
+     return null;
+
+}
+
+//Interface Discovery
+function pfz_interface_discovery() {
+    $ifaces = get_interface_arr();
+
+    $json_string = '{"data":[';
+
+    foreach ($ifaces as $iface) {
+        $json_string .= '{"{#IFNAME}":"' . $iface . '"';
+
+        $descr = pfz_get_if_name($iface);
+        if($descr === null){ $descr = $iface; }
+
+        $json_string .= ',"{#IFDESCR}":"' . $descr . '"';
+        $json_string .= '},';
+    }
+    $json_string = rtrim($json_string,",");
+    $json_string .= "]}";
+
+    echo $json_string;
+
 }
 
 
@@ -323,6 +345,9 @@ function pfz_discovery($section){
                break;
           case "services":
                pfz_services_discovery();
+               break;
+          case "interfaces":
+               pfz_interface_discovery();
                break;
      }         
 }

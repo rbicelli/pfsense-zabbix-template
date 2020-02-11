@@ -2980,7 +2980,7 @@
                     <type>7</type>
                     <snmp_community/>
                     <snmp_oid/>
-                    <key>net.if.discovery</key>
+                    <key>pfsense.discovery[interfaces]</key>
                     <delay>3600</delay>
                     <status>0</status>
                     <allowed_hosts/>
@@ -3015,7 +3015,7 @@
                     <description>Discovery of network interfaces as defined in global regular expression &quot;Network interfaces for discovery&quot;.</description>
                     <item_prototypes>
                         <item_prototype>
-                            <name>Incoming network traffic on $1</name>
+                            <name>Incoming network traffic on {#IFDESCR}</name>
                             <type>7</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -3084,7 +3084,7 @@
                             <master_item/>
                         </item_prototype>
                         <item_prototype>
-                            <name>Outgoing network traffic on $1</name>
+                            <name>Outgoing network traffic on {#IFDESCR}</name>
                             <type>7</type>
                             <snmp_community/>
                             <snmp_oid/>
@@ -3156,7 +3156,7 @@
                     <trigger_prototypes/>
                     <graph_prototypes>
                         <graph_prototype>
-                            <name>Network traffic on {#IFNAME}</name>
+                            <name>Network traffic on {#IFDESCR}</name>
                             <width>900</width>
                             <height>200</height>
                             <yaxismin>0.0000</yaxismin>
