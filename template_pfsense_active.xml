@@ -3996,7 +3996,7 @@
                                 </step>
                                 <step>
                                     <type>5</type>
-                                    <params>(p2p_tls,p2p_shared_key,server_tls,server_user,server_tls_user))
+                                    <params>(p2p_tls,p2p_shared_key,server_tls,server_user,server_tls_user)
 \2</params>
                                 </step>
                             </preprocessing>
