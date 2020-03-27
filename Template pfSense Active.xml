@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>4.0</version>
-    <date>2020-03-27T07:54:22Z</date>
+    <date>2020-03-27T09:02:11Z</date>
     <groups>
         <group>
             <name>Templates</name>
@@ -3157,7 +3157,7 @@ Version 1.0.0</description>
                     <trigger_prototypes/>
                     <graph_prototypes>
                         <graph_prototype>
-                            <name>Network traffic on $1</name>
+                            <name>Network traffic on {#IFNAME}</name>
                             <width>900</width>
                             <height>200</height>
                             <yaxismin>0.0000</yaxismin>
@@ -3880,6 +3880,66 @@ Version 1.0.0</description>
                     <description/>
                     <item_prototypes>
                         <item_prototype>
+                            <name>OpenVPN Server {#NAME} Clients Connected</name>
+                            <type>7</type>
+                            <snmp_community/>
+                            <snmp_oid/>
+                            <key>pfsense.value[openvpn_servervalue,{#SERVER},conns]</key>
+                            <delay>60s</delay>
+                            <history>90d</history>
+                            <trends>365d</trends>
+                            <status>0</status>
+                            <value_type>3</value_type>
+                            <allowed_hosts/>
+                            <units/>
+                            <snmpv3_contextname/>
+                            <snmpv3_securityname/>
+                            <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                            <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                            <snmpv3_authpassphrase/>
+                            <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                            <snmpv3_privpassphrase/>
+                            <params/>
+                            <ipmi_sensor/>
+                            <authtype>0</authtype>
+                            <username/>
+                            <password/>
+                            <publickey/>
+                            <privatekey/>
+                            <port/>
+                            <description/>
+                            <inventory_link>0</inventory_link>
+                            <applications>
+                                <application>
+                                    <name>OpenVPN Server</name>
+                                </application>
+                            </applications>
+                            <valuemap/>
+                            <logtimefmt/>
+                            <preprocessing/>
+                            <jmx_endpoint/>
+                            <timeout>3s</timeout>
+                            <url/>
+                            <query_fields/>
+                            <posts/>
+                            <status_codes>200</status_codes>
+                            <follow_redirects>1</follow_redirects>
+                            <post_type>0</post_type>
+                            <http_proxy/>
+                            <headers/>
+                            <retrieve_mode>0</retrieve_mode>
+                            <request_method>0</request_method>
+                            <output_format>0</output_format>
+                            <allow_traps>0</allow_traps>
+                            <ssl_cert_file/>
+                            <ssl_key_file/>
+                            <ssl_key_password/>
+                            <verify_peer>0</verify_peer>
+                            <verify_host>0</verify_host>
+                            <application_prototypes/>
+                            <master_item/>
+                        </item_prototype>
+                        <item_prototype>
                             <name>OpenVPN Server {#NAME} Mode</name>
                             <type>7</type>
                             <snmp_community/>
@@ -4055,11 +4115,11 @@ Version 1.0.0</description>
                                 <step>
                                     <type>5</type>
                                     <params>(.*)
-\1:up=1:down=0:none=2:reconnecting=3</params>
+\1:up=1:down=0:none=2:reconnecting; ping-restart=3:waiting=4</params>
                                 </step>
                                 <step>
                                     <type>5</type>
-                                    <params>(up|down|none|reconnecting)(?=.*:\1=(\d))
+                                    <params>(up|down|none|reconnecting; ping-restart|waiting)(?=.*:\1=(\d))
 \2</params>
                                 </step>
                             </preprocessing>
@@ -5888,6 +5948,10 @@ or&#13;
                 <mapping>
                     <value>3</value>
                     <newvalue>Reconnecting</newvalue>
+                </mapping>
+                <mapping>
+                    <value>4</value>
+                    <newvalue>Waiting</newvalue>
                 </mapping>
             </mappings>
         </value_map>

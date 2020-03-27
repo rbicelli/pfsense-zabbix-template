@@ -149,6 +149,13 @@ function pfz_openvpn_servervalue($server_id,$valuekey){
           if($server['vpnid']==$server_id)
                $value = $server[$valuekey];
      }
+     
+     //Client Connections: isan array so it is sufficient to count elements     
+     if ($valuekey=="conns"){
+          $value=count($conns);
+          if ($value=="") $value="0";
+     }     
+     
      if ($value=="") $value="none";
      echo $value;
 }
