@@ -56,9 +56,10 @@ function pfz_test(){
 }
 
 
-function pfz_get_if_name($hwif){
-
-     $ifdescrs = get_configured_interface_with_descr(true);
+function pfz_get_if_name($hwif, $ifdescrs=""){
+     if !(is_array($if_descrs)) 
+          $ifdescrs = get_configured_interface_with_descr(true);
+     
      foreach ($ifdescrs as $ifdescr => $ifname){
           $ifinfo = get_interface_info($ifdescr);
           if($ifinfo["hwif"]==$hwif){
@@ -70,7 +71,9 @@ function pfz_get_if_name($hwif){
 }
 
 //Interface Discovery
-function pfz_interface_discovery() {
+function pfz_interface_discovery_legacy() {
+    
+    $ifdescrs = get_configured_interface_with_descr(true);
     $ifaces = get_interface_arr();
 
     $json_string = '{"data":[';
@@ -81,6 +84,22 @@ function pfz_interface_discovery() {
         $descr = pfz_get_if_name($iface);
         if($descr === null){ $descr = $iface; }
 
+        $json_string .= ',"{#IFDESCR}":"' . $descr . '"';
+        $json_string .= '},';
+    }
+    $json_string = rtrim($json_string,",");
+    $json_string .= "]}";
+
+    echo $json_string;
+
+}
+
+function pfz_interface_discovery() {
+    
+    $ifdescrs = get_configured_interface_with_descr(true);
+    
+    foreach ($ifdescr as $descr=>$iface) {
+        $json_string .= '{"{#IFNAME}":"' . $iface["hwif"] . '"';
         $json_string .= ',"{#IFDESCR}":"' . $descr . '"';
         $json_string .= '},';
     }
@@ -109,7 +128,7 @@ function pfz_openvpn_serverdiscovery() {
      foreach ($servers as $server){
           $name = trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $server['name']));
           $json_string .= '{"{#SERVER}":"' . $server['vpnid'] . '"';
-          $json_string .= ',"{#NAME}":"' . $name . '"';
+          $json_string .= ',"{#NAME}":"' . $name . '"';  
           $json_string .= '},';
      }
 
@@ -120,6 +139,10 @@ function pfz_openvpn_serverdiscovery() {
 }
 
 
+/*
+ * Get OpenVPN Server Value
+ * TODO: If the server type is user auth consider the server Up/Listening if status is "none"
+*/
 function pfz_openvpn_servervalue($server_id,$valuekey){
      $servers = pfz_openvpn_get_all_servers();     
      foreach($servers as $server) {
