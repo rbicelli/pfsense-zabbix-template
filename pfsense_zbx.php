@@ -1,7 +1,7 @@
 <?php
 /*** 
 pfsense_zbx.php - pfSense Zabbix Interface
-Version 0.9.0 - 12/12/2019 
+Version 0.9.1 - 2020-03-27 
 
 Written by Riccardo Bicelli <r.bicelli@gmail.com>
 This program is licensed under Apache 2.0 License
@@ -174,7 +174,8 @@ function pfz_openvpn_clientvalue($client_id, $valuekey){
 }
 
 
-//Services Discovery
+// Services Discovery
+// 2020-03-27: Added space replace with __ for issue #12
 function pfz_services_discovery(){
      $services = get_services();
 
@@ -192,7 +193,7 @@ function pfz_services_discovery(){
                //zone for Captive Portal
                if (!empty($service['zone'])) $id = "." . $service["zone"];
                               
-               $json_string .= '{"{#SERVICE}":"' . $service['name'] . $id . '"';          
+               $json_string .= '{"{#SERVICE}":"' . str_replace(" ", "__", $service['name']) . $id . '"';          
                $json_string .= ',"{#DESCRIPTION}":"' . $service['description'] . '"';
                $json_string .= '},';
           }
@@ -204,7 +205,8 @@ function pfz_services_discovery(){
 
 }
 
-
+// Get service value
+// 2020-03-27: Added space replace in service name for issue #12
 function pfz_service_value($name,$value){
      $services = get_services();     
      
@@ -214,8 +216,8 @@ function pfz_service_value($name,$value){
      $stopped_on_carp_slave = array("haproxy","openvpn.");
      
      foreach ($services as $service){
-          $namecfr=$service["name"];
-          $carpcfr=$service["name"];          
+          $namecfr=str_replace("__"," ",$service["name"]);
+          $carpcfr=str_replace("__"," ",$service["name"]);          
 
           //OpenVPN          
           if (!empty($service['id'])) {                           
