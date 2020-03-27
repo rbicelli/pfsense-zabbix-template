@@ -56,32 +56,23 @@ function pfz_test(){
 }
 
 
-function pfz_get_if_name($hwif, $ifdescrs=""){
-     if !(is_array($if_descrs)) 
-          $ifdescrs = get_configured_interface_with_descr(true);
-     
-     foreach ($ifdescrs as $ifdescr => $ifname){
-          $ifinfo = get_interface_info($ifdescr);
-          if($ifinfo["hwif"]==$hwif){
-               return $ifname;
-          }
-     }
-     return null;
-
-}
-
-//Interface Discovery
-function pfz_interface_discovery_legacy() {
-    
+// Interface Discovery
+// Improved performance, but need testing
+function pfz_interface_discovery() {
     $ifdescrs = get_configured_interface_with_descr(true);
     $ifaces = get_interface_arr();
 
     $json_string = '{"data":[';
 
-    foreach ($ifaces as $iface) {
+    foreach ($ifdescrs as $ifdescr => $ifname){
+          $ifinfo = get_interface_info($ifdescr);
+          $ifaces[$ifname] = $ifinfo;
+    }
+
+    foreach ($ifaces as $iface=>$ifdescr) {
         $json_string .= '{"{#IFNAME}":"' . $iface . '"';
 
-        $descr = pfz_get_if_name($iface);
+        $descr = $ifdescr;
         if($descr === null){ $descr = $iface; }
 
         $json_string .= ',"{#IFDESCR}":"' . $descr . '"';
@@ -93,23 +84,6 @@ function pfz_interface_discovery_legacy() {
     echo $json_string;
 
 }
-
-function pfz_interface_discovery() {
-    
-    $ifdescrs = get_configured_interface_with_descr(true);
-    
-    foreach ($ifdescr as $descr=>$iface) {
-        $json_string .= '{"{#IFNAME}":"' . $iface["hwif"] . '"';
-        $json_string .= ',"{#IFDESCR}":"' . $descr . '"';
-        $json_string .= '},';
-    }
-    $json_string = rtrim($json_string,",");
-    $json_string .= "]}";
-
-    echo $json_string;
-
-}
-
 
 //OpenVPN Server Discovery
 function pfz_openvpn_get_all_servers(){
