@@ -57,7 +57,7 @@ function pfz_test(){
 
 
 // Interface Discovery
-// Improved performance, but need testing
+// Improved performance
 function pfz_interface_discovery() {
     $ifdescrs = get_configured_interface_with_descr(true);
     $ifaces = get_interface_arr();
