@@ -61,21 +61,28 @@ function pfz_test(){
 function pfz_interface_discovery() {
     $ifdescrs = get_configured_interface_with_descr(true);
     $ifaces = get_interface_arr();
-
+    $ifcs=array();
+ 
     $json_string = '{"data":[';
-
-    foreach ($ifdescrs as $ifdescr => $ifname){
-          $ifinfo = get_interface_info($ifdescr);
-          $ifaces[$ifname] = $ifinfo;
+                   
+    foreach ($ifdescrs as $ifname => $ifdescr){
+          $ifinfo = get_interface_info($ifname);
+          $ifinfo["description"] = $ifdescr;
+          $ifcs[$ifname] = $ifinfo;
     }
 
-    foreach ($ifaces as $iface=>$ifdescr) {
-        $json_string .= '{"{#IFNAME}":"' . $iface . '"';
+    foreach ($ifaces as $hwif) {
+        $json_string .= '{"{#IFNAME}":"' . $hwif . '"';
 
-        $descr = $ifdescr;
-        if($descr === null){ $descr = $iface; }
+        $ifdescr = $hwif;
+        foreach($ifcs as $ifc=>$ifinfo){
+                if ($ifinfo["hwif"] == $hwif){
+                        $ifdescr = $ifinfo["description"];
+                        break;
+                }
+        }
 
-        $json_string .= ',"{#IFDESCR}":"' . $descr . '"';
+        $json_string .= ',"{#IFDESCR}":"' . $ifdescr . '"';
         $json_string .= '},';
     }
     $json_string = rtrim($json_string,",");
@@ -84,6 +91,7 @@ function pfz_interface_discovery() {
     echo $json_string;
 
 }
+
 
 //OpenVPN Server Discovery
 function pfz_openvpn_get_all_servers(){
