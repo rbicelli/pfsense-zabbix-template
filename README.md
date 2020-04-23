@@ -5,12 +5,14 @@ This is a pfSense active template for Zabbix, based on [Keenton Zabbix Template]
 Tested with pfSense 2.4 and Zabbix 4.0
 
 ## What it does
-
+ 
  - pfSense Version/Update Available
- - Gateway Monitoring (Gateway Status/RTT with discovery)
- - OpenVPN Server Monitoring (Server Status/Tunnel Status with discovery)
+ - Network interface Discovery and Monitoring with User Assigned Names
+ - Gateway Dicovery and Monitoring (Gateway Status/RTT)
+ - OpenVPN Server Discovery and Monitoring (Server Status/Tunnel Status)
+ - OpenVPN Clients Discovery and Monitoring (Client Status/Tunnel Status)
  - CARP Monitoring (Global CARP State)
- - Basic service monitoring (Service Status with discovery)
+ - Basic Service Discovery and Monitoring (Service Status)
  
 
 ## Configuration
@@ -44,7 +46,7 @@ _Please note that **AllowRoot=1** option is required in order to execute correct
 
 Then import xml template in Zabbix and add your pfSense hosts.
 
-If you are running a redundant CARP setup you can adjust the macro {#EXPECTED_CARP_STATUS} to a value representing what is CARP expected status on monitored box.
+If you are running a redundant CARP setup you should adjust the macro {#EXPECTED_CARP_STATUS} to a value representing what is CARP expected status on monitored box.
 
 Possible values are:
 

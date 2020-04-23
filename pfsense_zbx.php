@@ -135,7 +135,7 @@ function pfz_openvpn_servervalue($server_id,$valuekey){
      
      //Client Connections: is an array so it is sufficient to count elements     
      if ($valuekey=="conns"){
-          if (is_array($value)
+          if (is_array($value))
                $value=count($value);
           else
                $value="0";
