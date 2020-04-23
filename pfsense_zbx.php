@@ -1,7 +1,7 @@
 <?php
 /*** 
 pfsense_zbx.php - pfSense Zabbix Interface
-Version 0.9.1 - 2020-03-27 
+Version 0.9.2 - 2020-03-29 
 
 Written by Riccardo Bicelli <r.bicelli@gmail.com>
 This program is licensed under Apache 2.0 License
@@ -12,6 +12,7 @@ require_once('functions.inc');
 require_once('config.inc');
 require_once('util.inc');
 
+//For Interfaces Discovery
 require_once('interfaces.inc');
 
 //For OpenVPN Discovery
@@ -26,33 +27,35 @@ require_once('pkg-utils.inc');
 
 //Testing function, for template creating purpose
 function pfz_test(){
-
+        $line = "-------------------\n";
+        
         $ovpn_servers = pfz_openvpn_get_all_servers();
         echo "OPENVPN Servers:\n";
         print_r($ovpn_servers);
-        echo "-------------------\n";
+        echo $line;
 
         $ovpn_clients = openvpn_get_active_clients();
-        echo "OPENVPN Servers:\n";
+        echo "OPENVPN Clients:\n";
         print_r($ovpn_clients);
-        echo "-------------------\n";
+        echo $line;
 
-        echo "Network Interfaces:\n";        
         $ifdescrs = get_configured_interface_with_descr(true);
         $ifaces=array();
         foreach ($ifdescrs as $ifdescr => $ifname){	     
           $ifinfo = get_interface_info($ifdescr);
           $ifaces[$ifname] = $ifinfo;
         }
+        echo "Network Interfaces:\n";        
         print_r($ifaces);
-
         print_r(get_interface_arr());
         print_r(get_configured_interface_list());
+        echo $line;
 
-       echo "Services: \n";
-       $services = get_services();
-       print_r($services);
-       
+        $services = get_services();
+        echo "Services: \n";
+        print_r($services);
+        echo $line;
+
 }
 
 
@@ -89,7 +92,6 @@ function pfz_interface_discovery() {
     $json_string .= "]}";
 
     echo $json_string;
-
 }
 
 
@@ -123,7 +125,6 @@ function pfz_openvpn_serverdiscovery() {
 
 /*
  * Get OpenVPN Server Value
- * TODO: If the server type is user auth consider the server Up/Listening if status is "none"
 */
 function pfz_openvpn_servervalue($server_id,$valuekey){
      $servers = pfz_openvpn_get_all_servers();     
@@ -132,10 +133,12 @@ function pfz_openvpn_servervalue($server_id,$valuekey){
                $value = $server[$valuekey];
      }
      
-     //Client Connections: isan array so it is sufficient to count elements     
+     //Client Connections: is an array so it is sufficient to count elements     
      if ($valuekey=="conns"){
-          $value=count($value);
-          if ($value=="") $value="0";
+          if (is_array($value)
+               $value=count($value);
+          else
+               $value="0";
      }     
      
      if ($value=="") $value="none";
@@ -267,7 +270,7 @@ function pfz_service_value($name,$value){
 
 //Gateway Discovery
 function pfz_gw_rawstatus() {
-     //Return a Raw Gateway Status, useful for action Scripts (e.g. Update Cloudflare DNS config)
+     // Return a Raw Gateway Status, useful for action Scripts (e.g. Update Cloudflare DNS config)
      $gws = return_gateways_status(true);
      $gw_string="";
      foreach ($gws as $gw){
@@ -351,7 +354,13 @@ function pfz_get_system_value($section){
           case "installed_version":
                echo( get_system_pkg_version()['installed_version']);
                break;
-
+          case "new_version_available":
+               $pkgver = get_system_pkg_version();
+               if ($pkgver['version']==$pkgver['installed_version'])
+                    echo "0";
+               else
+                    echo "1";
+               break;
      }
 }
 
@@ -376,7 +385,7 @@ function pfz_discovery($section){
      }         
 }
 
-
+//Main Code
 switch (strtolower($argv[1])){     
      case "discovery":
           pfz_discovery($argv[2]);
