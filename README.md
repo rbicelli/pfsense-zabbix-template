@@ -1,21 +1,32 @@
+[buymeabeer]: https://www.buymeabeer.com/rbicelli
+
 # pfSense Zabbix template
 
-This is a pfSense active template for zabbix, based on [Keenton Zabbix Template](https://github.com/keentonsas/zabbix-template-pfsense) for freeBSD part and a php script using pfSense functions library for monitoring specific data.
+This is a pfSense active template for Zabbix, based on Standard Agent and a php script using pfSense functions library for monitoring specific data.
 
-Tested with pfSense 2.4 and Zabbix 4.0
+Tested with pfSense 2.4.x and Zabbix 4.0
 
 ## What it does
-
- - pfSense Version/Update Available
- - Gateway Monitoring (Gateway Status/RTT with discovery)
- - OpenVPN Server Monitoring (Server Status/Tunnel Status with discovery)
- - CARP Monitoring (Global CARP State)
- - Basic service monitoring (Service Status with discovery)
  
+ - Network interface Discovery and Monitoring with User Assigned Names
+ - Gateway Discovery and Monitoring (Gateway Status/RTT)
+ - OpenVPN Server Discovery and Monitoring (Server Status/Tunnel Status)
+ - OpenVPN Clients Discovery and Monitoring (Client Status/Tunnel Status)
+ - CARP Monitoring (Global CARP State)
+ - Basic Service Discovery and Monitoring (Service Status)
+ - pfSense Version/Update Available
 
 ## Configuration
 
 First copy the file pfsense_zbx.php to your pfsense box (e.g. to /root/scripts).
+
+For example, from pfSense shell:
+
+```bash
+mkdir /root/scripts
+curl -o /root/scripts/pfsense_zbx.php https://raw.githubusercontent.com/rbicelli/pfsense-zabbix-template/master/pfsense_zbx.php
+```
+
 Then install package "Zabbix Agent 4" on your pfSense Box
 
 
@@ -32,11 +43,11 @@ UserParameter=pfsense.discovery[*],/usr/local/bin/php /root/scripts/pfsense_zbx.
 UserParameter=pfsense.value[*],/usr/local/bin/php /root/scripts/pfsense_zbx.php $1 $2 $3
 ```
 
-__Please note that **AllowRoot=1** option is required in order to execute correctly OpenVPN checks and others._
+_Please note that **AllowRoot=1** option is required in order to execute correctly OpenVPN checks and others._
 
 Then import xml template in Zabbix and add your pfSense hosts.
 
-If you are running a redundant CARP setup you can adjust the macro {#EXPECTED_CARP_STATUS} to a value representing what is CARP expected status on monitored box.
+If you are running a redundant CARP setup you should adjust the macro {#EXPECTED_CARP_STATUS} to a value representing what is CARP expected status on monitored box.
 
 Possible values are:
 
@@ -45,3 +56,7 @@ Possible values are:
  - 2: Backup
 
 This is useful when monitoring services which could stay stopped on CARP Backup Member.
+
+## Credits
+
+[Keenton Zabbix Template](https://github.com/keentonsas/zabbix-template-pfsense) for Zabbix Agent freeBSD part.
