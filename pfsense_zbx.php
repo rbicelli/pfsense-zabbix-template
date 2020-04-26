@@ -151,7 +151,7 @@ function pfz_openvpn_servervalue($server_id,$valuekey){
                break;
      }
      
-     if ($value=="") $value="none";
+     //if ($value=="") $value="none";
      echo $value;
 }
 
