@@ -1,9 +1,14 @@
-# pfSense Zabbix template
+[![Buy Me A Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/rbicelli)
 
+<<<<<<< HEAD
 This is a pfSense active template for Zabbix, based on [Keenton Zabbix Template](https://github.com/keentonsas/zabbix-template-pfsense) for freeBSD part and a php script using pfSense functions library for monitoring specific data.
+=======
+# pfSense Zabbix Template
+>>>>>>> develop
 
-Tested with pfSense 2.4 and Zabbix 4.0
+This is a pfSense active template for Zabbix, based on Standard Agent and a php script using pfSense functions library for monitoring specific data.
 
+<<<<<<< HEAD
 ## What it does
  
  - pfSense Version/Update Available
@@ -13,7 +18,19 @@ Tested with pfSense 2.4 and Zabbix 4.0
  - OpenVPN Clients Discovery and Monitoring (Client Status/Tunnel Status)
  - CARP Monitoring (Global CARP State)
  - Basic Service Discovery and Monitoring (Service Status)
+=======
+Tested with pfSense 2.4.x and Zabbix 4.0
+
+## What it does
+>>>>>>> develop
  
+ - Network interface Discovery and Monitoring with User Assigned Names
+ - Gateway Discovery and Monitoring (Gateway Status/RTT)
+ - OpenVPN Server Discovery and Monitoring (Server Status/Tunnel Status)
+ - OpenVPN Clients Discovery and Monitoring (Client Status/Tunnel Status)
+ - CARP Monitoring (Global CARP State)
+ - Basic Service Discovery and Monitoring (Service Status)
+ - pfSense Version/Update Available
 
 ## Configuration
 
@@ -55,3 +72,10 @@ Possible values are:
  - 2: Backup
 
 This is useful when monitoring services which could stay stopped on CARP Backup Member.
+<<<<<<< HEAD
+=======
+
+## Credits
+
+[Keenton Zabbix Template](https://github.com/keentonsas/zabbix-template-pfsense) for Zabbix Agent freeBSD part.
+>>>>>>> develop

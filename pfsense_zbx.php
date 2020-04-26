@@ -1,7 +1,11 @@
 <?php
 /*** 
 pfsense_zbx.php - pfSense Zabbix Interface
+<<<<<<< HEAD
 Version 0.9.2 - 2020-03-29 
+=======
+Version 0.9.3 - 2020-04-26 
+>>>>>>> develop
 
 Written by Riccardo Bicelli <r.bicelli@gmail.com>
 This program is licensed under Apache 2.0 License
@@ -95,7 +99,7 @@ function pfz_interface_discovery() {
 }
 
 
-//OpenVPN Server Discovery
+// OpenVPN Server Discovery
 function pfz_openvpn_get_all_servers(){
      $servers = openvpn_get_active_servers();
      $sk_servers = openvpn_get_active_servers("p2p");
@@ -123,16 +127,22 @@ function pfz_openvpn_serverdiscovery() {
 }
 
 
+<<<<<<< HEAD
 /*
  * Get OpenVPN Server Value
 */
+=======
+// Get OpenVPN Server Value
+>>>>>>> develop
 function pfz_openvpn_servervalue($server_id,$valuekey){
      $servers = pfz_openvpn_get_all_servers();     
+     
      foreach($servers as $server) {
           if($server['vpnid']==$server_id)
                $value = $server[$valuekey];
      }
      
+<<<<<<< HEAD
      //Client Connections: is an array so it is sufficient to count elements     
      if ($valuekey=="conns"){
           if (is_array($value))
@@ -142,11 +152,33 @@ function pfz_openvpn_servervalue($server_id,$valuekey){
      }     
      
      if ($value=="") $value="none";
+=======
+     switch ($valuekey){     
+          
+          case "conns":
+               //Client Connections: is an array so it is sufficient to count elements                    
+               if (is_array($value))
+                    $value = count($value);
+               else
+                    $value = "0";
+               break;     
+               
+          case "status":
+               $value = pfz_valuemap("openvpn.server.status", $value);
+               break;
+
+          case "mode":
+               $value = pfz_valuemap("openvpn.server.mode", $value);
+               break;
+     }
+     
+     //if ($value=="") $value="none";
+>>>>>>> develop
      echo $value;
 }
 
 
-//OpenVPN Client Discovery
+// OpenVPN Client Discovery
 function pfz_openvpn_clientdiscovery() {
      $clients = openvpn_get_active_clients();
 
@@ -172,6 +204,15 @@ function pfz_openvpn_clientvalue($client_id, $valuekey){
           if($client['vpnid']==$client_id)
                $value = $client[$valuekey];
      }
+
+     switch ($valuekey){        
+               
+          case "status":
+               $value = pfz_valuemap("openvpn.server.client", $value);
+               break;
+
+     }
+
      if ($value=="") $value="none";
      echo $value;
 }
@@ -361,10 +402,52 @@ function pfz_get_system_value($section){
                else
                     echo "1";
                break;
+<<<<<<< HEAD
+=======
      }
 }
 
-//Argument parsers
+
+// Value mappings
+// Each value map is represented by an associative array
+function pfz_valuemap($valuename, $value){
+
+     switch ($valuename){     
+
+          case "openvpn.server.status":          
+                    $valuemap = array(
+                         "up" => "1",
+                         "down" => "2",
+                         "none" => "3",
+                         "reconnecting; ping-restart" => "4");          
+          break;
+          
+          case "openvpn.client.status":          
+                    $valuemap = array(
+                         "up" => "1",
+                         "down" => "0",
+                         "none" => "0",
+                         "reconnecting; ping-restart" => "2");          
+          break;
+
+          case "openvpn.server.mode":
+                    $valuemap = array(
+                         "p2p_tls" => "1",
+                         "p2p_shared_key" => "2",
+                         "server_tls" => "3",
+                         "server_user" => "4",
+                         "server_tls_user" => "5");          
+          break;     
+>>>>>>> develop
+     }
+
+     if (array_key_exists($value, $valuemap))
+          return $valuemap[$value];
+     
+     return "0";
+}
+
+//Argument parsers for Discovery
 function pfz_discovery($section){
      switch (strtolower($section)){     
           case "gw":
