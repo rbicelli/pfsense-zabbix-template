@@ -1,4 +1,4 @@
-[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/arial-black.png)](https://www.buymeacoffee.com/rbicelli)
+[![Buy Me A Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/rbicelli)
 
 # pfSense Zabbix template
 

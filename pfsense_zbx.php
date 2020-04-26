@@ -146,7 +146,7 @@ function pfz_openvpn_servervalue($server_id,$valuekey){
                $value = pfz_valuemap("openvpn.server.status", $value);
                break;
 
-          case "mode"
+          case "mode":
                $value = pfz_valuemap("openvpn.server.mode", $value);
                break;
      }
@@ -406,7 +406,7 @@ function pfz_valuemap($valuename, $value){
                          "reconnecting; ping-restart" => "2");          
           break;
 
-          case "openvpn.server.mode"
+          case "openvpn.server.mode":
                     $valuemap = array(
                          "p2p_tls" => "1",
                          "p2p_shared_key" => "2",
@@ -416,7 +416,7 @@ function pfz_valuemap($valuename, $value){
           break;     
      }
 
-     if (array_key_exists($value,$valuemap))
+     if (array_key_exists($value, $valuemap))
           return $valuemap[$value];
      
      return "0";
