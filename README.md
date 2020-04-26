@@ -1,4 +1,4 @@
-[buymeabeer]: https://www.buymeabeer.com/rbicelli
+[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/arial-black.png)](https://www.buymeacoffee.com/rbicelli)
 
 # pfSense Zabbix template
 
