@@ -4,9 +4,12 @@
 
 This is a pfSense active template for Zabbix, based on Standard Agent and a php script using pfSense functions library for monitoring specific data.
 
+
 Tested with pfSense 2.4.x and Zabbix 4.0
 
 ## What it does
+
+**Template pfSense Active**
  
  - Network interface Discovery and Monitoring with User Assigned Names
  - Gateway Discovery and Monitoring (Gateway Status/RTT)
@@ -15,6 +18,11 @@ Tested with pfSense 2.4.x and Zabbix 4.0
  - CARP Monitoring (Global CARP State)
  - Basic Service Discovery and Monitoring (Service Status)
  - pfSense Version/Update Available
+ 
+**Template pfSense Active: OpenVPN Server User Auth**
+
+ - Discovery of OpenVPN Clients connected to OpenVPN Servers in user auth mode
+ - Monitoring of Client Parameters (Bytes sent/received, Connection Time...)
 
 ## Configuration
 
@@ -45,7 +53,7 @@ UserParameter=pfsense.value[*],/usr/local/bin/php /root/scripts/pfsense_zbx.php 
 
 _Please note that **AllowRoot=1** option is required in order to execute correctly OpenVPN checks and others._
 
-Then import xml template in Zabbix and add your pfSense hosts.
+Then import xml templates in Zabbix and add your pfSense hosts.
 
 If you are running a redundant CARP setup you should adjust the macro {#EXPECTED_CARP_STATUS} to a value representing what is CARP expected status on monitored box.
 

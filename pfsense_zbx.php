@@ -186,9 +186,9 @@ function pfz_openvpn_server_userdiscovery(){
 // Get OpenVPN User Connected Value
 function pfz_openvpn_server_uservalue($unique_id, $valuekey){
 
-     $atpos=strpos($uniqueid,'@');
-     $user_id = substr($uniqueid,0,$atpos);
-     $server_id = substr($uniqueid,$atpos+1);
+     $atpos=strpos($unique_id,'@');
+     $server_id = substr($unique_id,0,$atpos);
+     $user_id = substr($unique_id,$atpos+1);
      
      $servers = pfz_openvpn_get_all_servers();
      foreach($servers as $server) {
