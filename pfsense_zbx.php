@@ -155,6 +155,32 @@ function pfz_openvpn_servervalue($server_id,$valuekey){
      echo $value;
 }
 
+//OpenVPN Server/User-Auth Discovery
+function pfz_openvpn_server_userdiscovery(){
+     $servers = pfz_openvpn_get_all_servers();
+
+     $json_string = '{"data":[';
+
+     foreach ($servers as $server){
+          if ( ($server['mode']=='server_user') || ($server['mode']=='server_tls_user') ) {
+               if (is_array($server['conns'])) {               
+                    $name = trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $server['name']));
+                    
+                    foreach($server['conns'] as $conn) {               
+                         $json_string .= '{"{#SERVER}":"' . $server['vpnid'] . '"';
+                         $json_string .= ',"{#NAME}":"' . $name . '"';
+                         $json_string .= ',"{#USERID}":"' . $conn['common_name'] . '"';    
+                         $json_string .= '},';
+                    }
+               }
+          }
+     }
+
+     $json_string = rtrim($json_string,",");
+     $json_string .= "]}";
+
+     echo $json_string;
+}
 
 // OpenVPN Client Discovery
 function pfz_openvpn_clientdiscovery() {
@@ -430,6 +456,9 @@ function pfz_discovery($section){
                break;
           case "openvpn_server":
                pfz_openvpn_serverdiscovery();
+               break;
+          case "openvpn_server_user":
+               pfz_openvpn_server_userdiscovery();
                break;
           case "openvpn_client":
                pfz_openvpn_clientdiscovery();
