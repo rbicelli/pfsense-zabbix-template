@@ -169,7 +169,7 @@ function pfz_openvpn_server_userdiscovery(){
                     foreach($server['conns'] as $conn) {               
                          $json_string .= '{"{#SERVERID}":"' . $server['vpnid'] . '"';
                          $json_string .= ',"{#SERVERNAME}":"' . $name . '"';
-                         $json_string .= ',"{#UNIQUEID}":"' . $server['vpnid'] . '@' . $conn['common_name'] . '"';                         
+                         $json_string .= ',"{#UNIQUEID}":"' . $server['vpnid'] . '+' . $conn['common_name'] . '"';                         
                          $json_string .= ',"{#USERID}":"' . $conn['common_name'] . '"';    
                          $json_string .= '},';
                     }
@@ -186,7 +186,7 @@ function pfz_openvpn_server_userdiscovery(){
 // Get OpenVPN User Connected Value
 function pfz_openvpn_server_uservalue($unique_id, $valuekey){
 
-     $atpos=strpos($unique_id,'@');
+     $atpos=strpos($unique_id,'+');
      $server_id = substr($unique_id,0,$atpos);
      $user_id = substr($unique_id,$atpos+1);
      
