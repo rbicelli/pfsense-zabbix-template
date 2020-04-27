@@ -167,9 +167,9 @@ function pfz_openvpn_server_userdiscovery(){
                     $name = trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $server['name']));
                     
                     foreach($server['conns'] as $conn) {               
-                         $json_string .= '{"{#SERVER}":"' . $server['vpnid'] . '"';
-                         $json_string .= ',"{#NAME}":"' . $name . '"';
-                         $json_string .= ',"{#UNIQUEID}":"' . $conn['common_name'] . '@' . $server['vpnid'] . '"';                         
+                         $json_string .= '{"{#SERVERID}":"' . $server['vpnid'] . '"';
+                         $json_string .= ',"{#SERVERNAME}":"' . $name . '"';
+                         $json_string .= ',"{#UNIQUEID}":"' . $server['vpnid'] . '@' . $conn['common_name'] . '"';                         
                          $json_string .= ',"{#USERID}":"' . $conn['common_name'] . '"';    
                          $json_string .= '},';
                     }
@@ -183,14 +183,14 @@ function pfz_openvpn_server_userdiscovery(){
      echo $json_string;
 }
 
-// Get OpenVPN Server Value
+// Get OpenVPN User Connected Value
 function pfz_openvpn_server_uservalue($unique_id, $valuekey){
-     $servers = pfz_openvpn_get_all_servers();
-     $atpos=strpos($str,'@');
 
-     $server_id = substr($str,0,$atpos);
-     $user_id = substr($str,$atpos+1);
+     $atpos=strpos($uniqueid,'@');
+     $user_id = substr($uniqueid,0,$atpos);
+     $server_id = substr($uniqueid,$atpos+1);
      
+     $servers = pfz_openvpn_get_all_servers();
      foreach($servers as $server) {
           if($server['vpnid']==$server_id) {
                foreach($server['conns'] as $conn) {               
@@ -508,7 +508,7 @@ switch (strtolower($argv[1])){
           pfz_openvpn_servervalue($argv[2],$argv[3]);
           break;
      case "openvpn_server_uservalue":
-          pfz_openvpn_servervalue($argv[2],$argv[3]);
+          pfz_openvpn_server_uservalue($argv[2],$argv[3]);
           break;
      case "openvpn_clientvalue":
           pfz_openvpn_clientvalue($argv[2],$argv[3]);
