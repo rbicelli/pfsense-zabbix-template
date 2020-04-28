@@ -442,7 +442,8 @@ function pfz_valuemap($valuename, $value){
                          "up" => "1",
                          "down" => "2",
                          "none" => "3",
-                         "reconnecting; ping-restart" => "4");          
+                         "reconnecting; ping-restart" => "4",
+                         "" => "3");          
           break;
           
           case "openvpn.client.status":          
