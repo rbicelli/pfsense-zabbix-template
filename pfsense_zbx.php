@@ -437,13 +437,13 @@ function pfz_valuemap($valuename, $value){
 
      switch ($valuename){     
 
-          case "openvpn.server.status":          
+          case "openvpn.server.status":
+                    if ($value=="") $value="none";          
                     $valuemap = array(
                          "up" => "1",
                          "down" => "2",
                          "none" => "3",
-                         "reconnecting; ping-restart" => "4",
-                         "" => "3");          
+                         "reconnecting; ping-restart" => "4");          
           break;
           
           case "openvpn.client.status":          
