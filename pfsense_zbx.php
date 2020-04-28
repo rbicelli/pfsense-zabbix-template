@@ -128,8 +128,14 @@ function pfz_openvpn_servervalue($server_id,$valuekey){
      $servers = pfz_openvpn_get_all_servers();     
      
      foreach($servers as $server) {
-          if($server['vpnid']==$server_id)
+          if($server['vpnid']==$server_id){
                $value = $server[$valuekey];
+               if ($valuekey=="status") {
+                    if ( ($server['mode']=="server_user") || ($server['mode']=="server_tls_user") ){
+                         if ($value=="") $value="server_user_listening";                    
+                    }                    
+               }
+          }
      }
      
      switch ($valuekey){     
@@ -143,6 +149,7 @@ function pfz_openvpn_servervalue($server_id,$valuekey){
                break;     
                
           case "status":
+               
                $value = pfz_valuemap("openvpn.server.status", $value);
                break;
 
@@ -437,13 +444,14 @@ function pfz_valuemap($valuename, $value){
 
      switch ($valuename){     
 
-          case "openvpn.server.status":
-                    if ($value=="") $value="none";          
+          case "openvpn.server.status":          
                     $valuemap = array(
+                         "down" => "0",
                          "up" => "1",
-                         "down" => "2",
-                         "none" => "3",
-                         "reconnecting; ping-restart" => "4");          
+                         "none" => "2",
+                         "reconnecting; ping-restart" => "3",
+                         "waiting" => "4",
+                         "server_user_listening" => "5");          
           break;
           
           case "openvpn.client.status":          

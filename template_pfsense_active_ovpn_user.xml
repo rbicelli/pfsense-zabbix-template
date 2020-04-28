@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>4.0</version>
-    <date>2020-04-27T22:05:29Z</date>
+    <date>2020-04-28T07:22:36Z</date>
     <groups>
         <group>
             <name>Templates</name>
@@ -12,7 +12,12 @@
             <template>Template pfSense Active OpenVPN Server User Auth</template>
             <name>pfSense Active: OpenVPN Server User Auth</name>
             <description>Extension for pfSense Active Template.&#13;
-Monitor client Connections of OpenVPN Server.</description>
+Monitor client Connections of OpenVPN Server.&#13;
+&#13;
+Requires pfsense_zbx.php installed to pfSense Box.&#13;
+Version 1.0.1&#13;
+&#13;
+https://github.com/rbicelli/pfsense-zabbix-template</description>
             <groups>
                 <group>
                     <name>Templates</name>

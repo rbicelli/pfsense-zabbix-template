@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>4.0</version>
-    <date>2020-04-26T16:28:17Z</date>
+    <date>2020-04-28T07:21:17Z</date>
     <groups>
         <group>
             <name>Templates</name>
@@ -10,7 +10,7 @@
     <templates>
         <template>
             <template>Template pfSense Active</template>
-            <name>Pfsense Active</name>
+            <name>pfsense Active</name>
             <description>Active template for pfsense, requires pfsense_zbx.php installed to pfSense Box.&#13;
 Version 1.0.1&#13;
 &#13;
@@ -5998,6 +5998,10 @@ or&#13;
                 <mapping>
                     <value>4</value>
                     <newvalue>Waiting</newvalue>
+                </mapping>
+                <mapping>
+                    <value>5</value>
+                    <newvalue>Up/Listening</newvalue>
                 </mapping>
             </mappings>
         </value_map>
