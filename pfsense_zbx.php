@@ -240,7 +240,7 @@ function pfz_openvpn_clientvalue($client_id, $valuekey){
      switch ($valuekey){        
                
           case "status":
-               $value = pfz_valuemap("openvpn.server.client", $value);
+               $value = pfz_valuemap("openvpn.client.status", $value);
                break;
 
      }
