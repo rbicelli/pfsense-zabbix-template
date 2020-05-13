@@ -53,6 +53,8 @@ UserParameter=pfsense.value[*],/usr/local/bin/php /root/scripts/pfsense_zbx.php 
 
 _Please note that **AllowRoot=1** option is required in order to execute correctly OpenVPN checks and others._
 
+Also increase the **Timeout** value at least to **5**, otherwise some checks will fail.
+
 Then import xml templates in Zabbix and add your pfSense hosts.
 
 If you are running a redundant CARP setup you should adjust the macro {#EXPECTED_CARP_STATUS} to a value representing what is CARP expected status on monitored box.
