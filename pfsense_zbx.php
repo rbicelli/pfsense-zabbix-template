@@ -61,39 +61,54 @@ function pfz_test(){
 
 // Interface Discovery
 // Improved performance
-function pfz_interface_discovery() {
+function pfz_interface_discovery($skip_disabled = true, $skip_unconfigured = true) {
     $ifdescrs = get_configured_interface_with_descr(true);
-    $ifaces = get_interface_arr();
-    $ifcs=array();
- 
-    $json_string = '{"data":[';
-                   
-    foreach ($ifdescrs as $ifname => $ifdescr){
-          $ifinfo = get_interface_info($ifname);
-          $ifinfo["description"] = $ifdescr;
-          $ifcs[$ifname] = $ifinfo;
+    $all_hw_ifs = get_interface_arr();
+    $merged_ifs=array();
+
+    $output = ['data' => []];
+
+    foreach ($ifdescrs as $pfsense_if_name => $user_if_name ) {
+          $ifinfo = get_interface_info($pfsense_if_name);
+          $ifinfo["description"] = $user_if_name;
+          $ifinfo["pfsense_name"] = $pfsense_if_name;
+          $hwname = $ifinfo['hwif'];
+          $merged_ifs[$hwname] = $ifinfo;
     }
 
-    foreach ($ifaces as $hwif) {
-        $json_string .= '{"{#IFNAME}":"' . $hwif . '"';
+	foreach ($all_hw_ifs as $hwif) {
+	    $record = [];
 
-        $ifdescr = $hwif;
-        foreach($ifcs as $ifc=>$ifinfo){
-                if ($ifinfo["hwif"] == $hwif){
-                        $ifdescr = $ifinfo["description"];
-                        break;
-                }
-        }
+	    $record['{#IFNAME}'] = $hwif;
 
-        $json_string .= ',"{#IFDESCR}":"' . $ifdescr . '"';
-        $json_string .= '},';
+	    // needed when using interface names in dependent items via jsonpath
+	    $record['{#IFNAMEJ}'] = str_replace('.','_',$hwif);
+
+	    if (!empty($merged_ifs[ $hwif ])) {
+	    	if(true === $skip_disabled && isset($merged_ifs[ $hwif ]['enabled'])) {
+	    		if($merged_ifs[ $hwif ]['enabled'] != 1) {
+	    			continue;
+			    }
+		    }
+		    $record['{#IFDESCR}'] = $merged_ifs[ $hwif ]['description'];
+	    } else {
+	    	if(true === $skip_unconfigured) {
+		        continue;
+		    }
+	    	else {
+			    $record['{#IFDESCR}'] = $hwif;
+		    }
+	    }
+
+	    $output['data'][] = $record;
+
     }
-    $json_string = rtrim($json_string,",");
-    $json_string .= "]}";
-
-    echo $json_string;
+    echo json_encode($output);
 }
 
+function pfz_interface_discovery_all() {
+	pfz_interface_discovery(false, false);
+}
 
 // OpenVPN Server Discovery
 function pfz_openvpn_get_all_servers(){
@@ -498,6 +513,9 @@ function pfz_discovery($section){
                break;
           case "interfaces":
                pfz_interface_discovery();
+               break;
+          case "interfaces_all":
+               pfz_interface_discovery_all();
                break;
      }         
 }
