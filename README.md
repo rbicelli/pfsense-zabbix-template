@@ -5,7 +5,7 @@
 This is a pfSense active template for Zabbix, based on Standard Agent and a php script using pfSense functions library for monitoring specific data.
 
 
-Tested with pfSense 2.4.x and Zabbix 4.0
+Tested with pfSense 2.4.x, Zabbix 4.0, Zabbix 5.0
 
 ## What it does
 
@@ -22,7 +22,7 @@ Tested with pfSense 2.4.x and Zabbix 4.0
 **Template pfSense Active: OpenVPN Server User Auth**
 
  - Discovery of OpenVPN Clients connected to OpenVPN Servers in user auth mode
- - Monitoring of Client Parameters (Bytes sent/received, Connection Time...)
+ - Monitoring of Client Parameters (Bytes sent/received, Connection Time...) 
 
 ## Configuration
 
