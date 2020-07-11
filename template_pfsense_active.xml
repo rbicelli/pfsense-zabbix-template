@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>4.0</version>
-    <date>2020-04-28T07:21:17Z</date>
+    <date>2020-07-11T12:27:03Z</date>
     <groups>
         <group>
-            <name>Templates</name>
+            <name>Templates/Network Devices</name>
         </group>
     </groups>
     <templates>
@@ -17,7 +17,7 @@ Version 1.0.1&#13;
 https://github.com/rbicelli/pfsense-zabbix-template</description>
             <groups>
                 <group>
-                    <name>Templates</name>
+                    <name>Templates/Network Devices</name>
                 </group>
             </groups>
             <applications>
@@ -3240,18 +3240,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                                 <name>pfSense Gateway Status</name>
                             </valuemap>
                             <logtimefmt/>
-                            <preprocessing>
-                                <step>
-                                    <type>5</type>
-                                    <params>(.*)
-\1:none=0:loss=1:highdelay=2:highloss=3:force_down=4:down=5</params>
-                                </step>
-                                <step>
-                                    <type>5</type>
-                                    <params>(none|loss|highdelay|highloss|force_down|down)(?=.*:\1=(\d))
-\2</params>
-                                </step>
-                            </preprocessing>
+                            <preprocessing/>
                             <jmx_endpoint/>
                             <timeout>3s</timeout>
                             <url/>
@@ -3425,8 +3414,8 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <graph_prototypes>
                         <graph_prototype>
                             <name>Gateway {#GATEWAY} Availability</name>
-                            <width>640</width>
-                            <height>480</height>
+                            <width>900</width>
+                            <height>200</height>
                             <yaxismin>0.0000</yaxismin>
                             <yaxismax>100.0000</yaxismax>
                             <show_work_period>1</show_work_period>
@@ -3469,8 +3458,8 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                         </graph_prototype>
                         <graph_prototype>
                             <name>Gateway {#GATEWAY} Status</name>
-                            <width>640</width>
-                            <height>480</height>
+                            <width>900</width>
+                            <height>200</height>
                             <yaxismin>0.0000</yaxismin>
                             <yaxismax>5.0000</yaxismax>
                             <show_work_period>1</show_work_period>
@@ -5180,7 +5169,7 @@ or&#13;
             <expression>{Template pfSense Active:pfsense.value[system,new_version_available].last()}=1</expression>
             <recovery_mode>0</recovery_mode>
             <recovery_expression/>
-            <name>New verson of pfSense Available on {HOST.NAME}</name>
+            <name>New Version of pfSense Available on {HOST.NAME}</name>
             <correlation_mode>0</correlation_mode>
             <correlation_tag/>
             <url/>

@@ -191,7 +191,7 @@ function pfz_openvpn_server_userdiscovery(){
 }
 
 // Get OpenVPN User Connected Value
-function pfz_openvpn_server_uservalue($unique_id, $valuekey){
+function pfz_openvpn_server_uservalue($unique_id, $valuekey, $default=""){
 
      $atpos=strpos($unique_id,'+');
      $server_id = substr($unique_id,0,$atpos);
@@ -202,12 +202,12 @@ function pfz_openvpn_server_uservalue($unique_id, $valuekey){
           if($server['vpnid']==$server_id) {
                foreach($server['conns'] as $conn) {               
                     if ($conn['common_name']==$user_id){
-                         $value = $conn[$valuekey];     
+                         $value = $conn[$valuekey];
                     }
                }               
           }
      }
-     
+     if ($value=="") $value = $default;
      echo $value;
 }
 // OpenVPN Client Discovery
@@ -230,7 +230,7 @@ function pfz_openvpn_clientdiscovery() {
 }
 
 
-function pfz_openvpn_clientvalue($client_id, $valuekey){
+function pfz_openvpn_clientvalue($client_id, $valuekey, $default="none"){
      $clients = openvpn_get_active_clients();     
      foreach($clients as $client) {
           if($client['vpnid']==$client_id)
@@ -245,7 +245,7 @@ function pfz_openvpn_clientvalue($client_id, $valuekey){
 
      }
 
-     if ($value=="") $value="none";
+     if ($value=="") $value=$default;
      echo $value;
 }
 
@@ -370,8 +370,12 @@ function pfz_gw_discovery() {
 
 function pfz_gw_value($gw, $valuekey) {
      $gws = return_gateways_status(true);
-     if(array_key_exists($gw,$gws))
-          echo $gws[$gw][$valuekey];
+     if(array_key_exists($gw,$gws)) {
+          $value = $gws[$gw][$valuekey];
+          if ($valuekey=="status")
+               $value = pfz_valuemap("gateway.status", $value);     
+          echo $value;         
+     }
 }
 
 
@@ -469,6 +473,16 @@ function pfz_valuemap($valuename, $value){
                          "server_tls" => "3",
                          "server_user" => "4",
                          "server_tls_user" => "5");          
+          break;
+          
+          case "gateway.status":
+                    $valuemap = array(
+                         "none" => "0",
+                         "loss" => "1",
+                         "highdelay" => "2",
+                         "highloss" => "3",
+                         "force_down" => "4",
+                         "down" => "5");          
           break;     
      }
 
@@ -518,6 +532,9 @@ switch (strtolower($argv[1])){
           break;
      case "openvpn_server_uservalue":
           pfz_openvpn_server_uservalue($argv[2],$argv[3]);
+          break;
+     case "openvpn_server_uservalue_numeric":
+          pfz_openvpn_server_uservalue($argv[2],$argv[3],"0");
           break;
      case "openvpn_clientvalue":
           pfz_openvpn_clientvalue($argv[2],$argv[3]);
