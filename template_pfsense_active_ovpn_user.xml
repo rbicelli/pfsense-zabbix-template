@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>4.0</version>
-    <date>2020-07-11T12:27:51Z</date>
+    <date>2020-07-12T06:37:29Z</date>
     <groups>
         <group>
             <name>Templates/Network devices</name>
@@ -189,7 +189,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <snmp_oid/>
                             <key>pfsense.value[openvpn_server_uservalue,{#UNIQUEID},connect_time_unix]</key>
                             <delay>60s</delay>
-                            <history>180d</history>
+                            <history>90d</history>
                             <trends>0</trends>
                             <status>0</status>
                             <value_type>3</value_type>
@@ -249,7 +249,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <snmp_oid/>
                             <key>pfsense.value[openvpn_server_uservalue,{#UNIQUEID},remote_host]</key>
                             <delay>60s</delay>
-                            <history>0</history>
+                            <history>90d</history>
                             <trends>0</trends>
                             <status>0</status>
                             <value_type>4</value_type>
@@ -309,7 +309,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <snmp_oid/>
                             <key>pfsense.value[openvpn_server_uservalue,{#UNIQUEID},user_name]</key>
                             <delay>60s</delay>
-                            <history>0</history>
+                            <history>90d</history>
                             <trends>0</trends>
                             <status>0</status>
                             <value_type>4</value_type>
@@ -429,7 +429,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <snmp_oid/>
                             <key>pfsense.value[openvpn_server_uservalue,{#UNIQUEID},virtual_addr]</key>
                             <delay>60s</delay>
-                            <history>180d</history>
+                            <history>90d</history>
                             <trends>0</trends>
                             <status>0</status>
                             <value_type>4</value_type>
@@ -488,8 +488,8 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <snmp_community/>
                             <snmp_oid/>
                             <key>pfsense.value[openvpn_server_uservalue_numeric,{#UNIQUEID},client_id]</key>
-                            <delay>120s</delay>
-                            <history>0</history>
+                            <delay>60s</delay>
+                            <history>90d</history>
                             <trends>0</trends>
                             <status>0</status>
                             <value_type>3</value_type>
@@ -549,7 +549,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <snmp_oid/>
                             <key>pfsense.value[openvpn_server_uservalue_numeric,{#UNIQUEID},peer_id]</key>
                             <delay>60s</delay>
-                            <history>0</history>
+                            <history>90d</history>
                             <trends>0</trends>
                             <status>0</status>
                             <value_type>3</value_type>
