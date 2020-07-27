@@ -3331,7 +3331,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     </item_prototypes>
                     <trigger_prototypes>
                         <trigger_prototype>
-                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last(#3)}=5</expression>
+                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last()}=5</expression>
                             <recovery_mode>0</recovery_mode>
                             <recovery_expression/>
                             <name>Gateway {#GATEWAY} is down</name>
@@ -3347,7 +3347,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <tags/>
                         </trigger_prototype>
                         <trigger_prototype>
-                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last(#3)}=4</expression>
+                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last()}=4</expression>
                             <recovery_mode>0</recovery_mode>
                             <recovery_expression/>
                             <name>Gateway {#GATEWAY} is forced down</name>
@@ -3363,7 +3363,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <tags/>
                         </trigger_prototype>
                         <trigger_prototype>
-                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last(#3)}=2</expression>
+                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last()}=2</expression>
                             <recovery_mode>0</recovery_mode>
                             <recovery_expression/>
                             <name>High Delay on gateway {#GATEWAY}</name>
@@ -3379,7 +3379,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <tags/>
                         </trigger_prototype>
                         <trigger_prototype>
-                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last(#3)}=3</expression>
+                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last()}=3</expression>
                             <recovery_mode>0</recovery_mode>
                             <recovery_expression/>
                             <name>High packet Loss on {#GATEWAY}</name>
@@ -3395,7 +3395,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <tags/>
                         </trigger_prototype>
                         <trigger_prototype>
-                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last(#3)}=1</expression>
+                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last()}=1</expression>
                             <recovery_mode>0</recovery_mode>
                             <recovery_expression/>
                             <name>Packet Loss on {#GATEWAY}</name>
