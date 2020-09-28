@@ -283,17 +283,19 @@ function pfz_services_discovery(){
 
 // Get service value
 // 2020-03-27: Added space replace in service name for issue #12
+// 2020-09-28: Corrected Space Replace
 function pfz_service_value($name,$value){
      $services = get_services();     
-     
+     $name = str_replace("__"," ",$name);
+           
      //List of service which are stopped on CARP Slave.
      //For now this is the best way i found for filtering out the triggers
      //Waiting for a way in Zabbix to use Global Regexp in triggers with items discovery
      $stopped_on_carp_slave = array("haproxy","openvpn.","openvpn");
      
      foreach ($services as $service){
-          $namecfr=str_replace("__"," ",$service["name"]);
-          $carpcfr=str_replace("__"," ",$service["name"]);          
+          $namecfr = $service["name"];
+          $carpcfr = $service["name"];          
 
           //OpenVPN          
           if (!empty($service['id'])) {                           

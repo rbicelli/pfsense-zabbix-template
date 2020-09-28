@@ -4,7 +4,7 @@
     <date>2020-07-12T06:37:29Z</date>
     <groups>
         <group>
-            <name>Templates/Network devices</name>
+            <name>Templates/Network Devices</name>
         </group>
     </groups>
     <templates>
@@ -20,7 +20,7 @@ Version 1.0.1&#13;
 https://github.com/rbicelli/pfsense-zabbix-template</description>
             <groups>
                 <group>
-                    <name>Templates/Network devices</name>
+                    <name>Templates/Network Devices</name>
                 </group>
             </groups>
             <applications>
