@@ -202,12 +202,15 @@ function pfz_openvpn_server_userdiscovery(){
                if (is_array($server['conns'])) {               
                     $name = trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $server['name']));
                     
-                    foreach($server['conns'] as $conn) {               
-                         $json_string .= '{"{#SERVERID}":"' . $server['vpnid'] . '"';
-                         $json_string .= ',"{#SERVERNAME}":"' . $name . '"';
-                         $json_string .= ',"{#UNIQUEID}":"' . $server['vpnid'] . '+' . $conn['common_name'] . '"';                         
-                         $json_string .= ',"{#USERID}":"' . $conn['common_name'] . '"';    
-                         $json_string .= '},';
+                    foreach($server['conns'] as $conn) {
+                    	
+                    	$common_name = pfz_replacespecialchars($conn['common_name']);
+                    	               
+                        $json_string .= '{"{#SERVERID}":"' . $server['vpnid'] . '"';
+                        $json_string .= ',"{#SERVERNAME}":"' . $name . '"';
+                        $json_string .= ',"{#UNIQUEID}":"' . $server['vpnid'] . '+' . $common_name . '"';                         
+                        $json_string .= ',"{#USERID}":"' . $conn['common_name'] . '"';    
+                        $json_string .= '},';
                     }
                }
           }
@@ -222,6 +225,7 @@ function pfz_openvpn_server_userdiscovery(){
 // Get OpenVPN User Connected Value
 function pfz_openvpn_server_uservalue($unique_id, $valuekey, $default=""){
 
+	 $unique_id = pfz_replacespecialchars($unique_id,true);
      $atpos=strpos($unique_id,'+');
      $server_id = substr($unique_id,0,$atpos);
      $user_id = substr($unique_id,$atpos+1);
@@ -258,6 +262,20 @@ function pfz_openvpn_clientdiscovery() {
      echo $json_string;
 }
 
+function pfz_replacespecialchars($inputstr,$reverse=false){
+	 $specialchars = ",',\",`,*,?,[,],{,},~,$,!,&,;,(,),<,>,|,#,@,0x0a";
+	 $specialchars = explode(",",$specialchars);	 
+	 $resultstr = $inputstr;
+	 
+	 for ($n=0;$n<count($specialchars);$n++){
+	 	if ($reverse==false)
+	 		$resultstr = str_replace($specialchars[$n],'%%' . $n . '%',$resultstr);
+	 	else
+	 		$resultstr = str_replace('%%' . $n . '%',$specialchars[$n],$resultstr);
+	 }	 
+	 
+	 return ($resultstr);
+}
 
 function pfz_openvpn_clientvalue($client_id, $valuekey, $default="none"){
      $clients = openvpn_get_active_clients();     
