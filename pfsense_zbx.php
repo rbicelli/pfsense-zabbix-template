@@ -338,7 +338,7 @@ function pfz_service_value($name,$value){
      //List of service which are stopped on CARP Slave.
      //For now this is the best way i found for filtering out the triggers
      //Waiting for a way in Zabbix to use Global Regexp in triggers with items discovery
-     $stopped_on_carp_slave = array("haproxy","openvpn.","openvpn");
+     $stopped_on_carp_slave = array("haproxy","radvd","openvpn.","openvpn");
      
      foreach ($services as $service){
           $namecfr = $service["name"];
