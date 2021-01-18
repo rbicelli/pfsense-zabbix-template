@@ -756,6 +756,7 @@ function pfz_valuemap($valuename, $value, $default="0"){
           
           case "gateway.status":
                     $valuemap = array(
+                         "online" => "0",
                          "none" => "0",
                          "loss" => "1",
                          "highdelay" => "2",
