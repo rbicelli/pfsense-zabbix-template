@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>4.0</version>
-    <date>2020-07-12T20:15:44Z</date>
+    <date>2021-01-18T15:00:52Z</date>
     <groups>
         <group>
             <name>Templates/Network Devices</name>
@@ -12,7 +12,7 @@
             <template>Template pfSense Active</template>
             <name>pfsense Active</name>
             <description>Active template for pfsense, requires pfsense_zbx.php installed to pfSense Box.&#13;
-Version 1.0.1&#13;
+Version 1.0.2&#13;
 &#13;
 https://github.com/rbicelli/pfsense-zabbix-template</description>
             <groups>
@@ -930,6 +930,65 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <valuemap>
                         <name>Generic YesNo</name>
                     </valuemap>
+                    <logtimefmt/>
+                    <preprocessing/>
+                    <jmx_endpoint/>
+                    <timeout>3s</timeout>
+                    <url/>
+                    <query_fields/>
+                    <posts/>
+                    <status_codes>200</status_codes>
+                    <follow_redirects>1</follow_redirects>
+                    <post_type>0</post_type>
+                    <http_proxy/>
+                    <headers/>
+                    <retrieve_mode>0</retrieve_mode>
+                    <request_method>0</request_method>
+                    <output_format>0</output_format>
+                    <allow_traps>0</allow_traps>
+                    <ssl_cert_file/>
+                    <ssl_key_file/>
+                    <ssl_key_password/>
+                    <verify_peer>0</verify_peer>
+                    <verify_host>0</verify_host>
+                    <master_item/>
+                </item>
+                <item>
+                    <name>Packages Needing Update</name>
+                    <type>7</type>
+                    <snmp_community/>
+                    <snmp_oid/>
+                    <key>pfsense.value[system,packages_update]</key>
+                    <delay>1d</delay>
+                    <history>90d</history>
+                    <trends>365d</trends>
+                    <status>0</status>
+                    <value_type>3</value_type>
+                    <allowed_hosts/>
+                    <units/>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description>Number of packages needing update.</description>
+                    <inventory_link>0</inventory_link>
+                    <applications>
+                        <application>
+                            <name>System</name>
+                        </application>
+                    </applications>
+                    <valuemap/>
                     <logtimefmt/>
                     <preprocessing/>
                     <jmx_endpoint/>
@@ -3045,7 +3104,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <snmp_community/>
                     <snmp_oid/>
                     <key>pfsense.discovery[gw]</key>
-                    <delay>30s</delay>
+                    <delay>300s</delay>
                     <status>0</status>
                     <allowed_hosts/>
                     <snmpv3_contextname/>
@@ -3077,7 +3136,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <snmp_community/>
                             <snmp_oid/>
                             <key>pfsense.value[gw_value,{#GATEWAY},delay]</key>
-                            <delay>30s</delay>
+                            <delay>60s</delay>
                             <history>90d</history>
                             <trends>365d</trends>
                             <status>0</status>
@@ -3142,7 +3201,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <snmp_community/>
                             <snmp_oid/>
                             <key>pfsense.value[gw_value,{#GATEWAY},loss]</key>
-                            <delay>30s</delay>
+                            <delay>60s</delay>
                             <history>90d</history>
                             <trends>365d</trends>
                             <status>0</status>
@@ -3207,7 +3266,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <snmp_community/>
                             <snmp_oid/>
                             <key>pfsense.value[gw_value,{#GATEWAY},status]</key>
-                            <delay>30s</delay>
+                            <delay>60s</delay>
                             <history>90d</history>
                             <trends>365d</trends>
                             <status>0</status>
@@ -3269,7 +3328,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <snmp_community/>
                             <snmp_oid/>
                             <key>pfsense.value[gw_value,{#GATEWAY},stddev]</key>
-                            <delay>30s</delay>
+                            <delay>60s</delay>
                             <history>90d</history>
                             <trends>365d</trends>
                             <status>0</status>
@@ -3549,6 +3608,71 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <description>Discovery of network interfaces as defined in global regular expression &quot;Network interfaces for discovery&quot;.</description>
                     <item_prototypes>
                         <item_prototype>
+                            <name>Incoming Errors on {#IFDESCR}</name>
+                            <type>7</type>
+                            <snmp_community/>
+                            <snmp_oid/>
+                            <key>net.if.in[{#IFNAME},errors]</key>
+                            <delay>60</delay>
+                            <history>7d</history>
+                            <trends>365d</trends>
+                            <status>0</status>
+                            <value_type>3</value_type>
+                            <allowed_hosts/>
+                            <units/>
+                            <snmpv3_contextname/>
+                            <snmpv3_securityname/>
+                            <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                            <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                            <snmpv3_authpassphrase/>
+                            <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                            <snmpv3_privpassphrase/>
+                            <params/>
+                            <ipmi_sensor/>
+                            <authtype>0</authtype>
+                            <username/>
+                            <password/>
+                            <publickey/>
+                            <privatekey/>
+                            <port/>
+                            <description/>
+                            <inventory_link>0</inventory_link>
+                            <applications>
+                                <application>
+                                    <name>Network interfaces</name>
+                                </application>
+                            </applications>
+                            <valuemap/>
+                            <logtimefmt/>
+                            <preprocessing>
+                                <step>
+                                    <type>10</type>
+                                    <params/>
+                                </step>
+                            </preprocessing>
+                            <jmx_endpoint/>
+                            <timeout>3s</timeout>
+                            <url/>
+                            <query_fields/>
+                            <posts/>
+                            <status_codes>200</status_codes>
+                            <follow_redirects>1</follow_redirects>
+                            <post_type>0</post_type>
+                            <http_proxy/>
+                            <headers/>
+                            <retrieve_mode>0</retrieve_mode>
+                            <request_method>0</request_method>
+                            <output_format>0</output_format>
+                            <allow_traps>0</allow_traps>
+                            <ssl_cert_file/>
+                            <ssl_key_file/>
+                            <ssl_key_password/>
+                            <verify_peer>0</verify_peer>
+                            <verify_host>0</verify_host>
+                            <application_prototypes/>
+                            <master_item/>
+                        </item_prototype>
+                        <item_prototype>
                             <name>Incoming network traffic on {#IFDESCR}</name>
                             <type>7</type>
                             <snmp_community/>
@@ -3593,6 +3717,71 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                                 <step>
                                     <type>1</type>
                                     <params>8</params>
+                                </step>
+                            </preprocessing>
+                            <jmx_endpoint/>
+                            <timeout>3s</timeout>
+                            <url/>
+                            <query_fields/>
+                            <posts/>
+                            <status_codes>200</status_codes>
+                            <follow_redirects>1</follow_redirects>
+                            <post_type>0</post_type>
+                            <http_proxy/>
+                            <headers/>
+                            <retrieve_mode>0</retrieve_mode>
+                            <request_method>0</request_method>
+                            <output_format>0</output_format>
+                            <allow_traps>0</allow_traps>
+                            <ssl_cert_file/>
+                            <ssl_key_file/>
+                            <ssl_key_password/>
+                            <verify_peer>0</verify_peer>
+                            <verify_host>0</verify_host>
+                            <application_prototypes/>
+                            <master_item/>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Outgoing errors on {#IFDESCR}</name>
+                            <type>7</type>
+                            <snmp_community/>
+                            <snmp_oid/>
+                            <key>net.if.out[{#IFNAME},errors]</key>
+                            <delay>60</delay>
+                            <history>7d</history>
+                            <trends>365d</trends>
+                            <status>0</status>
+                            <value_type>3</value_type>
+                            <allowed_hosts/>
+                            <units/>
+                            <snmpv3_contextname/>
+                            <snmpv3_securityname/>
+                            <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                            <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                            <snmpv3_authpassphrase/>
+                            <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                            <snmpv3_privpassphrase/>
+                            <params/>
+                            <ipmi_sensor/>
+                            <authtype>0</authtype>
+                            <username/>
+                            <password/>
+                            <publickey/>
+                            <privatekey/>
+                            <port/>
+                            <description/>
+                            <inventory_link>0</inventory_link>
+                            <applications>
+                                <application>
+                                    <name>Network interfaces</name>
+                                </application>
+                            </applications>
+                            <valuemap/>
+                            <logtimefmt/>
+                            <preprocessing>
+                                <step>
+                                    <type>10</type>
+                                    <params/>
                                 </step>
                             </preprocessing>
                             <jmx_endpoint/>
@@ -3760,7 +3949,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <snmp_community/>
                     <snmp_oid/>
                     <key>pfsense.discovery[openvpn_client]</key>
-                    <delay>30s</delay>
+                    <delay>300s</delay>
                     <status>0</status>
                     <allowed_hosts/>
                     <snmpv3_contextname/>
@@ -3792,7 +3981,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <snmp_community/>
                             <snmp_oid/>
                             <key>pfsense.value[openvpn_clientvalue,{#CLIENT},status]</key>
-                            <delay>30s</delay>
+                            <delay>60s</delay>
                             <history>90d</history>
                             <trends>365d</trends>
                             <status>0</status>
@@ -3894,7 +4083,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <snmp_community/>
                     <snmp_oid/>
                     <key>pfsense.discovery[openvpn_server]</key>
-                    <delay>30s</delay>
+                    <delay>300s</delay>
                     <status>0</status>
                     <allowed_hosts/>
                     <snmpv3_contextname/>
@@ -4210,7 +4399,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <snmp_community/>
                     <snmp_oid/>
                     <key>pfsense.discovery[services]</key>
-                    <delay>30s</delay>
+                    <delay>300s</delay>
                     <status>0</status>
                     <allowed_hosts/>
                     <snmpv3_contextname/>
@@ -4304,7 +4493,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <snmp_community/>
                             <snmp_oid/>
                             <key>pfsense.value[service_value,{#SERVICE},status]</key>
-                            <delay>30s</delay>
+                            <delay>60s</delay>
                             <history>90d</history>
                             <trends>365d</trends>
                             <status>0</status>
@@ -4868,6 +5057,18 @@ or&#13;
             <httptests/>
             <macros>
                 <macro>
+                    <macro>{$CARP_SERVICES_STOPPED}</macro>
+                    <value>^(haproxy|openvpn)$</value>
+                </macro>
+                <macro>
+                    <macro>{$CARP_SLAVE_SERVICES:&quot;haproxy&quot;}</macro>
+                    <value>0</value>
+                </macro>
+                <macro>
+                    <macro>{$CARP_SLAVE_SERVICES:&quot;openvpn&quot;}</macro>
+                    <value>0</value>
+                </macro>
+                <macro>
                     <macro>{$EXPECTED_CARP_STATUS}</macro>
                     <value>0</value>
                 </macro>
@@ -5178,6 +5379,22 @@ or&#13;
             <description>A new version of pfSense is available for update.</description>
             <type>0</type>
             <manual_close>1</manual_close>
+            <dependencies/>
+            <tags/>
+        </trigger>
+        <trigger>
+            <expression>{Template pfSense Active:pfsense.value[system,packages_update].last()}&gt;0</expression>
+            <recovery_mode>0</recovery_mode>
+            <recovery_expression/>
+            <name>Packages Update Available on {HOST.NAME}</name>
+            <correlation_mode>0</correlation_mode>
+            <correlation_tag/>
+            <url/>
+            <status>0</status>
+            <priority>1</priority>
+            <description>Notify of new version of packages are available</description>
+            <type>0</type>
+            <manual_close>0</manual_close>
             <dependencies/>
             <tags/>
         </trigger>

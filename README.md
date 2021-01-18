@@ -18,11 +18,18 @@ Tested with pfSense 2.4.x, Zabbix 4.0, Zabbix 5.0
  - CARP Monitoring (Global CARP State)
  - Basic Service Discovery and Monitoring (Service Status)
  - pfSense Version/Update Available
+ - Packages Update Available
  
 **Template pfSense Active: OpenVPN Server User Auth**
 
  - Discovery of OpenVPN Clients connected to OpenVPN Servers in user auth mode
  - Monitoring of Client Parameters (Bytes sent/received, Connection Time...) 
+
+**Template pfSense Active: IPsec**
+
+ - Discovery of IPsec Site-to-Site tunnels
+ - Monitoring tunnel status (Phase 1 and Phase 2)
+
 
 ## Configuration
 

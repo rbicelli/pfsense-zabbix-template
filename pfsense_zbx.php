@@ -1,7 +1,7 @@
 <?php
 /*** 
 pfsense_zbx.php - pfSense Zabbix Interface
-Version 0.9.3 - 2020-04-26 
+Version 1.0.2 - 2021-01-18
 
 Written by Riccardo Bicelli <r.bicelli@gmail.com>
 This program is licensed under Apache 2.0 License
@@ -23,6 +23,8 @@ require_once("service-utils.inc");
 
 //For System
 require_once('pkg-utils.inc'); 
+
+//For DHCP
 
 
 //Testing function, for template creating purpose
@@ -55,7 +57,34 @@ function pfz_test(){
         echo "Services: \n";
         print_r($services);
         echo $line;
-
+        
+        echo "IPsec: \n";
+	
+		require_once("ipsec.inc");
+		global $config;
+		init_config_arr(array('ipsec', 'phase1'));
+		init_config_arr(array('ipsec', 'phase2'));
+		$a_phase2 = &$config['ipsec']['phase2'];
+        $status = ipsec_list_sa();
+		echo "IPsec Status: \n";
+		print_r($status);		
+		
+		$a_phase1 = &$config['ipsec']['phase1'];
+		$a_phase2 = &$config['ipsec']['phase2'];
+	
+		echo "IPsec Config Phase 1: \n";
+		print_r($a_phase1);
+		
+		echo "IPsec Config Phase 2: \n";
+		print_r($a_phase2);
+		
+		echo $line;
+		
+		//Packages
+		echo "Packages: \n";
+		require_once("pkg-utils.inc");
+		$installed_packages = get_pkg_info('all', false, true);
+		print_r($installed_packages);
 }
 
 
@@ -334,6 +363,7 @@ function pfz_service_value($name,$value){
                               echo 0;
                          else
                               echo 1;
+                         break;
                     default:               
                          echo $service[$value];
                          break;
@@ -381,18 +411,207 @@ function pfz_gw_value($gw, $valuekey) {
 }
 
 
-function pfz_carp_status(){
+// IPSEC Discovery
+function pfz_ipsec_discovery_ph1(){
+	
+	require_once("ipsec.inc");	
+	global $config;
+	init_config_arr(array('ipsec', 'phase1'));
+	$a_phase1 = &$config['ipsec']['phase1'];
+	
+	$json_string = '{"data":[';
+	
+	foreach ($a_phase1 as $data) {
+		$json_string .= '{"{#IKEID}":"' . $data['ikeid'] . '"';
+		$json_string .= ',"{#NAME}":"' . $data['descr'] . '"';
+		$json_string .= '},';
+	}	
+
+	$json_string = rtrim($json_string,",");
+    $json_string .= "]}";     	
+    
+    echo $json_string;
+	
+}
+
+
+function pfz_ipsec_ph1($ikeid,$valuekey){	
+	// Get Value from IPsec Phase 1 Configuration
+	// If Getting "disabled" value only check item presence in config array
+
+	require_once("ipsec.inc");
+	global $config;
+	init_config_arr(array('ipsec', 'phase1'));
+	$a_phase1 = &$config['ipsec']['phase1'];	
+
+	$value = "";	
+	switch ($valuekey) {
+		case 'status':
+			$value = pfz_ipsec_status($ikeid);
+			break;
+		case 'disabled':
+			$value = "0";		
+		default:
+			foreach ($a_phase1 as $data) {
+				if ($data['ikeid'] == $ikeid) {
+					if(array_key_exists($valuekey,$data)) {
+					if ($valuekey=='disabled')
+						$value = "1";
+					else
+						$value = pfz_valuemap("ipsec." . $valuekey, $data[$valuekey], $data[$valuekey]);
+					break;
+					}
+				}
+			}		
+	}
+	echo $value;
+}
+
+function pfz_ipsec_discovery_ph2(){
+	
+	require_once("ipsec.inc");
+	
+	global $config;
+	init_config_arr(array('ipsec', 'phase2'));
+	$a_phase2 = &$config['ipsec']['phase2'];
+	
+	$json_string = '{"data":[';
+	
+	foreach ($a_phase2 as $data) {
+		$json_string .= '{"{#IKEID}":"' . $data['ikeid'] . '"';
+		$json_string .= ',"{#NAME}":"' .  $data['descr'] . '"';
+		$json_string .= ',"{#UNIQID}":"' .  $data['uniqid'] . '"';
+		$json_string .= ',"{#REQID}":"' .  $data['reqid'] . '"';
+		$json_string .= ',"{#EXTID}":"' .  $data['ikeid'] . '.' . $data['reqid'] . '"';
+		$json_string .= '},';
+	}	
+
+	$json_string = rtrim($json_string,",");
+    $json_string .= "]}";     	
+    
+    echo $json_string;
+	
+}
+
+function pfz_ipsec_ph2($uniqid, $valuekey){
+	require_once("ipsec.inc");
+	global $config;
+	init_config_arr(array('ipsec', 'phase2'));
+	$a_phase2 = &$config['ipsec']['phase2'];	
+	
+	$valuecfr = explode(".",$valuekey);
+		
+	switch ($valuecfr[0]) {
+		case 'status':
+			$idarr = explode(".", $uniqid);
+			$statuskey = "state";
+			if (isset($valuecfr[1])) $statuskey = $valuecfr[1]; 
+			$value = pfz_ipsec_status($idarr[0],$idarr[1],$statuskey);
+			break;
+		case 'disabled':
+			$value = "0";
+	}							
+	
+	foreach ($a_phase2 as $data) {
+		if ($data['uniqid'] == $uniqid) {
+			if(array_key_exists($valuekey,$data)) {
+			if ($valuekey=='disabled')
+				$value = "1";
+			else
+				$value = pfz_valuemap("ipsec_ph2." . $valuekey, $data[$valuekey], $data[$valuekey]);
+			break;
+			}
+		}
+	}
+	echo $value;
+}
+
+function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
+		
+	require_once("ipsec.inc");
+	global $config;
+	init_config_arr(array('ipsec', 'phase1'));
+	$a_phase1 = &$config['ipsec']['phase1'];
+	$status = ipsec_list_sa();
+	$ipsecconnected = array();	
+	
+	$carp_status = pfz_carp_status(false);
+	
+	//Phase-Status match borrowed from status_ipsec.php	
+	if (is_array($status)) {		
+		foreach ($status as $l_ikeid=>$ikesa) {			
+			
+			if(isset($ikesa['con-id'])){
+				$con_id = substr($ikesa['con-id'], 3);
+			}else{
+				$con_id = filter_var($l_ikeid, FILTER_SANITIZE_NUMBER_INT);
+			}
+			if ($ikesa['version'] == 1) {
+				$ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '00'));
+				$ipsecconnected[$ph1idx] = $ph1idx;
+			} else {
+				if (!ipsec_ikeid_used($con_id)) {
+					// probably a v2 with split connection then
+					$ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '00'));
+					$ipsecconnected[$ph1idx] = $ph1idx;
+				} else {
+					$ipsecconnected[$con_id] = $ph1idx = $con_id;
+				}
+			}
+			if ($ph1idx == $ikeid){
+				if ($reqid!=-1) {
+					// Asking for Phase2 Status Value
+					foreach ($ikesa['child-sas'] as $childsas) {
+						if ($childsas['reqid']==$reqid) {
+							if ($childsas['state'] == 'REKEYED') {
+								//if state is rekeyed go on
+								$tmp_value = $childsas[$valuekey];
+							} else {
+								$tmp_value = $childsas[$valuekey];
+								break;
+							}
+						}						
+					}
+				} else {
+					$tmp_value = $ikesa[$valuekey];
+				}
+								
+				break;
+			}			
+		}	
+	}
+	switch($valuekey) {
+					case 'state':
+						$value = pfz_valuemap('ipsec.state', strtolower($tmp_value));
+						$value = $value + (10 * ($carp_status-1));						
+						break;
+					default:
+						$value = $tmp_value;
+						break;
+	}
+//	print_r($ikesa);
+	return $value;
+}
+
+
+
+function pfz_carp_status($echo = true){
      //Detect CARP Status
      global $config;
      $status_return = 0;
      $status = get_carp_status();
      $carp_detected_problems = get_single_sysctl("net.inet.carp.demotion");
 
+	 //CARP is disabled
+	 $ret = 0;
+	 
      if ($status != 0) { //CARP is enabled
 
           if ($carp_detected_problems != 0) {                              
-               echo 4;   //There's some Major Problems with CARP
-               return true;
+			   //There's some Major Problems with CARP
+               $ret = 4;
+               if ($echo == true) echo $ret;   
+               return $ret;
           }
                     
           $status_changed = false;
@@ -410,19 +629,55 @@ function pfz_carp_status(){
           }          
           if ($status_changed) {
                //CARP Status is inconsistent across interfaces
+               $ret=3;
                echo 3;          
           } else {
                if ($prev_status=="MASTER")
-                    echo 1;
+                    $ret = 1;                    
                else
-                    echo 2;
+					$ret = 2;
           }      
-     } else {
-          //CARP is Disabled
-          echo 0;     
      }
+     
+     if ($echo == true) echo $ret;   
+     return $ret;
+     
 }
 
+function pfz_dhcpfailover_discovery(){
+	//System functions regarding DHCP Leases will be available in the upcoming release of pfSense, so let's wait
+	require_once("system.inc");
+	$leases = system_get_dhcpleases();
+	
+	$json_string = '{"data":[';
+	
+	if (count($leases['failover']) > 0){
+		foreach ($leases['failover'] as $data){
+			   $json_string .= '{"{#FAILOVER_GROUP}":"' . str_replace(" ", "__", $data['name']) . '"';          
+		}
+	}
+
+	$json_string = rtrim($json_string,",");
+    $json_string .= "]}";     	
+    
+    echo $json_string;
+}
+
+//Packages
+function pfz_packages_uptodate(){
+	require_once("pkg-utils.inc");
+	$installed_packages = get_pkg_info('all', false, true);
+		
+	$ret = 0;
+
+	foreach ($installed_packages as $package){
+		if ($package['version']!=$package['installed_version']){
+			$ret ++;
+		}
+	}
+	
+	return $ret;
+}
 
 //System Information
 function pfz_get_system_value($section){
@@ -440,13 +695,17 @@ function pfz_get_system_value($section){
                else
                     echo "1";
                break;
+          case "packages_update":
+          		echo pfz_packages_uptodate();
+          		break;	
      }
 }
 
 
+
 // Value mappings
 // Each value map is represented by an associative array
-function pfz_valuemap($valuename, $value){
+function pfz_valuemap($valuename, $value, $default="0"){
 
      switch ($valuename){     
 
@@ -485,13 +744,55 @@ function pfz_valuemap($valuename, $value){
                          "highloss" => "3",
                          "force_down" => "4",
                          "down" => "5");          
-          break;     
+          break;    
+          
+          case "ipsec.iketype":
+          			$valuemap = array (
+          				"auto" => 0,
+          				"ikev1" => 1,
+          				"ikev2" => 2);
+          break;
+          
+          case "ipsec.mode":
+          			$valuemap = array (
+          				"main" => 0,
+          				"aggressive" => 1);
+          break;
+          
+          case "ipsec.protocol":
+          			$valuemap = array (
+          				"both" => 0,
+          				"inet" => 1,
+          				"inet6" => 2);
+          break;
+          
+          case "ipsec_ph2.mode":
+          			$valuemap = array (
+          				"transport" => 0,
+          				"tunnel" => 1,
+          				"tunnel6" => 2);
+          break;
+          
+          case "ipsec_ph2.protocol":
+          			$valuemap = array (
+          				"esp" => 1,
+          				"ah" => 2);
+          break;
+
+		  case "ipsec.state":
+          			$valuemap = array (
+          				"established" => 1,
+          				"connecting" => 2,
+          				"installed" => 1,
+          				"rekeyed" => 2);
+          break;
+
      }
 
      if (array_key_exists($value, $valuemap))
           return $valuemap[$value];
      
-     return "0";
+     return $default;
 }
 
 //Argument parsers for Discovery
@@ -514,6 +815,15 @@ function pfz_discovery($section){
                break;
           case "interfaces":
                pfz_interface_discovery();
+               break;
+          case "ipsec_ph1":
+          	   pfz_ipsec_discovery_ph1();
+               break;
+          case "ipsec_ph2":
+          	   pfz_ipsec_discovery_ph2();
+               break;
+          case "dhcpfailover":
+          	   pfz_dhcpfailover_discovery();
                break;
      }         
 }
@@ -552,6 +862,12 @@ switch (strtolower($argv[1])){
           break;
      case "system":
           pfz_get_system_value($argv[2]);
+          break;
+     case "ipsec_ph1":
+          pfz_ipsec_ph1($argv[2],$argv[3]);
+          break;
+     case "ipsec_ph2":
+          pfz_ipsec_ph2($argv[2],$argv[3]);
           break;
      default:
           pfz_test();
