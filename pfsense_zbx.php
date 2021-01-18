@@ -808,9 +808,10 @@ function pfz_valuemap($valuename, $value, $default="0"){
 
      }
 
-     if (array_key_exists($value, $valuemap))
-          return $valuemap[$value];
-     
+     if (isset($valuemap)) {
+     	if (array_key_exists($value, $valuemap))
+          	return $valuemap[$value];
+     }
      return $default;
 }
 
