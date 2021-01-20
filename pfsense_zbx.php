@@ -162,7 +162,11 @@ function pfz_openvpn_servervalue($server_id,$valuekey){
                if ($valuekey=="status") {
                     if ( ($server['mode']=="server_user") || ($server['mode']=="server_tls_user") || ($server['mode']=="server_tls") ){
                          if ($value=="") $value="server_user_listening";                    
-                    }                    
+                    } else if ($server['mode']=="p2p_tls"){
+                        // For p2p_tls, ensure we have one client, and return up if it's the case
+                        if ($value=="")
+                            $value=(is_array($server["conns"]) && count($server["conns"]) > 0) ? "up" : "down";
+                    }                  
                }
           }
      }
@@ -808,7 +812,7 @@ function pfz_valuemap($valuename, $value, $default="0"){
 
      }
 
-     if (isset($valuemap)) {
+     if (is_array($valuemap)) {
      	if (array_key_exists($value, $valuemap))
           	return $valuemap[$value];
      }
