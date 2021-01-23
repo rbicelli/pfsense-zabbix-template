@@ -42,6 +42,12 @@ mkdir /root/scripts
 curl -o /root/scripts/pfsense_zbx.php https://raw.githubusercontent.com/rbicelli/pfsense-zabbix-template/master/pfsense_zbx.php
 ```
 
+or, from **Diagnostics/Command Prompt** input this one-liner:
+
+```bash
+mkdir /root/scripts && curl -o /root/scripts/pfsense_zbx.php https://raw.githubusercontent.com/rbicelli/pfsense-zabbix-template/master/pfsense_zbx.php
+```
+
 Then install package "Zabbix Agent 4" on your pfSense Box
 
 
