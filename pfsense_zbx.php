@@ -603,8 +603,11 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 	}
 	switch($valuekey) {
 					case 'state':
-						$value = pfz_valuemap('ipsec.state', strtolower($tmp_value));
-						$value = $value + (10 * ($carp_status-1));						
+						if ($carp_status == 0) {
+							$value = pfz_valuemap('ipsec.state', strtolower($tmp_value));
+						} else {
+							$value = $value + (10 * ($carp_status-1));
+						}	
 						break;
 					default:
 						$value = $tmp_value;
