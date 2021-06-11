@@ -201,7 +201,7 @@ function pfz_openvpn_server_userdiscovery(){
      $json_string = '{"data":[';
 
      foreach ($servers as $server){
-          if ( ($server['mode']=='server_user') || ($server['mode']=='server_tls_user') ) {
+          if ( ($server['mode']=='server_user') || ($server['mode']=='server_tls_user') || ($server['mode']=='server_tls') ) {
                if (is_array($server['conns'])) {               
                     $name = trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $server['name']));
                     
