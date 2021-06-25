@@ -4486,7 +4486,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <item_prototypes>
                         <item_prototype>
                             <name>Service {#DESCRIPTION}  enabled on CARP Slave</name>
-                            <type>0</type>
+                            <type>7</type>
                             <snmp_community/>
                             <snmp_oid/>
                             <key>pfsense.value[service_value,{#SERVICE},run_on_carp_slave]</key>
@@ -4548,7 +4548,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                         </item_prototype>
                         <item_prototype>
                             <name>Service {#DESCRIPTION} Status</name>
-                            <type>0</type>
+                            <type>7</type>
                             <snmp_community/>
                             <snmp_oid/>
                             <key>pfsense.value[service_value,{#SERVICE},status]</key>
