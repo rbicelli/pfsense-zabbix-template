@@ -1007,6 +1007,7 @@ function pfz_valuemap($valuename, $value, $default="0"){
      }
 
      if (is_array($valuemap)) {
+     	$value = strtolower($value);
      	if (array_key_exists($value, $valuemap))
           	return $valuemap[$value];
      }
