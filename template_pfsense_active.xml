@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>4.0</version>
-    <date>2021-01-23T15:53:03Z</date>
+    <date>2021-07-04T19:16:51Z</date>
     <groups>
         <group>
             <name>Templates/Network Devices</name>
@@ -2525,7 +2525,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <publickey/>
                     <privatekey/>
                     <port/>
-                    <description>quantité de mémoire en cours d'utilisation par les processus</description>
+                    <description>Memory used by processes</description>
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
@@ -2704,7 +2704,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <publickey/>
                     <privatekey/>
                     <port/>
-                    <description>quantité de mémoire utilisée pour mettre des données en cache</description>
+                    <description>amount of memory used to cache data</description>
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
@@ -2763,7 +2763,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <publickey/>
                     <privatekey/>
                     <port/>
-                    <description>quantité de mémoire complètement libre et prête a être utilisée directement.</description>
+                    <description>amount of memory completely free and ready to be used directly.</description>
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
@@ -2822,7 +2822,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <publickey/>
                     <privatekey/>
                     <port/>
-                    <description>quantité de mémoire qui contient des données qui ne sont plus utilisées (peut être directement libéré si besoin)</description>
+                    <description>amount of memory that contains data that is no longer used (can be directly freed if needed)</description>
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
@@ -3124,7 +3124,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <publickey/>
                     <privatekey/>
                     <port/>
-                    <description>quantité de mémoire utilisée par le kernel, ne peut être ni déchargée en swap, ni compressée.</description>
+                    <description>amount of memory used by the kernel, can neither be unloaded in swap, nor compressed.</description>
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
@@ -4479,7 +4479,14 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <filter>
                         <evaltype>0</evaltype>
                         <formula/>
-                        <conditions/>
+                        <conditions>
+                            <condition>
+                                <macro>{#SERVICE}</macro>
+                                <value>@pfSense service names for discovery</value>
+                                <operator>8</operator>
+                                <formulaid>A</formulaid>
+                            </condition>
+                        </conditions>
                     </filter>
                     <lifetime>30d</lifetime>
                     <description/>

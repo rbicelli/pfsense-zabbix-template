@@ -1,7 +1,7 @@
 <?php
 /*** 
 pfsense_zbx.php - pfSense Zabbix Interface
-Version 1.0.2 - 2021-01-18
+Version 1.0.3 - 2022-07-04
 
 Written by Riccardo Bicelli <r.bicelli@gmail.com>
 This program is licensed under Apache 2.0 License
@@ -569,11 +569,15 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 			}
 			if ($ikesa['version'] == 1) {
 				$ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '00'));
+				//pfSense 2.5 with conn enumeration like conn100000
+				if ( ($ph1idx==false) || ($ph1idx=='')) $ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '0000'));
 				$ipsecconnected[$ph1idx] = $ph1idx;
 			} else {
 				if (!ipsec_ikeid_used($con_id)) {
 					// probably a v2 with split connection then
 					$ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '00'));
+					//pfSense 2.5 with conn enumeration like conn100000
+					if ( ($ph1idx==false) || ($ph1idx=='')) $ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '0000'));					
 					$ipsecconnected[$ph1idx] = $ph1idx;
 				} else {
 					$ipsecconnected[$con_id] = $ph1idx = $con_id;
