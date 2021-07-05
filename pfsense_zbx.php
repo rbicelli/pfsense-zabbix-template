@@ -1,7 +1,7 @@
 <?php
 /*** 
 pfsense_zbx.php - pfSense Zabbix Interface
-Version 0.9.3 - 2020-04-26 
+Version 1.0.3 - 2022-07-04
 
 Written by Riccardo Bicelli <r.bicelli@gmail.com>
 This program is licensed under Apache 2.0 License
@@ -24,6 +24,7 @@ require_once("service-utils.inc");
 //For System
 require_once('pkg-utils.inc'); 
 
+//For DHCP
 
 //Testing function, for template creating purpose
 function pfz_test(){
@@ -55,7 +56,34 @@ function pfz_test(){
         echo "Services: \n";
         print_r($services);
         echo $line;
-
+        
+        echo "IPsec: \n";
+	
+		require_once("ipsec.inc");
+		global $config;
+		init_config_arr(array('ipsec', 'phase1'));
+		init_config_arr(array('ipsec', 'phase2'));
+		$a_phase2 = &$config['ipsec']['phase2'];
+        $status = ipsec_list_sa();
+		echo "IPsec Status: \n";
+		print_r($status);		
+		
+		$a_phase1 = &$config['ipsec']['phase1'];
+		$a_phase2 = &$config['ipsec']['phase2'];
+	
+		echo "IPsec Config Phase 1: \n";
+		print_r($a_phase1);
+		
+		echo "IPsec Config Phase 2: \n";
+		print_r($a_phase2);
+		
+		echo $line;
+		
+		//Packages
+		echo "Packages: \n";
+		require_once("pkg-utils.inc");
+		$installed_packages = get_pkg_info('all', false, true);
+		print_r($installed_packages);
 }
 
 
@@ -148,7 +176,11 @@ function pfz_openvpn_servervalue($server_id,$valuekey){
                if ($valuekey=="status") {
                     if ( ($server['mode']=="server_user") || ($server['mode']=="server_tls_user") || ($server['mode']=="server_tls") ){
                          if ($value=="") $value="server_user_listening";                    
-                    }                    
+                    } else if ($server['mode']=="p2p_tls"){
+                        // For p2p_tls, ensure we have one client, and return up if it's the case
+                        if ($value=="")
+                            $value=(is_array($server["conns"]) && count($server["conns"]) > 0) ? "up" : "down";
+                    }                  
                }
           }
      }
@@ -184,16 +216,19 @@ function pfz_openvpn_server_userdiscovery(){
      $json_string = '{"data":[';
 
      foreach ($servers as $server){
-          if ( ($server['mode']=='server_user') || ($server['mode']=='server_tls_user') ) {
+          if ( ($server['mode']=='server_user') || ($server['mode']=='server_tls_user') || ($server['mode']=='server_tls') ) {
                if (is_array($server['conns'])) {               
                     $name = trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $server['name']));
                     
-                    foreach($server['conns'] as $conn) {               
-                         $json_string .= '{"{#SERVERID}":"' . $server['vpnid'] . '"';
-                         $json_string .= ',"{#SERVERNAME}":"' . $name . '"';
-                         $json_string .= ',"{#UNIQUEID}":"' . $server['vpnid'] . '+' . $conn['common_name'] . '"';                         
-                         $json_string .= ',"{#USERID}":"' . $conn['common_name'] . '"';    
-                         $json_string .= '},';
+                    foreach($server['conns'] as $conn) {
+                    	
+                    	$common_name = pfz_replacespecialchars($conn['common_name']);
+                    	               
+                        $json_string .= '{"{#SERVERID}":"' . $server['vpnid'] . '"';
+                        $json_string .= ',"{#SERVERNAME}":"' . $name . '"';
+                        $json_string .= ',"{#UNIQUEID}":"' . $server['vpnid'] . '+' . $common_name . '"';                         
+                        $json_string .= ',"{#USERID}":"' . $conn['common_name'] . '"';    
+                        $json_string .= '},';
                     }
                }
           }
@@ -206,8 +241,9 @@ function pfz_openvpn_server_userdiscovery(){
 }
 
 // Get OpenVPN User Connected Value
-function pfz_openvpn_server_uservalue($unique_id, $valuekey){
+function pfz_openvpn_server_uservalue($unique_id, $valuekey, $default=""){
 
+	 $unique_id = pfz_replacespecialchars($unique_id,true);
      $atpos=strpos($unique_id,'+');
      $server_id = substr($unique_id,0,$atpos);
      $user_id = substr($unique_id,$atpos+1);
@@ -217,12 +253,12 @@ function pfz_openvpn_server_uservalue($unique_id, $valuekey){
           if($server['vpnid']==$server_id) {
                foreach($server['conns'] as $conn) {               
                     if ($conn['common_name']==$user_id){
-                         $value = $conn[$valuekey];     
+                         $value = $conn[$valuekey];
                     }
                }               
           }
      }
-     
+     if ($value=="") $value = $default;
      echo $value;
 }
 // OpenVPN Client Discovery
@@ -244,8 +280,22 @@ function pfz_openvpn_clientdiscovery() {
      echo $json_string;
 }
 
+function pfz_replacespecialchars($inputstr,$reverse=false){
+	 $specialchars = ",',\",`,*,?,[,],{,},~,$,!,&,;,(,),<,>,|,#,@,0x0a";
+	 $specialchars = explode(",",$specialchars);	 
+	 $resultstr = $inputstr;
+	 
+	 for ($n=0;$n<count($specialchars);$n++){
+	 	if ($reverse==false)
+	 		$resultstr = str_replace($specialchars[$n],'%%' . $n . '%',$resultstr);
+	 	else
+	 		$resultstr = str_replace('%%' . $n . '%',$specialchars[$n],$resultstr);
+	 }	 
+	 
+	 return ($resultstr);
+}
 
-function pfz_openvpn_clientvalue($client_id, $valuekey){
+function pfz_openvpn_clientvalue($client_id, $valuekey, $default="none"){
      $clients = openvpn_get_active_clients();     
      foreach($clients as $client) {
           if($client['vpnid']==$client_id)
@@ -260,7 +310,7 @@ function pfz_openvpn_clientvalue($client_id, $valuekey){
 
      }
 
-     if ($value=="") $value="none";
+     if ($value=="") $value=$default;
      echo $value;
 }
 
@@ -298,17 +348,19 @@ function pfz_services_discovery(){
 
 // Get service value
 // 2020-03-27: Added space replace in service name for issue #12
+// 2020-09-28: Corrected Space Replace
 function pfz_service_value($name,$value){
      $services = get_services();     
-     
+     $name = str_replace("__"," ",$name);
+           
      //List of service which are stopped on CARP Slave.
      //For now this is the best way i found for filtering out the triggers
      //Waiting for a way in Zabbix to use Global Regexp in triggers with items discovery
-     $stopped_on_carp_slave = array("haproxy","openvpn.","openvpn");
+     $stopped_on_carp_slave = array("haproxy","radvd","openvpn.","openvpn");
      
      foreach ($services as $service){
-          $namecfr=str_replace("__"," ",$service["name"]);
-          $carpcfr=str_replace("__"," ",$service["name"]);          
+          $namecfr = $service["name"];
+          $carpcfr = $service["name"];          
 
           //OpenVPN          
           if (!empty($service['id'])) {                           
@@ -347,6 +399,7 @@ function pfz_service_value($name,$value){
                               echo 0;
                          else
                               echo 1;
+                         break;
                     default:               
                          echo $service[$value];
                          break;
@@ -385,23 +438,223 @@ function pfz_gw_discovery() {
 
 function pfz_gw_value($gw, $valuekey) {
      $gws = return_gateways_status(true);
-     if(array_key_exists($gw,$gws))
-          echo $gws[$gw][$valuekey];
+     if(array_key_exists($gw,$gws)) {
+          $value = $gws[$gw][$valuekey];
+          if ($valuekey=="status")
+               $value = pfz_valuemap("gateway.status", $value);     
+          echo $value;         
+     }
 }
 
 
-function pfz_carp_status(){
+// IPSEC Discovery
+function pfz_ipsec_discovery_ph1(){
+	
+	require_once("ipsec.inc");	
+	global $config;
+	init_config_arr(array('ipsec', 'phase1'));
+	$a_phase1 = &$config['ipsec']['phase1'];
+	
+	$json_string = '{"data":[';
+	
+	foreach ($a_phase1 as $data) {
+		$json_string .= '{"{#IKEID}":"' . $data['ikeid'] . '"';
+		$json_string .= ',"{#NAME}":"' . $data['descr'] . '"';
+		$json_string .= '},';
+	}	
+
+	$json_string = rtrim($json_string,",");
+    $json_string .= "]}";     	
+    
+    echo $json_string;
+	
+}
+
+
+function pfz_ipsec_ph1($ikeid,$valuekey){	
+	// Get Value from IPsec Phase 1 Configuration
+	// If Getting "disabled" value only check item presence in config array
+
+	require_once("ipsec.inc");
+	global $config;
+	init_config_arr(array('ipsec', 'phase1'));
+	$a_phase1 = &$config['ipsec']['phase1'];	
+
+	$value = "";	
+	switch ($valuekey) {
+		case 'status':
+			$value = pfz_ipsec_status($ikeid);
+			break;
+		case 'disabled':
+			$value = "0";		
+		default:
+			foreach ($a_phase1 as $data) {
+				if ($data['ikeid'] == $ikeid) {
+					if(array_key_exists($valuekey,$data)) {
+					if ($valuekey=='disabled')
+						$value = "1";
+					else
+						$value = pfz_valuemap("ipsec." . $valuekey, $data[$valuekey], $data[$valuekey]);
+					break;
+					}
+				}
+			}		
+	}
+	echo $value;
+}
+
+function pfz_ipsec_discovery_ph2(){
+	
+	require_once("ipsec.inc");
+	
+	global $config;
+	init_config_arr(array('ipsec', 'phase2'));
+	$a_phase2 = &$config['ipsec']['phase2'];
+	
+	$json_string = '{"data":[';
+	
+	foreach ($a_phase2 as $data) {
+		$json_string .= '{"{#IKEID}":"' . $data['ikeid'] . '"';
+		$json_string .= ',"{#NAME}":"' .  $data['descr'] . '"';
+		$json_string .= ',"{#UNIQID}":"' .  $data['uniqid'] . '"';
+		$json_string .= ',"{#REQID}":"' .  $data['reqid'] . '"';
+		$json_string .= ',"{#EXTID}":"' .  $data['ikeid'] . '.' . $data['reqid'] . '"';
+		$json_string .= '},';
+	}	
+
+	$json_string = rtrim($json_string,",");
+    $json_string .= "]}";     	
+    
+    echo $json_string;
+	
+}
+
+function pfz_ipsec_ph2($uniqid, $valuekey){
+	require_once("ipsec.inc");
+	global $config;
+	init_config_arr(array('ipsec', 'phase2'));
+	$a_phase2 = &$config['ipsec']['phase2'];	
+	
+	$valuecfr = explode(".",$valuekey);
+		
+	switch ($valuecfr[0]) {
+		case 'status':
+			$idarr = explode(".", $uniqid);
+			$statuskey = "state";
+			if (isset($valuecfr[1])) $statuskey = $valuecfr[1]; 
+			$value = pfz_ipsec_status($idarr[0],$idarr[1],$statuskey);
+			break;
+		case 'disabled':
+			$value = "0";
+	}							
+	
+	foreach ($a_phase2 as $data) {
+		if ($data['uniqid'] == $uniqid) {
+			if(array_key_exists($valuekey,$data)) {
+			if ($valuekey=='disabled')
+				$value = "1";
+			else
+				$value = pfz_valuemap("ipsec_ph2." . $valuekey, $data[$valuekey], $data[$valuekey]);
+			break;
+			}
+		}
+	}
+	echo $value;
+}
+
+function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
+		
+	require_once("ipsec.inc");
+	global $config;
+	init_config_arr(array('ipsec', 'phase1'));
+	$a_phase1 = &$config['ipsec']['phase1'];
+	$status = ipsec_list_sa();
+	$ipsecconnected = array();	
+	
+	$carp_status = pfz_carp_status(false);
+	
+	//Phase-Status match borrowed from status_ipsec.php	
+	if (is_array($status)) {		
+		foreach ($status as $l_ikeid=>$ikesa) {			
+			
+			if(isset($ikesa['con-id'])){
+				$con_id = substr($ikesa['con-id'], 3);
+			}else{
+				$con_id = filter_var($l_ikeid, FILTER_SANITIZE_NUMBER_INT);
+			}
+			if ($ikesa['version'] == 1) {
+				$ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '00'));
+				//pfSense 2.5 with conn enumeration like conn100000
+				if ( ($ph1idx==false) || ($ph1idx=='')) $ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '0000'));
+				$ipsecconnected[$ph1idx] = $ph1idx;
+			} else {
+				if (!ipsec_ikeid_used($con_id)) {
+					// probably a v2 with split connection then
+					$ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '00'));
+					//pfSense 2.5 with conn enumeration like conn100000
+					if ( ($ph1idx==false) || ($ph1idx=='')) $ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '0000'));					
+					$ipsecconnected[$ph1idx] = $ph1idx;
+				} else {
+					$ipsecconnected[$con_id] = $ph1idx = $con_id;
+				}
+			}
+			if ($ph1idx == $ikeid){
+				if ($reqid!=-1) {
+					// Asking for Phase2 Status Value
+					foreach ($ikesa['child-sas'] as $childsas) {
+						if ($childsas['reqid']==$reqid) {
+							if ($childsas['state'] == 'REKEYED') {
+								//if state is rekeyed go on
+								$tmp_value = $childsas[$valuekey];
+							} else {
+								$tmp_value = $childsas[$valuekey];
+								break;
+							}
+						}						
+					}
+				} else {
+					$tmp_value = $ikesa[$valuekey];
+				}
+								
+				break;
+			}			
+		}	
+	}
+	switch($valuekey) {
+					case 'state':
+						if ($carp_status == 0) {
+							$value = pfz_valuemap('ipsec.state', strtolower($tmp_value));
+						} else {
+							$value = $value + (10 * ($carp_status-1));
+						}	
+						break;
+					default:
+						$value = $tmp_value;
+						break;
+	}
+//	print_r($ikesa);
+	return $value;
+}
+
+
+
+function pfz_carp_status($echo = true){
      //Detect CARP Status
      global $config;
      $status_return = 0;
      $status = get_carp_status();
      $carp_detected_problems = get_single_sysctl("net.inet.carp.demotion");
 
+	 //CARP is disabled
+	 $ret = 0;
+	 
      if ($status != 0) { //CARP is enabled
 
           if ($carp_detected_problems != 0) {                              
-               echo 4;   //There's some Major Problems with CARP
-               return true;
+			   //There's some Major Problems with CARP
+               $ret = 4;
+               if ($echo == true) echo $ret;   
+               return $ret;
           }
                     
           $status_changed = false;
@@ -419,19 +672,247 @@ function pfz_carp_status(){
           }          
           if ($status_changed) {
                //CARP Status is inconsistent across interfaces
+               $ret=3;
                echo 3;          
           } else {
                if ($prev_status=="MASTER")
-                    echo 1;
+                    $ret = 1;                    
                else
-                    echo 2;
+					$ret = 2;
           }      
-     } else {
-          //CARP is Disabled
-          echo 0;     
      }
+     
+     if ($echo == true) echo $ret;   
+     return $ret;
+     
 }
 
+// DHCP Checks (copy of status_dhcp_leases.php, waiting for pfsense 2.5)
+function pfz_remove_duplicate($array, $field) {
+	foreach ($array as $sub) {
+		$cmp[] = $sub[$field];
+	}
+	$unique = array_unique(array_reverse($cmp, true));
+	foreach ($unique as $k => $rien) {
+		$new[] = $array[$k];
+	}
+	return $new;
+}
+
+// Get DHCP Arrays (copied from status_dhcp_leases.php, waiting for pfsense 2.5, in order to use system_get_dhcpleases();)
+function pfz_dhcp_get($valuekey) {
+
+	require_once("config.inc");
+	
+	$leasesfile = "{$g['dhcpd_chroot_path']}/var/db/dhcpd.leases";
+
+	$awk = "/usr/bin/awk";
+	/* this pattern sticks comments into a single array item */
+	$cleanpattern = "'{ gsub(\"#.*\", \"\");} { gsub(\";\", \"\"); print;}'";
+	/* We then split the leases file by } */
+	$splitpattern = "'BEGIN { RS=\"}\";} {for (i=1; i<=NF; i++) printf \"%s \", \$i; printf \"}\\n\";}'";
+
+	/* stuff the leases file in a proper format into a array by line */
+	@exec("/bin/cat {$leasesfile} 2>/dev/null| {$awk} {$cleanpattern} | {$awk} {$splitpattern}", $leases_content);
+	$leases_count = count($leases_content);
+	@exec("/usr/sbin/arp -an", $rawdata);
+
+	foreach ($leases_content as $lease) {
+		/* split the line by space */
+		$data = explode(" ", $lease);
+		/* walk the fields */
+		$f = 0;
+		$fcount = count($data);
+		/* with less than 20 fields there is nothing useful */
+		if ($fcount < 20) {
+			$i++;
+			continue;
+		}
+		while ($f < $fcount) {
+			switch ($data[$f]) {
+				case "failover":
+					$pools[$p]['name'] = trim($data[$f+2], '"');
+					$pools[$p]['name'] = "{$pools[$p]['name']} (" . convert_friendly_interface_to_friendly_descr(substr($pools[$p]['name'], 5)) . ")";
+					$pools[$p]['mystate'] = $data[$f+7];
+					$pools[$p]['peerstate'] = $data[$f+14];
+					$pools[$p]['mydate'] = $data[$f+10];
+					$pools[$p]['mydate'] .= " " . $data[$f+11];
+					$pools[$p]['peerdate'] = $data[$f+17];
+					$pools[$p]['peerdate'] .= " " . $data[$f+18];
+					$p++;
+					$i++;
+					continue 3;
+				case "lease":
+					$leases[$l]['ip'] = $data[$f+1];
+					$leases[$l]['type'] = $dynamic_string;
+					$f = $f+2;
+					break;
+				case "starts":
+					$leases[$l]['start'] = $data[$f+2];
+					$leases[$l]['start'] .= " " . $data[$f+3];
+					$f = $f+3;
+					break;
+				case "ends":
+					if ($data[$f+1] == "never") {
+						// Quote from dhcpd.leases(5) man page:
+						// If a lease will never expire, date is never instead of an actual date.
+						$leases[$l]['end'] = gettext("Never");
+						$f = $f+1;
+					} else {
+						$leases[$l]['end'] = $data[$f+2];
+						$leases[$l]['end'] .= " " . $data[$f+3];
+						$f = $f+3;
+					}
+					break;
+				case "tstp":
+					$f = $f+3;
+					break;
+				case "tsfp":
+					$f = $f+3;
+					break;
+				case "atsfp":
+					$f = $f+3;
+					break;
+				case "cltt":
+					$f = $f+3;
+					break;
+				case "binding":
+					switch ($data[$f+2]) {
+						case "active":
+							$leases[$l]['act'] = $active_string;
+							break;
+						case "free":
+							$leases[$l]['act'] = $expired_string;
+							$leases[$l]['online'] = $offline_string;
+							break;
+						case "backup":
+							$leases[$l]['act'] = $reserved_string;
+							$leases[$l]['online'] = $offline_string;
+							break;
+					}
+					$f = $f+1;
+					break;
+				case "next":
+					/* skip the next binding statement */
+					$f = $f+3;
+					break;
+				case "rewind":
+					/* skip the rewind binding statement */
+					$f = $f+3;
+					break;
+				case "hardware":
+					$leases[$l]['mac'] = $data[$f+2];
+					/* check if it's online and the lease is active */
+					if (in_array($leases[$l]['ip'], $arpdata_ip)) {
+						$leases[$l]['online'] = $online_string;
+					} else {
+						$leases[$l]['online'] = $offline_string;
+					}
+					$f = $f+2;
+					break;
+				case "client-hostname":
+					if ($data[$f+1] <> "") {
+						$leases[$l]['hostname'] = preg_replace('/"/', '', $data[$f+1]);
+					} else {
+						$hostname = gethostbyaddr($leases[$l]['ip']);
+						if ($hostname <> "") {
+							$leases[$l]['hostname'] = $hostname;
+						}
+					}
+					$f = $f+1;
+					break;
+				case "uid":
+					$f = $f+1;
+					break;
+			}
+			$f++;
+		}
+		$l++;
+		$i++;
+		/* slowly chisel away at the source array */
+		array_shift($leases_content);
+	}
+	/* remove duplicate items by mac address */
+	if (count($leases) > 0) {
+		$leases = pfz_remove_duplicate($leases, "ip");
+	}
+
+	if (count($pools) > 0) {
+		$pools = pfz_remove_duplicate($pools, "name");
+		asort($pools);
+	}
+
+	switch ($valuekey){
+		case "pools":
+			return $pools;
+			break;
+		case "failover":
+			return $failover;
+			break;
+		case "leases":
+		default:
+			return $leases;		
+	}
+
+}
+
+function pfz_dhcpfailover_discovery(){
+	//System functions regarding DHCP Leases will be available in the upcoming release of pfSense, so let's wait
+	require_once("system.inc");
+	$leases = system_get_dhcpleases();
+	
+	$json_string = '{"data":[';
+	
+	if (count($leases['failover']) > 0){
+		foreach ($leases['failover'] as $data){
+			   $json_string .= '{"{#FAILOVER_GROUP}":"' . str_replace(" ", "__", $data['name']) . '"';          
+		}
+	}
+
+	$json_string = rtrim($json_string,",");
+    $json_string .= "]}";     	
+    
+    echo $json_string;
+}
+
+function pfz_dhcp_check_failover(){
+	// Check DHCP Failover Status
+	// Returns number of failover pools which state is not normal or
+	// different than peer state
+	$failover = pfz_dhcp_get("failover");
+	$ret = 0;
+	foreach ($failover as $f){
+		if ( ($f["mystate"]!="normal") || ($f["mystate"]!=$f["peerstate"])) {
+			$ret++;
+		}
+	}		
+	return $ret;	
+}
+
+function pfz_dhcp($section, $valuekey=""){
+	switch ($section){
+		case "failover":
+			echo pfz_dhcp_check_failover();
+			break;
+		default:		
+	}
+}
+
+//Packages
+function pfz_packages_uptodate(){
+	require_once("pkg-utils.inc");
+	$installed_packages = get_pkg_info('all', false, true);
+		
+	$ret = 0;
+
+	foreach ($installed_packages as $package){
+		if ($package['version']!=$package['installed_version']){
+			$ret ++;
+		}
+	}
+	
+	return $ret;
+}
 
 //System Information
 function pfz_get_system_value($section){
@@ -449,13 +930,17 @@ function pfz_get_system_value($section){
                else
                     echo "1";
                break;
+          case "packages_update":
+          		echo pfz_packages_uptodate();
+          		break;	
      }
 }
 
 
+
 // Value mappings
 // Each value map is represented by an associative array
-function pfz_valuemap($valuename, $value){
+function pfz_valuemap($valuename, $value, $default="0"){
 
      switch ($valuename){     
 
@@ -484,13 +969,68 @@ function pfz_valuemap($valuename, $value){
                          "server_tls" => "3",
                          "server_user" => "4",
                          "server_tls_user" => "5");          
-          break;     
+          break;
+          
+          case "gateway.status":
+                    $valuemap = array(
+                         "online" => "0",
+                         "none" => "0",
+                         "loss" => "1",
+                         "highdelay" => "2",
+                         "highloss" => "3",
+                         "force_down" => "4",
+                         "down" => "5");          
+          break;    
+          
+          case "ipsec.iketype":
+          			$valuemap = array (
+          				"auto" => 0,
+          				"ikev1" => 1,
+          				"ikev2" => 2);
+          break;
+          
+          case "ipsec.mode":
+          			$valuemap = array (
+          				"main" => 0,
+          				"aggressive" => 1);
+          break;
+          
+          case "ipsec.protocol":
+          			$valuemap = array (
+          				"both" => 0,
+          				"inet" => 1,
+          				"inet6" => 2);
+          break;
+          
+          case "ipsec_ph2.mode":
+          			$valuemap = array (
+          				"transport" => 0,
+          				"tunnel" => 1,
+          				"tunnel6" => 2);
+          break;
+          
+          case "ipsec_ph2.protocol":
+          			$valuemap = array (
+          				"esp" => 1,
+          				"ah" => 2);
+          break;
+
+		  case "ipsec.state":
+          			$valuemap = array (
+          				"established" => 1,
+          				"connecting" => 2,
+          				"installed" => 1,
+          				"rekeyed" => 2);
+          break;
+
      }
 
-     if (array_key_exists($value, $valuemap))
-          return $valuemap[$value];
-     
-     return "0";
+     if (is_array($valuemap)) {
+     	$value = strtolower($value);
+     	if (array_key_exists($value, $valuemap))
+          	return $valuemap[$value];
+     }
+     return $default;
 }
 
 //Argument parsers for Discovery
@@ -514,8 +1054,19 @@ function pfz_discovery($section){
           case "interfaces":
                pfz_interface_discovery();
                break;
+<<<<<<< HEAD
           case "interfaces_all":
                pfz_interface_discovery_all();
+=======
+          case "ipsec_ph1":
+          	   pfz_ipsec_discovery_ph1();
+               break;
+          case "ipsec_ph2":
+          	   pfz_ipsec_discovery_ph2();
+               break;
+          case "dhcpfailover":
+          	   pfz_dhcpfailover_discovery();
+>>>>>>> master
                break;
      }         
 }
@@ -537,6 +1088,9 @@ switch (strtolower($argv[1])){
      case "openvpn_server_uservalue":
           pfz_openvpn_server_uservalue($argv[2],$argv[3]);
           break;
+     case "openvpn_server_uservalue_numeric":
+          pfz_openvpn_server_uservalue($argv[2],$argv[3],"0");
+          break;
      case "openvpn_clientvalue":
           pfz_openvpn_clientvalue($argv[2],$argv[3]);
           break;
@@ -551,6 +1105,15 @@ switch (strtolower($argv[1])){
           break;
      case "system":
           pfz_get_system_value($argv[2]);
+          break;
+     case "ipsec_ph1":
+          pfz_ipsec_ph1($argv[2],$argv[3]);
+          break;
+     case "ipsec_ph2":
+          pfz_ipsec_ph2($argv[2],$argv[3]);
+          break;
+     case "dhcp":
+     	  pfz_dhcp($argv[2],$argv[3]);
           break;
      default:
           pfz_test();

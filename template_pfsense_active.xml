@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>4.0</version>
-    <date>2020-04-28T07:21:17Z</date>
+    <date>2021-07-04T19:16:51Z</date>
     <groups>
         <group>
-            <name>Templates</name>
+            <name>Templates/Network Devices</name>
         </group>
     </groups>
     <templates>
@@ -12,18 +12,15 @@
             <template>Template pfSense Active</template>
             <name>pfsense Active</name>
             <description>Active template for pfsense, requires pfsense_zbx.php installed to pfSense Box.&#13;
-Version 1.0.1&#13;
+Version 1.0.2&#13;
 &#13;
 https://github.com/rbicelli/pfsense-zabbix-template</description>
             <groups>
                 <group>
-                    <name>Templates</name>
+                    <name>Templates/Network Devices</name>
                 </group>
             </groups>
             <applications>
-                <application>
-                    <name>CARP</name>
-                </application>
                 <application>
                     <name>CPU</name>
                 </application>
@@ -32,6 +29,9 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                 </application>
                 <application>
                     <name>Gateways</name>
+                </application>
+                <application>
+                    <name>HA</name>
                 </application>
                 <application>
                     <name>Memory</name>
@@ -271,7 +271,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
-                            <name>CARP</name>
+                            <name>HA</name>
                         </application>
                     </applications>
                     <valuemap>
@@ -745,12 +745,71 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
-                            <name>CARP</name>
+                            <name>HA</name>
                         </application>
                     </applications>
                     <valuemap>
                         <name>pfSense CARP Status</name>
                     </valuemap>
+                    <logtimefmt/>
+                    <preprocessing/>
+                    <jmx_endpoint/>
+                    <timeout>3s</timeout>
+                    <url/>
+                    <query_fields/>
+                    <posts/>
+                    <status_codes>200</status_codes>
+                    <follow_redirects>1</follow_redirects>
+                    <post_type>0</post_type>
+                    <http_proxy/>
+                    <headers/>
+                    <retrieve_mode>0</retrieve_mode>
+                    <request_method>0</request_method>
+                    <output_format>0</output_format>
+                    <allow_traps>0</allow_traps>
+                    <ssl_cert_file/>
+                    <ssl_key_file/>
+                    <ssl_key_password/>
+                    <verify_peer>0</verify_peer>
+                    <verify_host>0</verify_host>
+                    <master_item/>
+                </item>
+                <item>
+                    <name>DHCP Failover Pool Problems</name>
+                    <type>7</type>
+                    <snmp_community/>
+                    <snmp_oid/>
+                    <key>pfsense.value[dhcp,failover]</key>
+                    <delay>120s</delay>
+                    <history>90d</history>
+                    <trends>365d</trends>
+                    <status>0</status>
+                    <value_type>3</value_type>
+                    <allowed_hosts/>
+                    <units/>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description>This value indicates, in a HA scenario, if DHCP failover pool partners are out of sync.</description>
+                    <inventory_link>0</inventory_link>
+                    <applications>
+                        <application>
+                            <name>HA</name>
+                        </application>
+                    </applications>
+                    <valuemap/>
                     <logtimefmt/>
                     <preprocessing/>
                     <jmx_endpoint/>
@@ -930,6 +989,65 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <valuemap>
                         <name>Generic YesNo</name>
                     </valuemap>
+                    <logtimefmt/>
+                    <preprocessing/>
+                    <jmx_endpoint/>
+                    <timeout>3s</timeout>
+                    <url/>
+                    <query_fields/>
+                    <posts/>
+                    <status_codes>200</status_codes>
+                    <follow_redirects>1</follow_redirects>
+                    <post_type>0</post_type>
+                    <http_proxy/>
+                    <headers/>
+                    <retrieve_mode>0</retrieve_mode>
+                    <request_method>0</request_method>
+                    <output_format>0</output_format>
+                    <allow_traps>0</allow_traps>
+                    <ssl_cert_file/>
+                    <ssl_key_file/>
+                    <ssl_key_password/>
+                    <verify_peer>0</verify_peer>
+                    <verify_host>0</verify_host>
+                    <master_item/>
+                </item>
+                <item>
+                    <name>Packages Needing Update</name>
+                    <type>7</type>
+                    <snmp_community/>
+                    <snmp_oid/>
+                    <key>pfsense.value[system,packages_update]</key>
+                    <delay>1d</delay>
+                    <history>90d</history>
+                    <trends>365d</trends>
+                    <status>0</status>
+                    <value_type>3</value_type>
+                    <allowed_hosts/>
+                    <units/>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <description>Number of packages needing update.</description>
+                    <inventory_link>0</inventory_link>
+                    <applications>
+                        <application>
+                            <name>System</name>
+                        </application>
+                    </applications>
+                    <valuemap/>
                     <logtimefmt/>
                     <preprocessing/>
                     <jmx_endpoint/>
@@ -2407,7 +2525,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <publickey/>
                     <privatekey/>
                     <port/>
-                    <description>quantité de mémoire en cours d'utilisation par les processus</description>
+                    <description>Memory used by processes</description>
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
@@ -2586,7 +2704,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <publickey/>
                     <privatekey/>
                     <port/>
-                    <description>quantité de mémoire utilisée pour mettre des données en cache</description>
+                    <description>amount of memory used to cache data</description>
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
@@ -2645,7 +2763,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <publickey/>
                     <privatekey/>
                     <port/>
-                    <description>quantité de mémoire complètement libre et prête a être utilisée directement.</description>
+                    <description>amount of memory completely free and ready to be used directly.</description>
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
@@ -2704,7 +2822,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <publickey/>
                     <privatekey/>
                     <port/>
-                    <description>quantité de mémoire qui contient des données qui ne sont plus utilisées (peut être directement libéré si besoin)</description>
+                    <description>amount of memory that contains data that is no longer used (can be directly freed if needed)</description>
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
@@ -3006,7 +3124,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <publickey/>
                     <privatekey/>
                     <port/>
-                    <description>quantité de mémoire utilisée par le kernel, ne peut être ni déchargée en swap, ni compressée.</description>
+                    <description>amount of memory used by the kernel, can neither be unloaded in swap, nor compressed.</description>
                     <inventory_link>0</inventory_link>
                     <applications>
                         <application>
@@ -3045,7 +3163,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <snmp_community/>
                     <snmp_oid/>
                     <key>pfsense.discovery[gw]</key>
-                    <delay>30s</delay>
+                    <delay>300s</delay>
                     <status>0</status>
                     <allowed_hosts/>
                     <snmpv3_contextname/>
@@ -3077,7 +3195,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <snmp_community/>
                             <snmp_oid/>
                             <key>pfsense.value[gw_value,{#GATEWAY},delay]</key>
-                            <delay>30s</delay>
+                            <delay>60s</delay>
                             <history>90d</history>
                             <trends>365d</trends>
                             <status>0</status>
@@ -3142,7 +3260,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <snmp_community/>
                             <snmp_oid/>
                             <key>pfsense.value[gw_value,{#GATEWAY},loss]</key>
-                            <delay>30s</delay>
+                            <delay>60s</delay>
                             <history>90d</history>
                             <trends>365d</trends>
                             <status>0</status>
@@ -3207,7 +3325,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <snmp_community/>
                             <snmp_oid/>
                             <key>pfsense.value[gw_value,{#GATEWAY},status]</key>
-                            <delay>30s</delay>
+                            <delay>60s</delay>
                             <history>90d</history>
                             <trends>365d</trends>
                             <status>0</status>
@@ -3240,18 +3358,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                                 <name>pfSense Gateway Status</name>
                             </valuemap>
                             <logtimefmt/>
-                            <preprocessing>
-                                <step>
-                                    <type>5</type>
-                                    <params>(.*)
-\1:none=0:loss=1:highdelay=2:highloss=3:force_down=4:down=5</params>
-                                </step>
-                                <step>
-                                    <type>5</type>
-                                    <params>(none|loss|highdelay|highloss|force_down|down)(?=.*:\1=(\d))
-\2</params>
-                                </step>
-                            </preprocessing>
+                            <preprocessing/>
                             <jmx_endpoint/>
                             <timeout>3s</timeout>
                             <url/>
@@ -3280,7 +3387,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <snmp_community/>
                             <snmp_oid/>
                             <key>pfsense.value[gw_value,{#GATEWAY},stddev]</key>
-                            <delay>30s</delay>
+                            <delay>60s</delay>
                             <history>90d</history>
                             <trends>365d</trends>
                             <status>0</status>
@@ -3342,7 +3449,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     </item_prototypes>
                     <trigger_prototypes>
                         <trigger_prototype>
-                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last(#3)}=5</expression>
+                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last()}=5</expression>
                             <recovery_mode>0</recovery_mode>
                             <recovery_expression/>
                             <name>Gateway {#GATEWAY} is down</name>
@@ -3358,7 +3465,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <tags/>
                         </trigger_prototype>
                         <trigger_prototype>
-                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last(#3)}=4</expression>
+                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last()}=4</expression>
                             <recovery_mode>0</recovery_mode>
                             <recovery_expression/>
                             <name>Gateway {#GATEWAY} is forced down</name>
@@ -3374,7 +3481,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <tags/>
                         </trigger_prototype>
                         <trigger_prototype>
-                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last(#3)}=2</expression>
+                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last()}=2</expression>
                             <recovery_mode>0</recovery_mode>
                             <recovery_expression/>
                             <name>High Delay on gateway {#GATEWAY}</name>
@@ -3390,7 +3497,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <tags/>
                         </trigger_prototype>
                         <trigger_prototype>
-                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last(#3)}=3</expression>
+                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last()}=3</expression>
                             <recovery_mode>0</recovery_mode>
                             <recovery_expression/>
                             <name>High packet Loss on {#GATEWAY}</name>
@@ -3406,7 +3513,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <tags/>
                         </trigger_prototype>
                         <trigger_prototype>
-                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last(#3)}=1</expression>
+                            <expression>{Template pfSense Active:pfsense.value[gw_value,{#GATEWAY},status].last()}=1</expression>
                             <recovery_mode>0</recovery_mode>
                             <recovery_expression/>
                             <name>Packet Loss on {#GATEWAY}</name>
@@ -3425,8 +3532,8 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <graph_prototypes>
                         <graph_prototype>
                             <name>Gateway {#GATEWAY} Availability</name>
-                            <width>640</width>
-                            <height>480</height>
+                            <width>900</width>
+                            <height>200</height>
                             <yaxismin>0.0000</yaxismin>
                             <yaxismax>100.0000</yaxismax>
                             <show_work_period>1</show_work_period>
@@ -3469,8 +3576,8 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                         </graph_prototype>
                         <graph_prototype>
                             <name>Gateway {#GATEWAY} Status</name>
-                            <width>640</width>
-                            <height>480</height>
+                            <width>900</width>
+                            <height>200</height>
                             <yaxismin>0.0000</yaxismin>
                             <yaxismax>5.0000</yaxismax>
                             <show_work_period>1</show_work_period>
@@ -3560,6 +3667,71 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <description>Discovery of network interfaces as defined in global regular expression &quot;Network interfaces for discovery&quot;.</description>
                     <item_prototypes>
                         <item_prototype>
+                            <name>Incoming Errors on {#IFDESCR}</name>
+                            <type>7</type>
+                            <snmp_community/>
+                            <snmp_oid/>
+                            <key>net.if.in[{#IFNAME},errors]</key>
+                            <delay>60</delay>
+                            <history>7d</history>
+                            <trends>365d</trends>
+                            <status>0</status>
+                            <value_type>3</value_type>
+                            <allowed_hosts/>
+                            <units/>
+                            <snmpv3_contextname/>
+                            <snmpv3_securityname/>
+                            <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                            <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                            <snmpv3_authpassphrase/>
+                            <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                            <snmpv3_privpassphrase/>
+                            <params/>
+                            <ipmi_sensor/>
+                            <authtype>0</authtype>
+                            <username/>
+                            <password/>
+                            <publickey/>
+                            <privatekey/>
+                            <port/>
+                            <description/>
+                            <inventory_link>0</inventory_link>
+                            <applications>
+                                <application>
+                                    <name>Network interfaces</name>
+                                </application>
+                            </applications>
+                            <valuemap/>
+                            <logtimefmt/>
+                            <preprocessing>
+                                <step>
+                                    <type>10</type>
+                                    <params/>
+                                </step>
+                            </preprocessing>
+                            <jmx_endpoint/>
+                            <timeout>3s</timeout>
+                            <url/>
+                            <query_fields/>
+                            <posts/>
+                            <status_codes>200</status_codes>
+                            <follow_redirects>1</follow_redirects>
+                            <post_type>0</post_type>
+                            <http_proxy/>
+                            <headers/>
+                            <retrieve_mode>0</retrieve_mode>
+                            <request_method>0</request_method>
+                            <output_format>0</output_format>
+                            <allow_traps>0</allow_traps>
+                            <ssl_cert_file/>
+                            <ssl_key_file/>
+                            <ssl_key_password/>
+                            <verify_peer>0</verify_peer>
+                            <verify_host>0</verify_host>
+                            <application_prototypes/>
+                            <master_item/>
+                        </item_prototype>
+                        <item_prototype>
                             <name>Incoming network traffic on {#IFDESCR}</name>
                             <type>7</type>
                             <snmp_community/>
@@ -3604,6 +3776,71 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                                 <step>
                                     <type>1</type>
                                     <params>8</params>
+                                </step>
+                            </preprocessing>
+                            <jmx_endpoint/>
+                            <timeout>3s</timeout>
+                            <url/>
+                            <query_fields/>
+                            <posts/>
+                            <status_codes>200</status_codes>
+                            <follow_redirects>1</follow_redirects>
+                            <post_type>0</post_type>
+                            <http_proxy/>
+                            <headers/>
+                            <retrieve_mode>0</retrieve_mode>
+                            <request_method>0</request_method>
+                            <output_format>0</output_format>
+                            <allow_traps>0</allow_traps>
+                            <ssl_cert_file/>
+                            <ssl_key_file/>
+                            <ssl_key_password/>
+                            <verify_peer>0</verify_peer>
+                            <verify_host>0</verify_host>
+                            <application_prototypes/>
+                            <master_item/>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Outgoing errors on {#IFDESCR}</name>
+                            <type>7</type>
+                            <snmp_community/>
+                            <snmp_oid/>
+                            <key>net.if.out[{#IFNAME},errors]</key>
+                            <delay>60</delay>
+                            <history>7d</history>
+                            <trends>365d</trends>
+                            <status>0</status>
+                            <value_type>3</value_type>
+                            <allowed_hosts/>
+                            <units/>
+                            <snmpv3_contextname/>
+                            <snmpv3_securityname/>
+                            <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                            <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                            <snmpv3_authpassphrase/>
+                            <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                            <snmpv3_privpassphrase/>
+                            <params/>
+                            <ipmi_sensor/>
+                            <authtype>0</authtype>
+                            <username/>
+                            <password/>
+                            <publickey/>
+                            <privatekey/>
+                            <port/>
+                            <description/>
+                            <inventory_link>0</inventory_link>
+                            <applications>
+                                <application>
+                                    <name>Network interfaces</name>
+                                </application>
+                            </applications>
+                            <valuemap/>
+                            <logtimefmt/>
+                            <preprocessing>
+                                <step>
+                                    <type>10</type>
+                                    <params/>
                                 </step>
                             </preprocessing>
                             <jmx_endpoint/>
@@ -3771,7 +4008,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <snmp_community/>
                     <snmp_oid/>
                     <key>pfsense.discovery[openvpn_client]</key>
-                    <delay>30s</delay>
+                    <delay>300s</delay>
                     <status>0</status>
                     <allowed_hosts/>
                     <snmpv3_contextname/>
@@ -3803,7 +4040,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <snmp_community/>
                             <snmp_oid/>
                             <key>pfsense.value[openvpn_clientvalue,{#CLIENT},status]</key>
-                            <delay>30s</delay>
+                            <delay>60s</delay>
                             <history>90d</history>
                             <trends>365d</trends>
                             <status>0</status>
@@ -3905,7 +4142,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <snmp_community/>
                     <snmp_oid/>
                     <key>pfsense.discovery[openvpn_server]</key>
-                    <delay>30s</delay>
+                    <delay>300s</delay>
                     <status>0</status>
                     <allowed_hosts/>
                     <snmpv3_contextname/>
@@ -4221,7 +4458,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <snmp_community/>
                     <snmp_oid/>
                     <key>pfsense.discovery[services]</key>
-                    <delay>30s</delay>
+                    <delay>300s</delay>
                     <status>0</status>
                     <allowed_hosts/>
                     <snmpv3_contextname/>
@@ -4242,14 +4479,21 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <filter>
                         <evaltype>0</evaltype>
                         <formula/>
-                        <conditions/>
+                        <conditions>
+                            <condition>
+                                <macro>{#SERVICE}</macro>
+                                <value>@pfSense service names for discovery</value>
+                                <operator>8</operator>
+                                <formulaid>A</formulaid>
+                            </condition>
+                        </conditions>
                     </filter>
                     <lifetime>30d</lifetime>
                     <description/>
                     <item_prototypes>
                         <item_prototype>
                             <name>Service {#DESCRIPTION}  enabled on CARP Slave</name>
-                            <type>0</type>
+                            <type>7</type>
                             <snmp_community/>
                             <snmp_oid/>
                             <key>pfsense.value[service_value,{#SERVICE},run_on_carp_slave]</key>
@@ -4311,11 +4555,11 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                         </item_prototype>
                         <item_prototype>
                             <name>Service {#DESCRIPTION} Status</name>
-                            <type>0</type>
+                            <type>7</type>
                             <snmp_community/>
                             <snmp_oid/>
                             <key>pfsense.value[service_value,{#SERVICE},status]</key>
-                            <delay>30s</delay>
+                            <delay>60s</delay>
                             <history>90d</history>
                             <trends>365d</trends>
                             <status>0</status>
@@ -4879,6 +5123,18 @@ or&#13;
             <httptests/>
             <macros>
                 <macro>
+                    <macro>{$CARP_SERVICES_STOPPED}</macro>
+                    <value>^(haproxy|openvpn)$</value>
+                </macro>
+                <macro>
+                    <macro>{$CARP_SLAVE_SERVICES:&quot;haproxy&quot;}</macro>
+                    <value>0</value>
+                </macro>
+                <macro>
+                    <macro>{$CARP_SLAVE_SERVICES:&quot;openvpn&quot;}</macro>
+                    <value>0</value>
+                </macro>
+                <macro>
                     <macro>{$EXPECTED_CARP_STATUS}</macro>
                     <value>0</value>
                 </macro>
@@ -5065,6 +5321,22 @@ or&#13;
             <tags/>
         </trigger>
         <trigger>
+            <expression>{Template pfSense Active:pfsense.value[carp_status].last()}&gt;2</expression>
+            <recovery_mode>0</recovery_mode>
+            <recovery_expression/>
+            <name>DHCP Failover Problems on {HOST.NAME}</name>
+            <correlation_mode>0</correlation_mode>
+            <correlation_tag/>
+            <url>https://docs.netgate.com/pfsense/en/latest/troubleshooting/ha-dhcp-failover.html</url>
+            <status>0</status>
+            <priority>4</priority>
+            <description>One or more DHCP Pools are experiencing failover problems. This could potentially cause other problems in yourr network.</description>
+            <type>0</type>
+            <manual_close>0</manual_close>
+            <dependencies/>
+            <tags/>
+        </trigger>
+        <trigger>
             <expression>{Template pfSense Active:system.uname.diff(0)}&gt;0</expression>
             <recovery_mode>0</recovery_mode>
             <recovery_expression/>
@@ -5180,7 +5452,7 @@ or&#13;
             <expression>{Template pfSense Active:pfsense.value[system,new_version_available].last()}=1</expression>
             <recovery_mode>0</recovery_mode>
             <recovery_expression/>
-            <name>New verson of pfSense Available on {HOST.NAME}</name>
+            <name>New Version of pfSense Available on {HOST.NAME}</name>
             <correlation_mode>0</correlation_mode>
             <correlation_tag/>
             <url/>
@@ -5189,6 +5461,22 @@ or&#13;
             <description>A new version of pfSense is available for update.</description>
             <type>0</type>
             <manual_close>1</manual_close>
+            <dependencies/>
+            <tags/>
+        </trigger>
+        <trigger>
+            <expression>{Template pfSense Active:pfsense.value[system,packages_update].last()}&gt;0</expression>
+            <recovery_mode>0</recovery_mode>
+            <recovery_expression/>
+            <name>Packages Update Available on {HOST.NAME}</name>
+            <correlation_mode>0</correlation_mode>
+            <correlation_tag/>
+            <url/>
+            <status>0</status>
+            <priority>1</priority>
+            <description>New version of packages are available</description>
+            <type>0</type>
+            <manual_close>0</manual_close>
             <dependencies/>
             <tags/>
         </trigger>

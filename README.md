@@ -5,7 +5,7 @@
 This is a pfSense active template for Zabbix, based on Standard Agent and a php script using pfSense functions library for monitoring specific data.
 
 
-Tested with pfSense 2.4.x and Zabbix 4.0
+Tested with pfSense 2.4.x, Zabbix 4.0, Zabbix 5.0
 
 ## What it does
 
@@ -18,11 +18,18 @@ Tested with pfSense 2.4.x and Zabbix 4.0
  - CARP Monitoring (Global CARP State)
  - Basic Service Discovery and Monitoring (Service Status)
  - pfSense Version/Update Available
+ - Packages Update Available
  
 **Template pfSense Active: OpenVPN Server User Auth**
 
  - Discovery of OpenVPN Clients connected to OpenVPN Servers in user auth mode
- - Monitoring of Client Parameters (Bytes sent/received, Connection Time...)
+ - Monitoring of Client Parameters (Bytes sent/received, Connection Time...) 
+
+**Template pfSense Active: IPsec**
+
+ - Discovery of IPsec Site-to-Site tunnels
+ - Monitoring tunnel status (Phase 1 and Phase 2)
+
 
 ## Configuration
 
@@ -33,6 +40,12 @@ For example, from pfSense shell:
 ```bash
 mkdir /root/scripts
 curl -o /root/scripts/pfsense_zbx.php https://raw.githubusercontent.com/rbicelli/pfsense-zabbix-template/master/pfsense_zbx.php
+```
+
+or, from **Diagnostics/Command Prompt** input this one-liner:
+
+```bash
+mkdir /root/scripts && curl -o /root/scripts/pfsense_zbx.php https://raw.githubusercontent.com/rbicelli/pfsense-zabbix-template/master/pfsense_zbx.php
 ```
 
 Then install package "Zabbix Agent 4" on your pfSense Box
@@ -57,7 +70,7 @@ Also increase the **Timeout** value at least to **5**, otherwise some checks wil
 
 Then import xml templates in Zabbix and add your pfSense hosts.
 
-If you are running a redundant CARP setup you should adjust the macro {#EXPECTED_CARP_STATUS} to a value representing what is CARP expected status on monitored box.
+If you are running a redundant CARP setup you should adjust the macro {$EXPECTED_CARP_STATUS} to a value representing what is CARP expected status on monitored box.
 
 Possible values are:
 
