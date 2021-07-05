@@ -89,19 +89,19 @@ For running speedtests on WAN interfaces you have to install the speedtest packa
 
 From **Diagnostics/Command Prompt** input this commands:
 
-```
+```bash
 pkg update && pkg install -y py37-speedtest-cli
 ```
 
 Speedtest python package could be broken at the moment, so you could need an extra step: download the latest version from package author's github repo.
 
-```
-	curl -Lo /usr/local/lib/python3.7/site-packages speedtest.py https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py
+```bash
+curl -Lo /usr/local/lib/python3.7/site-packages/speedtest.py https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py
 ```
 
 For testing if speedtest is installed properly you can try it:
 
-```
+```bash
 	/usr/local/bin/speedtest
 ```
 
