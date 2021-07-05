@@ -30,6 +30,11 @@ Tested with pfSense 2.4.x, Zabbix 4.0, Zabbix 5.0
 
  - Discovery of IPsec Site-to-Site tunnels
  - Monitoring tunnel status (Phase 1 and Phase 2)
+ 
+**Template pfSense Active: Speedtest**
+
+ - Discovery of WAN Interfaces
+ - Perform speed tests and collect metrics
 
 
 ## Configuration
@@ -65,7 +70,7 @@ UserParameter=pfsense.discovery[*],/usr/local/bin/php /root/scripts/pfsense_zbx.
 UserParameter=pfsense.value[*],/usr/local/bin/php /root/scripts/pfsense_zbx.php $1 $2 $3
 ```
 
-_Please note that **AllowRoot=1** option is required in order to execute correctly OpenVPN checks and others._
+_Please note that **AllowRoot=1** option is required in order to correctly execute OpenVPN checks and others._
 
 Also increase the **Timeout** value at least to **5**, otherwise some checks will fail.
 

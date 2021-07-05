@@ -7,6 +7,10 @@ Written by Riccardo Bicelli <r.bicelli@gmail.com>
 This program is licensed under Apache 2.0 License
 */
 
+//Some Useful defines
+
+define('SPEEDTEST_INTERVAL',8); //Speedtest Interval (in hours)
+
 require_once('globals.inc');
 require_once('functions.inc');
 require_once('config.inc');
@@ -169,7 +173,7 @@ function pfz_interface_speedtest_value($ifname, $value){
 function pfz_speedtest_exec ($ifname, $ipaddr, $is_cron=false){
 	$filename = "/tmp/speedtest-$ifname";
 	$filerun = "/tmp/speedtest-run"; 
-	$filecron = "/tmp/speedtest.cron"
+	$filecron = "/tmp/speedtest.cron";
 	
 	if (file_exists($filename)) {
 		$json_output = json_decode(file_get_contents($filename), true);
@@ -180,8 +184,8 @@ function pfz_speedtest_exec ($ifname, $ipaddr, $is_cron=false){
 	if ($is_cron) touch($filecron);
 	
 	if ( $is_cron==false || file_exists($filecron)) {
-		if ( (time()-filemtime($filename) > 8 * 3600) || (file_exists($filename)==false) ) {
-	  		// file older than 8 Hours
+		if ( (time()-filemtime($filename) > SPEEDTEST_INTERVAL * 3600) || (file_exists($filename)==false) ) {
+	  		// file is older than SPEEDTEST_INTERVAL
 	  		if ( (time()-filemtime($filerun) > 180 ) ) @unlink($filerun);
 
 			if (file_exists($filename)==false) {
@@ -189,7 +193,6 @@ function pfz_speedtest_exec ($ifname, $ipaddr, $is_cron=false){
 	  			$st_command = "nohup /usr/local/bin/speedtest --source $ipaddr --json > $filename && rm $filerun &";
 				exec ($st_command);
 			}
-
 		}
 	}
 	
