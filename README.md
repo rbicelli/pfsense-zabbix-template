@@ -12,6 +12,7 @@ Tested with pfSense 2.4.x, Zabbix 4.0, Zabbix 5.0
 **Template pfSense Active**
  
  - Network interface Discovery and Monitoring with User Assigned Names
+ - Scheduled Speedtest on WAN interfaces (via ookla speedtest)
  - Gateway Discovery and Monitoring (Gateway Status/RTT)
  - OpenVPN Server Discovery and Monitoring (Server Status/Tunnel Status)
  - OpenVPN Clients Discovery and Monitoring (Client Status/Tunnel Status)
@@ -79,6 +80,35 @@ Possible values are:
  - 2: Backup
 
 This is useful when monitoring services which could stay stopped on CARP Backup Member.
+
+
+## Setup Speedtest
+
+For running speedtests on WAN interfaces you have to install the speedtest package
+
+
+From **Diagnostics/Command Prompt** input this commands:
+
+```
+pkg update && pkg install -y py37-speedtest-cli
+```
+
+Speedtest python package could be broken at the moment, so you could need an extra step: download the latest version from package author's github repo.
+
+```
+	curl -Lo /usr/local/lib/python3.7/site-packages speedtest.py https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py
+```
+
+For testing if speedtest is installed properly you can try it:
+
+```
+	/usr/local/bin/speedtest
+```
+
+Remember that you will need to install the package on *every* pfSense upgrade.
+
+**For speedtest to work you may need to increase Timeout up to its maximum (30)**
+
 
 ## Credits
 

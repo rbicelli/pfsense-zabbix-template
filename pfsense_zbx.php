@@ -1,7 +1,7 @@
 <?php
 /*** 
 pfsense_zbx.php - pfSense Zabbix Interface
-Version 1.0.3 - 2022-07-04
+Version 1.0.5 - 2021-07-05
 
 Written by Riccardo Bicelli <r.bicelli@gmail.com>
 This program is licensed under Apache 2.0 License
@@ -89,53 +89,111 @@ function pfz_test(){
 
 // Interface Discovery
 // Improved performance
-function pfz_interface_discovery($skip_disabled = true, $skip_unconfigured = true) {
+function pfz_interface_discovery($is_wan=false) {
     $ifdescrs = get_configured_interface_with_descr(true);
-    $all_hw_ifs = get_interface_arr();
-    $merged_ifs=array();
+    $ifaces = get_interface_arr();
+    $ifcs=array();
+ 
+    $json_string = '{"data":[';
+                   
+    foreach ($ifdescrs as $ifname => $ifdescr){
+          $ifinfo = get_interface_info($ifname);
+          $ifinfo["description"] = $ifdescr;
+	      $ifcs[$ifname] = $ifinfo;
+	      
+    }    
 
-    $output = ['data' => []];
-
-    foreach ($ifdescrs as $pfsense_if_name => $user_if_name ) {
-          $ifinfo = get_interface_info($pfsense_if_name);
-          $ifinfo["description"] = $user_if_name;
-          $ifinfo["pfsense_name"] = $pfsense_if_name;
-          $hwname = $ifinfo['hwif'];
-          $merged_ifs[$hwname] = $ifinfo;
+    foreach ($ifaces as $hwif) {
+        
+        $ifdescr = $hwif;
+        $has_gw = false;
+        $is_vpn = false;
+        
+        foreach($ifcs as $ifc=>$ifinfo){
+                if ($ifinfo["hwif"] == $hwif){
+                        $ifdescr = $ifinfo["description"];
+                        if (array_key_exists("gateway",$ifinfo)) $has_gw=true;
+                        if (strpos($ifinfo["if"],"ovpn")!==false) $is_vpn=true;
+                        break;
+                }
+        }
+		
+		if ( ($is_wan==false) ||  (($is_wan==true) && ($has_gw==true) && ($is_vpn==false)) ) { 
+		    $json_string .= '{"{#IFNAME}":"' . $hwif . '"';
+		    $json_string .= ',"{#IFDESCR}":"' . $ifdescr . '"';
+		    $json_string .= '},';
+        }
+    
     }
+    $json_string = rtrim($json_string,",");
+    $json_string .= "]}";
 
-	foreach ($all_hw_ifs as $hwif) {
-	    $record = [];
-
-	    $record['{#IFNAME}'] = $hwif;
-
-	    // needed when using interface names in dependent items via jsonpath
-	    $record['{#IFNAMEJ}'] = str_replace('.','_',$hwif);
-
-	    if (!empty($merged_ifs[ $hwif ])) {
-	    	if(true === $skip_disabled && isset($merged_ifs[ $hwif ]['enabled'])) {
-	    		if($merged_ifs[ $hwif ]['enabled'] != 1) {
-	    			continue;
-			    }
-		    }
-		    $record['{#IFDESCR}'] = $merged_ifs[ $hwif ]['description'];
-	    } else {
-	    	if(true === $skip_unconfigured) {
-		        continue;
-		    }
-	    	else {
-			    $record['{#IFDESCR}'] = $hwif;
-		    }
-	    }
-
-	    $output['data'][] = $record;
-
-    }
-    echo json_encode($output);
+    echo $json_string;
 }
 
-function pfz_interface_discovery_all() {
-	pfz_interface_discovery(false, false);
+//Interface Speedtest
+function pfz_interface_speedtest_value($ifname, $value){
+	$ifdescrs = get_configured_interface_with_descr(true);
+    $ifaces = get_interface_arr();
+    $pf_interface_name='';
+    $subvalue=false;
+    
+    $tvalue = explode(".", $value);
+    
+    if (count($tvalue)>1) {
+    	$value = $tvalue[0];
+    	$subvalue = $tvalue[1];
+    }        
+                       
+    foreach ($ifdescrs as $ifn => $ifd){
+          $ifinfo = get_interface_info($ifn);
+          if($ifinfo['hwif']==$ifname) {
+          	$pf_interface_name = $ifn;
+          	break;
+          }
+    }        
+	
+	//If the interface has a gateway is considered WAN, so let's do the speedtest
+	if (array_key_exists("gateway", $ifinfo)) {
+		$ipaddr = $ifinfo['ipaddr'];		
+		$speedtest_data = pfz_speedtest_exec($pf_interface_name,$ipaddr);
+		if (array_key_exists($value,$speedtest_data)) {
+			if ($subvalue == false) 
+				echo $speedtest_data[$value];
+			else
+				echo $speedtest_data[$value][$subvalue];
+		}
+	}	
+}
+
+function pfz_speedtest_exec ($ifname, $ipaddr, $is_cron=false){
+	$filename = "/tmp/speedtest-$ifname";
+	$filerun = "/tmp/speedtest-run"; 
+	$filecron = "/tmp/speedtest.cron"
+	
+	if (file_exists($filename)) {
+		$json_output = json_decode(file_get_contents($filename), true);
+		if ($json_output==null) @unlink($filename);
+		return $json_output;	
+	}
+	
+	if ($is_cron) touch($filecron);
+	
+	if ( $is_cron==false || file_exists($filecron)) {
+		if ( (time()-filemtime($filename) > 8 * 3600) || (file_exists($filename)==false) ) {
+	  		// file older than 8 Hours
+	  		if ( (time()-filemtime($filerun) > 180 ) ) @unlink($filerun);
+
+			if (file_exists($filename)==false) {
+	  			touch($filerun);
+	  			$st_command = "nohup /usr/local/bin/speedtest --source $ipaddr --json > $filename && rm $filerun &";
+				exec ($st_command);
+			}
+
+		}
+	}
+	
+	return false;
 }
 
 // OpenVPN Server Discovery
@@ -936,7 +994,13 @@ function pfz_get_system_value($section){
      }
 }
 
-
+// File is present
+function pfz_file_exists($filename) {
+	if (file_exists($filename))
+		echo "1";
+	else
+		echo "0";
+}
 
 // Value mappings
 // Each value map is represented by an associative array
@@ -1039,6 +1103,9 @@ function pfz_discovery($section){
           case "gw":
                pfz_gw_discovery();
                break;
+          case "wan":
+          	   pfz_interface_discovery(true);
+               break;
           case "openvpn_server":
                pfz_openvpn_serverdiscovery();
                break;
@@ -1054,10 +1121,6 @@ function pfz_discovery($section){
           case "interfaces":
                pfz_interface_discovery();
                break;
-<<<<<<< HEAD
-          case "interfaces_all":
-               pfz_interface_discovery_all();
-=======
           case "ipsec_ph1":
           	   pfz_ipsec_discovery_ph1();
                break;
@@ -1066,7 +1129,6 @@ function pfz_discovery($section){
                break;
           case "dhcpfailover":
           	   pfz_dhcpfailover_discovery();
->>>>>>> master
                break;
      }         
 }
@@ -1082,6 +1144,9 @@ switch (strtolower($argv[1])){
      case "gw_status":
           pfz_gw_rawstatus();
           break;
+	 case "if_speedtest_value":
+	 	  pfz_interface_speedtest_value($argv[2],$argv[3]);
+	 	  break;
      case "openvpn_servervalue":
           pfz_openvpn_servervalue($argv[2],$argv[3]);
           break;
@@ -1115,6 +1180,9 @@ switch (strtolower($argv[1])){
      case "dhcp":
      	  pfz_dhcp($argv[2],$argv[3]);
           break;
+     case "file_exists":
+     	  pfz_file_exists($argv[2]);
+     	  break;     	  
      default:
           pfz_test();
 }
