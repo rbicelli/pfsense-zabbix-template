@@ -646,14 +646,14 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 			if ($ikesa['version'] == 1) {
 				$ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '00'));
 				//pfSense 2.5 with conn enumeration like conn100000
-				if ( ($ph1idx==false) || ($ph1idx=='')) $ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '0000'));
+				if ( ($ph1idx===false) || ($ph1idx=='')) $ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '0000'));
 				$ipsecconnected[$ph1idx] = $ph1idx;
 			} else {
 				if (!ipsec_ikeid_used($con_id)) {
 					// probably a v2 with split connection then
 					$ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '00'));
 					//pfSense 2.5 with conn enumeration like conn100000
-					if ( ($ph1idx==false) || ($ph1idx=='')) $ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '0000'));					
+					if ( ($ph1idx===false) || ($ph1idx=='')) $ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '0000'));					
 					$ipsecconnected[$ph1idx] = $ph1idx;
 				} else {
 					$ipsecconnected[$con_id] = $ph1idx = $con_id;
@@ -664,7 +664,7 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 					// Asking for Phase2 Status Value
 					foreach ($ikesa['child-sas'] as $childsas) {
 						if ($childsas['reqid']==$reqid) {
-							if ($childsas['state'] == 'REKEYED') {
+							if (strtolower($childsas['state']) == 'rekeyed') {
 								//if state is rekeyed go on
 								$tmp_value = $childsas[$valuekey];
 							} else {
@@ -681,19 +681,17 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 			}			
 		}	
 	}
+	
 	switch($valuekey) {
 					case 'state':
-						if ($carp_status == 0) {
-							$value = pfz_valuemap('ipsec.state', strtolower($tmp_value));
-						} else {
-							$value = $value + (10 * ($carp_status-1));
-						}	
+						$value = pfz_valuemap('ipsec.state', strtolower($tmp_value));
+						if ($carp_status!=0) $value = $value + (10 * ($carp_status-1));						
 						break;
 					default:
 						$value = $tmp_value;
 						break;
 	}
-//	print_r($ikesa);
+	
 	return $value;
 }
 
@@ -1008,7 +1006,6 @@ function pfz_file_exists($filename) {
 // Value mappings
 // Each value map is represented by an associative array
 function pfz_valuemap($valuename, $value, $default="0"){
-
      switch ($valuename){     
 
           case "openvpn.server.status":          
