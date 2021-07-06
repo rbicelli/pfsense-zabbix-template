@@ -9,7 +9,7 @@ This program is licensed under Apache 2.0 License
 
 //Some Useful defines
 
-define('SPEEDTEST_INTERVAL',8); //Speedtest Interval (in hours)
+define('SPEEDTEST_INTERVAL', 8); //Speedtest Interval (in hours)
 
 require_once('globals.inc');
 require_once('functions.inc');
@@ -93,18 +93,18 @@ function pfz_test(){
 
 // Interface Discovery
 // Improved performance
-function pfz_interface_discovery($is_wan=false) {
+function pfz_interface_discovery($is_wan=false,$is_cron=false) {
     $ifdescrs = get_configured_interface_with_descr(true);
     $ifaces = get_interface_arr();
     $ifcs=array();
+    $if_ret=array();
  
     $json_string = '{"data":[';
                    
     foreach ($ifdescrs as $ifname => $ifdescr){
           $ifinfo = get_interface_info($ifname);
           $ifinfo["description"] = $ifdescr;
-	      $ifcs[$ifname] = $ifinfo;
-	      
+	      $ifcs[$ifname] = $ifinfo;	      
     }    
 
     foreach ($ifaces as $hwif) {
@@ -123,6 +123,7 @@ function pfz_interface_discovery($is_wan=false) {
         }
 		
 		if ( ($is_wan==false) ||  (($is_wan==true) && ($has_gw==true) && ($is_vpn==false)) ) { 
+		    $if_ret[]=$hwif;
 		    $json_string .= '{"{#IFNAME}":"' . $hwif . '"';
 		    $json_string .= ',"{#IFDESCR}":"' . $ifdescr . '"';
 		    $json_string .= '},';
@@ -132,48 +133,79 @@ function pfz_interface_discovery($is_wan=false) {
     $json_string = rtrim($json_string,",");
     $json_string .= "]}";
 
+	if ($is_cron) return $if_ret;
+	
     echo $json_string;
 }
 
+
 //Interface Speedtest
-function pfz_interface_speedtest_value($ifname, $value){
-	$ifdescrs = get_configured_interface_with_descr(true);
-    $ifaces = get_interface_arr();
-    $pf_interface_name='';
-    $subvalue=false;
-    
-    $tvalue = explode(".", $value);
+function pfz_interface_speedtest_value($ifname, $value){	
+    $tvalue = explode(".", $value);    
     
     if (count($tvalue)>1) {
     	$value = $tvalue[0];
     	$subvalue = $tvalue[1];
     }        
-                       
-    foreach ($ifdescrs as $ifn => $ifd){
-          $ifinfo = get_interface_info($ifn);
-          if($ifinfo['hwif']==$ifname) {
-          	$pf_interface_name = $ifn;
-          	break;
-          }
-    }        
-	
+    
 	//If the interface has a gateway is considered WAN, so let's do the speedtest
-	if (array_key_exists("gateway", $ifinfo)) {
-		$ipaddr = $ifinfo['ipaddr'];		
-		$speedtest_data = pfz_speedtest_exec($pf_interface_name,$ipaddr);
-		if (array_key_exists($value,$speedtest_data)) {
+	$filename = "/tmp/speedtest-$ifname";
+	
+	if (file_exists($filename)) {
+		$speedtest_data = json_decode(file_get_contents($filename), true);
+		
+		if (array_key_exists($value, $speedtest_data)) {
 			if ($subvalue == false) 
 				echo $speedtest_data[$value];
 			else
 				echo $speedtest_data[$value][$subvalue];
-		}
-	}	
+		}	
+	}
+			
 }
 
+
+function pfz_speedtest_cron(){
+	require_once("services.inc");
+	$ifdescrs = get_configured_interface_with_descr(true);
+    $ifaces = get_interface_arr();
+    $pf_interface_name='';
+    $subvalue=false;    
+		                       
+    $ifcs = pfz_interface_discovery(true, true);    
+    
+    foreach ($ifcs as $ifname) {    	  
+          
+          foreach ($ifdescrs as $ifn => $ifd){
+		      $ifinfo = get_interface_info($ifn);
+		      if($ifinfo['hwif']==$ifname) {
+		      	$pf_interface_name = $ifn;
+		      	break;
+		      }
+    	  }
+          
+          //If the interface has a gateway is considered WAN, so let's do the speedtest
+          if (array_key_exists("gateway", $ifinfo)) {				
+		  	$ipaddr = $ifinfo['ipaddr'];		
+			pfz_speedtest_exec($ifname, $ipaddr);		
+		  }
+				          	
+    }
+}
+
+//installs a cron job for speedtests
+function pfz_speedtest_cron_install($enable=true){
+	//Install Cron Job
+	$command = "/usr/local/bin/php " . __FILE__ . " speedtest_cron"; 
+	install_cron_job($command, $enable, $minute = "*/15", "*", "*", "*", "*", "root", false);
+}        	
+
+
 function pfz_speedtest_exec ($ifname, $ipaddr, $is_cron=false){
+	
 	$filename = "/tmp/speedtest-$ifname";
 	$filerun = "/tmp/speedtest-run"; 
-	$filecron = "/tmp/speedtest.cron";
+	$filecron = "/tmp/speedtest.cron";	
 	
 	if (file_exists($filename)) {
 		$json_output = json_decode(file_get_contents($filename), true);
@@ -198,6 +230,7 @@ function pfz_speedtest_exec ($ifname, $ipaddr, $is_cron=false){
 	
 	return false;
 }
+
 
 // OpenVPN Server Discovery
 function pfz_openvpn_get_all_servers(){
@@ -1145,6 +1178,7 @@ switch (strtolower($argv[1])){
           pfz_gw_rawstatus();
           break;
 	 case "if_speedtest_value":
+	      pfz_speedtest_cron_install();
 	 	  pfz_interface_speedtest_value($argv[2],$argv[3]);
 	 	  break;
      case "openvpn_servervalue":
@@ -1182,6 +1216,13 @@ switch (strtolower($argv[1])){
           break;
      case "file_exists":
      	  pfz_file_exists($argv[2]);
+     	  break;
+     case "cron_speedtest":
+     	  pfz_speedtest_cron_install();
+     	  pfz_speedtest_cron();
+     	  break;
+     case "cron_cleanup":
+     	  pfz_speedtest_cron_install(false);
      	  break;     	  
      default:
           pfz_test();
