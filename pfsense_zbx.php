@@ -1217,7 +1217,7 @@ switch (strtolower($argv[1])){
      case "file_exists":
      	  pfz_file_exists($argv[2]);
      	  break;
-     case "cron_speedtest":
+     case "speedtest_cron":
      	  pfz_speedtest_cron_install();
      	  pfz_speedtest_cron();
      	  break;
