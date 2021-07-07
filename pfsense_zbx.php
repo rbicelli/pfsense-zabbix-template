@@ -201,7 +201,7 @@ function pfz_speedtest_cron_install($enable=true){
 }        	
 
 
-function pfz_speedtest_exec ($ifname, $ipaddr, $is_cron=false){
+function pfz_speedtest_exec ($ifname, $ipaddr){
 	
 	$filename = "/tmp/speedtest-$ifname";
 	$filerun = "/tmp/speedtest-run"; 
@@ -213,20 +213,17 @@ function pfz_speedtest_exec ($ifname, $ipaddr, $is_cron=false){
 		return $json_output;	
 	}
 	
-	if ($is_cron) touch($filecron);
 	
-	if ( $is_cron==false || file_exists($filecron)) {
-		if ( (time()-filemtime($filename) > SPEEDTEST_INTERVAL * 3600) || (file_exists($filename)==false) ) {
-	  		// file is older than SPEEDTEST_INTERVAL
-	  		if ( (time()-filemtime($filerun) > 180 ) ) @unlink($filerun);
+	if ( (time()-filemtime($filename) > SPEEDTEST_INTERVAL * 3600) || (file_exists($filename)==false) ) {
+	  	// file is older than SPEEDTEST_INTERVAL
+	  	if ( (time()-filemtime($filerun) > 180 ) ) @unlink($filerun);
 
-			if (file_exists($filename)==false) {
-	  			touch($filerun);
-	  			$st_command = "nohup /usr/local/bin/speedtest --source $ipaddr --json > $filename && rm $filerun &";
-				exec ($st_command);
-			}
+		if (file_exists($filerun)==false) {
+	  		touch($filerun);
+	  		$st_command = "nohup /usr/local/bin/speedtest --source $ipaddr --json > $filename && rm $filerun &";
+			exec ($st_command);
 		}
-	}
+	}	
 	
 	return false;
 }
