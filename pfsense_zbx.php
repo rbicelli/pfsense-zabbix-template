@@ -205,7 +205,6 @@ function pfz_speedtest_exec ($ifname, $ipaddr){
 	
 	$filename = "/tmp/speedtest-$ifname";
 	$filerun = "/tmp/speedtest-run"; 
-	$filecron = "/tmp/speedtest.cron";			
 	
 	if ( (time()-filemtime($filename) > SPEEDTEST_INTERVAL * 3600) || (file_exists($filename)==false) ) {
 	  	// file is older than SPEEDTEST_INTERVAL
@@ -213,12 +212,13 @@ function pfz_speedtest_exec ($ifname, $ipaddr){
 
 		if (file_exists($filerun)==false) {
 	  		touch($filerun);
-	  		$st_command = "nohup /usr/local/bin/speedtest --source $ipaddr --json > $filename && rm $filerun &";
+	  		$st_command = "/usr/local/bin/speedtest --source $ipaddr --json > $filename";
 			exec ($st_command);
+			@unlik($filerun);
 		}
 	}	
 	
-	return false;
+	return true;
 }
 
 
