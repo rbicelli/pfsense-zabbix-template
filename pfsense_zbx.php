@@ -205,14 +205,7 @@ function pfz_speedtest_exec ($ifname, $ipaddr){
 	
 	$filename = "/tmp/speedtest-$ifname";
 	$filerun = "/tmp/speedtest-run"; 
-	$filecron = "/tmp/speedtest.cron";	
-	
-	if (file_exists($filename)) {
-		$json_output = json_decode(file_get_contents($filename), true);
-		if ($json_output==null) @unlink($filename);
-		return $json_output;	
-	}
-	
+	$filecron = "/tmp/speedtest.cron";			
 	
 	if ( (time()-filemtime($filename) > SPEEDTEST_INTERVAL * 3600) || (file_exists($filename)==false) ) {
 	  	// file is older than SPEEDTEST_INTERVAL
