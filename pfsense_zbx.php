@@ -667,16 +667,12 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 				$con_id = filter_var($l_ikeid, FILTER_SANITIZE_NUMBER_INT);
 			}
 			if ($ikesa['version'] == 1) {
-				$ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '00'));
-				//pfSense 2.5 with conn enumeration like conn100000
-				if ( ($ph1idx===false) || ($ph1idx=='')) $ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '0000'));
+				$ph1idx = $con_id/1000;
 				$ipsecconnected[$ph1idx] = $ph1idx;
 			} else {
 				if (!ipsec_ikeid_used($con_id)) {
 					// probably a v2 with split connection then
-					$ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '00'));
-					//pfSense 2.5 with conn enumeration like conn100000
-					if ( ($ph1idx===false) || ($ph1idx=='')) $ph1idx = substr($con_id, 0, strrpos(substr($con_id, 0, -1), '0000'));					
+					$ph1idx = $con_id/1000;
 					$ipsecconnected[$ph1idx] = $ph1idx;
 				} else {
 					$ipsecconnected[$con_id] = $ph1idx = $con_id;

@@ -12,8 +12,7 @@ Tested with pfSense 2.4.x, Zabbix 4.0, Zabbix 5.0
 **Template pfSense Active**
  
  - Network interface Discovery and Monitoring with User Assigned Names
- - Scheduled Speedtest on WAN interfaces (via ookla speedtest)
- - Gateway Discovery and Monitoring (Gateway Status/RTT)
+ - Gateway Discovery and Monitoring (Gateway Status/RTT) 
  - OpenVPN Server Discovery and Monitoring (Server Status/Tunnel Status)
  - OpenVPN Clients Discovery and Monitoring (Client Status/Tunnel Status)
  - CARP Monitoring (Global CARP State)
@@ -41,17 +40,10 @@ Tested with pfSense 2.4.x, Zabbix 4.0, Zabbix 5.0
 
 First copy the file pfsense_zbx.php to your pfsense box (e.g. to /root/scripts).
 
-For example, from pfSense shell:
+From **Diagnostics/Command Prompt** input this one-liner:
 
 ```bash
-mkdir /root/scripts
-curl -o /root/scripts/pfsense_zbx.php https://raw.githubusercontent.com/rbicelli/pfsense-zabbix-template/master/pfsense_zbx.php
-```
-
-or, from **Diagnostics/Command Prompt** input this one-liner:
-
-```bash
-mkdir /root/scripts && curl -o /root/scripts/pfsense_zbx.php https://raw.githubusercontent.com/rbicelli/pfsense-zabbix-template/master/pfsense_zbx.php
+curl --create-dirs -o /root/scripts/pfsense_zbx.php https://raw.githubusercontent.com/rbicelli/pfsense-zabbix-template/master/pfsense_zbx.php
 ```
 
 Then install package "Zabbix Agent 4" on your pfSense Box
@@ -89,7 +81,7 @@ This is useful when monitoring services which could stay stopped on CARP Backup 
 
 ## Setup Speedtest
 
-For running speedtests on WAN interfaces you have to install the speedtest package
+For running speedtests on WAN interfaces you have to install the speedtest package.
 
 
 From **Diagnostics/Command Prompt** input this commands:
@@ -107,13 +99,16 @@ curl -Lo /usr/local/lib/python3.7/site-packages/speedtest.py https://raw.githubu
 For testing if speedtest is installed properly you can try it:
 
 ```bash
-	/usr/local/bin/speedtest
+/usr/local/bin/speedtest
 ```
 
 Remember that you will need to install the package on *every* pfSense upgrade.
 
-**For speedtest to work you may need to increase Timeout up to its maximum (30)**
+Speedtest template creates a cron job and check for entry everytime Zabbix requests its items. If you  want to uninstall the cron jobs simply run, from **Diagnostics/Command Prompt**:
 
+```bash
+/url/local/bin/php /root/scripts/pfsense_zbx.php cron_cleanup
+```
 
 ## Credits
 
