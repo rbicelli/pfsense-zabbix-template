@@ -214,7 +214,7 @@ function pfz_speedtest_exec ($ifname, $ipaddr){
 	  		touch($filerun);
 	  		$st_command = "/usr/local/bin/speedtest --source $ipaddr --json > $filename";
 			exec ($st_command);
-			@unlik($filerun);
+			@unlink($filerun);
 		}
 	}	
 	
