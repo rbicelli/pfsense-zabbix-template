@@ -196,8 +196,8 @@ function pfz_speedtest_cron(){
 //installs a cron job for speedtests
 function pfz_speedtest_cron_install($enable=true){
 	//Install Cron Job
-	$command = "/usr/local/bin/php " . __FILE__ . " speedtest_cron"; 
-	install_cron_job($command, $enable, $minute = "*/15", "*", "*", "*", "*", "root", false);
+	$command = "/usr/local/bin/php " . __FILE__ . " speedtest_cron";
+	install_cron_job($command, $enable, $minute = "*/15", "*", "*", "*", "*", "root", true);
 }        	
 
 
