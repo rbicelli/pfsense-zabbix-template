@@ -668,11 +668,13 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 			}
 			if ($ikesa['version'] == 1) {
 				$ph1idx = $con_id/1000;
+				if ($ph1idx>100) $ph1idx = $ph1idx/100;
 				$ipsecconnected[$ph1idx] = $ph1idx;
 			} else {
 				if (!ipsec_ikeid_used($con_id)) {
 					// probably a v2 with split connection then
 					$ph1idx = $con_id/1000;
+					if ($ph1idx>100) $ph1idx = $ph1idx/100;
 					$ipsecconnected[$ph1idx] = $ph1idx;
 				} else {
 					$ipsecconnected[$con_id] = $ph1idx = $con_id;
