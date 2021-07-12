@@ -204,6 +204,7 @@ function pfz_speedtest_cron_install($enable=true){
 function pfz_speedtest_exec ($ifname, $ipaddr){
 	
 	$filename = "/tmp/speedtest-$ifname";
+	$filetemp = "$filename.tmp";
 	$filerun = "/tmp/speedtest-run"; 
 	
 	if ( (time()-filemtime($filename) > SPEEDTEST_INTERVAL * 3600) || (file_exists($filename)==false) ) {
@@ -214,6 +215,7 @@ function pfz_speedtest_exec ($ifname, $ipaddr){
 	  		touch($filerun);
 	  		$st_command = "/usr/local/bin/speedtest --source $ipaddr --json > $filename";
 			exec ($st_command);
+			rename($filetemp,$filename);
 			@unlink($filerun);
 		}
 	}	
