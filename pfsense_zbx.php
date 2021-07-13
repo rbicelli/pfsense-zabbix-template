@@ -213,7 +213,7 @@ function pfz_speedtest_exec ($ifname, $ipaddr){
 
 		if (file_exists($filerun)==false) {
 	  		touch($filerun);
-	  		$st_command = "/usr/local/bin/speedtest --source $ipaddr --json > $filetmp";
+	  		$st_command = "/usr/local/bin/speedtest --source $ipaddr --json > $filetemp";
 			exec ($st_command);
 			rename($filetemp,$filename);
 			@unlink($filerun);
