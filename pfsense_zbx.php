@@ -207,11 +207,15 @@ function pfz_speedtest_exec ($ifname, $ipaddr){
 	$filetemp = "$filename.tmp";
 	$filerun = "/tmp/speedtest-run"; 
 	
+	// Issue #82
+	// Sleep random delay in order to avoid problem when 2 pfSense on the same Internet line
+	sleep (rand ( 1, 90));
+	
 	if ( (time()-filemtime($filename) > SPEEDTEST_INTERVAL * 3600) || (file_exists($filename)==false) ) {
 	  	// file is older than SPEEDTEST_INTERVAL
 	  	if ( (time()-filemtime($filerun) > 180 ) ) @unlink($filerun);
 
-		if (file_exists($filerun)==false) {
+		if (file_exists($filerun)==false) {	  			  		
 	  		touch($filerun);
 	  		$st_command = "/usr/local/bin/speedtest --source $ipaddr --json > $filetemp";
 			exec ($st_command);
@@ -670,13 +674,13 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 			}
 			if ($ikesa['version'] == 1) {
 				$ph1idx = $con_id/1000;
-				if ($ph1idx>100) $ph1idx = $ph1idx/100;
+				if ($ph1idx>=100) $ph1idx = $ph1idx/100;
 				$ipsecconnected[$ph1idx] = $ph1idx;
 			} else {
 				if (!ipsec_ikeid_used($con_id)) {
 					// probably a v2 with split connection then
 					$ph1idx = $con_id/1000;
-					if ($ph1idx>100) $ph1idx = $ph1idx/100;
+					if ($ph1idx>=100) $ph1idx = $ph1idx/100;
 					$ipsecconnected[$ph1idx] = $ph1idx;
 				} else {
 					$ipsecconnected[$con_id] = $ph1idx = $con_id;
