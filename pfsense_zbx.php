@@ -1,7 +1,7 @@
 <?php
 /*** 
 pfsense_zbx.php - pfSense Zabbix Interface
-Version 1.0.5 - 2021-07-05
+Version 1.1.1 - 2021-10-24
 
 Written by Riccardo Bicelli <r.bicelli@gmail.com>
 This program is licensed under Apache 2.0 License
@@ -112,17 +112,20 @@ function pfz_interface_discovery($is_wan=false,$is_cron=false) {
         $ifdescr = $hwif;
         $has_gw = false;
         $is_vpn = false;
+        $has_public_ip = false;
         
         foreach($ifcs as $ifc=>$ifinfo){
                 if ($ifinfo["hwif"] == $hwif){
                         $ifdescr = $ifinfo["description"];
                         if (array_key_exists("gateway",$ifinfo)) $has_gw=true;
+                        //	Issue #81 - https://stackoverflow.com/a/13818647/15093007
+                        if (filter_var($ifinfo["ipaddr"], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) $has_public_ip=true;
                         if (strpos($ifinfo["if"],"ovpn")!==false) $is_vpn=true;
                         break;
                 }
         }
 		
-		if ( ($is_wan==false) ||  (($is_wan==true) && ($has_gw==true) && ($is_vpn==false)) ) { 
+		if ( ($is_wan==false) ||  (($is_wan==true) && (($has_gw==true) || ($has_public_ip==true)) && ($is_vpn==false)) ) { 
 		    $if_ret[]=$hwif;
 		    $json_string .= '{"{#IFNAME}":"' . $hwif . '"';
 		    $json_string .= ',"{#IFDESCR}":"' . $ifdescr . '"';
@@ -164,7 +167,7 @@ function pfz_interface_speedtest_value($ifname, $value){
 			
 }
 
-
+// This is supposed to run via cron job
 function pfz_speedtest_cron(){
 	require_once("services.inc");
 	$ifdescrs = get_configured_interface_with_descr(true);
@@ -183,13 +186,9 @@ function pfz_speedtest_cron(){
 		      	break;
 		      }
     	  }
-          
-          //If the interface has a gateway is considered WAN, so let's do the speedtest
-          if (array_key_exists("gateway", $ifinfo)) {				
-		  	$ipaddr = $ifinfo['ipaddr'];		
-			pfz_speedtest_exec($ifname, $ipaddr);		
-		  }
-				          	
+          			
+		  pfz_speedtest_exec($ifname, $ifinfo['ipaddr']);
+		    	
     }
 }
 
@@ -446,7 +445,7 @@ function pfz_service_value($name,$value){
      //List of service which are stopped on CARP Slave.
      //For now this is the best way i found for filtering out the triggers
      //Waiting for a way in Zabbix to use Global Regexp in triggers with items discovery
-     $stopped_on_carp_slave = array("haproxy","radvd","openvpn.","openvpn");
+     $stopped_on_carp_slave = array("haproxy","radvd","openvpn.","openvpn","avahi");
      
      foreach ($services as $service){
           $namecfr = $service["name"];
@@ -530,8 +529,13 @@ function pfz_gw_value($gw, $valuekey) {
      $gws = return_gateways_status(true);
      if(array_key_exists($gw,$gws)) {
           $value = $gws[$gw][$valuekey];
-          if ($valuekey=="status")
-               $value = pfz_valuemap("gateway.status", $value);     
+          if ($valuekey=="status") { 
+               //Issue #70: Gateway Forced Down
+               if ($gws[$gw]["substatus"]<>"none") 
+                    $value = $gws[$gw]["substatus"];
+               
+               $value = pfz_valuemap("gateway.status", $value);
+          }     
           echo $value;         
      }
 }
@@ -1018,9 +1022,43 @@ function pfz_get_system_value($section){
                break;
           case "packages_update":
           		echo pfz_packages_uptodate();
-          		break;	
+          		break;
      }
 }
+
+//S.M.A.R.T Status
+// Taken from /usr/local/www/widgets/widgets/smart_status.widget.php
+function pfz_get_smart_status(){
+
+	$devs = get_smart_drive_list();
+	$status = 0;
+	foreach ($devs as $dev)  { ## for each found drive do                
+                $smartdrive_is_displayed = true;
+                $dev_ident = exec("diskinfo -v /dev/$dev | grep ident   | awk '{print $1}'"); ## get identifier from drive
+                $dev_state = trim(exec("smartctl -H /dev/$dev | awk -F: '/^SMART overall-health self-assessment test result/ {print $2;exit}
+/^SMART Health Status/ {print $2;exit}'")); ## get SMART state from drive
+                switch ($dev_state) {
+                        case "PASSED":
+                        case "OK":
+                                //OK
+                                $status=0;                                
+                                break;
+                        case "":
+                                //Unknown
+                                $status=2;
+                                return $status;
+                                break;
+                        default:
+                        		//Error
+                                $status=1;
+                                return $status;
+                                break;
+                }
+	}
+	
+	echo $status;
+}
+
 
 // File is present
 function pfz_file_exists($filename) {
@@ -1217,7 +1255,10 @@ switch (strtolower($argv[1])){
      	  break;
      case "cron_cleanup":
      	  pfz_speedtest_cron_install(false);
-     	  break;     	  
+     	  break;
+     case "smart_status":
+          pfz_get_smart_status();
+          break;     	  
      default:
           pfz_test();
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>5.0</version>
-    <date>2021-07-12T10:35:24Z</date>
+    <date>2021-11-09T21:44:28Z</date>
     <groups>
         <group>
             <name>Templates/Network Devices</name>
@@ -310,6 +310,29 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <priority>AVERAGE</priority>
                             <description>Gateway Status Change, for use with an acion Script (e.g. update DNS record)</description>
                             <manual_close>YES</manual_close>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>SMART Status</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.value[smart_status]</key>
+                    <delay>1800s</delay>
+                    <description>pfSense SMART Status</description>
+                    <applications>
+                        <application>
+                            <name>System</name>
+                        </application>
+                    </applications>
+                    <valuemap>
+                        <name>pfSense SMART Status</name>
+                    </valuemap>
+                    <triggers>
+                        <trigger>
+                            <expression>{last()}=1</expression>
+                            <name>SMART Errors on {HOST.NAME}</name>
+                            <priority>HIGH</priority>
+                            <description>pfSense has detected SMART Problems on one or more drives.</description>
                         </trigger>
                     </triggers>
                 </item>
@@ -2130,6 +2153,23 @@ or&#13;
                 <mapping>
                     <value>5</value>
                     <newvalue>Remote Access 8SSL/TLS + User Auth)</newvalue>
+                </mapping>
+            </mappings>
+        </value_map>
+        <value_map>
+            <name>pfSense SMART Status</name>
+            <mappings>
+                <mapping>
+                    <value>0</value>
+                    <newvalue>OK</newvalue>
+                </mapping>
+                <mapping>
+                    <value>1</value>
+                    <newvalue>Error</newvalue>
+                </mapping>
+                <mapping>
+                    <value>2</value>
+                    <newvalue>Unknown</newvalue>
                 </mapping>
             </mappings>
         </value_map>
