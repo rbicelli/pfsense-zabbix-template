@@ -661,30 +661,40 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 	require_once("ipsec.inc");
 	global $config;
 	init_config_arr(array('ipsec', 'phase1'));
+	
 	$a_phase1 = &$config['ipsec']['phase1'];
+	$conmap = array();
+	foreach ($a_phase1 as $ph1ent) {
+		if (get_ipsecifnum($ph1ent['ikeid'], 0)) {
+			$cname = "con" . get_ipsecifnum($ph1ent['ikeid'], 0);
+		} else {
+			$cname = "con{$ph1ent['ikeid']}00000";
+		}
+		$conmap[$cname] = $ph1ent['ikeid'];
+	}
+
 	$status = ipsec_list_sa();
-	$ipsecconnected = array();	
+	$ipsecconnected = array();
 	
 	$carp_status = pfz_carp_status(false);
 	
 	//Phase-Status match borrowed from status_ipsec.php	
 	if (is_array($status)) {		
-		foreach ($status as $l_ikeid=>$ikesa) {			
+		foreach ($status as $l_ikeid=>$ikesa) {
 			
-			if(isset($ikesa['con-id'])){
+			if (isset($ikesa['con-id'])) {
 				$con_id = substr($ikesa['con-id'], 3);
-			}else{
-				$con_id = filter_var($l_ikeid, FILTER_SANITIZE_NUMBER_INT);
+			} else {
+				$con_id = filter_var($ikeid, FILTER_SANITIZE_NUMBER_INT);
 			}
+			$con_name = "con" . $con_id;
 			if ($ikesa['version'] == 1) {
-				$ph1idx = $con_id/1000;
-				if ($ph1idx>=100) $ph1idx = $ph1idx/100;
+				$ph1idx = $conmap[$con_name];
 				$ipsecconnected[$ph1idx] = $ph1idx;
 			} else {
 				if (!ipsec_ikeid_used($con_id)) {
 					// probably a v2 with split connection then
-					$ph1idx = $con_id/1000;
-					if ($ph1idx>=100) $ph1idx = $ph1idx/100;
+					$ph1idx = $conmap[$con_name];
 					$ipsecconnected[$ph1idx] = $ph1idx;
 				} else {
 					$ipsecconnected[$con_id] = $ph1idx = $con_id;
