@@ -1334,15 +1334,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.discovery[services]</key>
                     <delay>5m</delay>
-                    <filter>
-                        <conditions>
-                            <condition>
-                                <macro>{#SERVICE}</macro>
-                                <value>@pfSense service names for discovery</value>
-                                <formulaid>A</formulaid>
-                            </condition>
-                        </conditions>
-                    </filter>
                     <item_prototypes>
                         <item_prototype>
                             <name>Service {#DESCRIPTION} enabled on CARP Slave</name>
