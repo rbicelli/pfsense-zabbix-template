@@ -262,6 +262,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                 </item>
                 <item>
                     <name>Certificates Manager: latest &quot;validFrom&quot;</name>
+                    <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.value[cert_date,validFrom.max]</key>
                     <units>unixtime</units>
                     <description>This item will return will return the latest date &quot;validFrom&quot; from all the certificates (including CA). This is used to find new/renewed certificates.</description>
@@ -288,6 +289,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                 </item>
                 <item>
                     <name>Certificates Manager: earliest &quot;validTo&quot;</name>
+                    <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.value[cert_date,validTo.min]</key>
                     <units>unixtime</units>
                     <description>This item will return will return the earliest date &quot;validTo&quot; from all the certificates (including CA). This is used to find expiring certificates.</description>
