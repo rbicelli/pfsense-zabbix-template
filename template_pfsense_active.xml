@@ -1,26 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>5.0</version>
-    <date>2021-11-09T21:44:28Z</date>
+    <date>2022-01-07T10:04:09Z</date>
     <groups>
         <group>
-            <name>Templates/Network Devices</name>
+            <name>Templates/Futur-Tech/Applications</name>
         </group>
     </groups>
     <templates>
         <template>
             <template>Template pfSense Active</template>
-            <name>pfsense Active</name>
+            <name>Template Futur-Tech App pfSense Active</name>
             <description>Active template for pfsense, requires pfsense_zbx.php installed to pfSense Box.&#13;
-Version 1.0.2&#13;
+Version 1.0.5&#13;
 &#13;
-https://github.com/rbicelli/pfsense-zabbix-template</description>
+https://github.com/Futur-Tech/futur-tech-zabbix-pfsense</description>
+            <templates>
+                <template>
+                    <name>pfSense Active Speedtest</name>
+                </template>
+                <template>
+                    <name>Template Futur-Tech Module Zabbix agent active</name>
+                </template>
+                <template>
+                    <name>Template pfSense Active IPsec</name>
+                </template>
+                <template>
+                    <name>Template pfSense Active OpenVPN Server User Auth</name>
+                </template>
+            </templates>
             <groups>
                 <group>
-                    <name>Templates/Network Devices</name>
+                    <name>Templates/Futur-Tech/Applications</name>
                 </group>
             </groups>
             <applications>
+                <application>
+                    <name>Certificate Manager</name>
+                </application>
                 <application>
                     <name>CPU</name>
                 </application>
@@ -35,9 +52,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                 </application>
                 <application>
                     <name>Memory</name>
-                </application>
-                <application>
-                    <name>Network interfaces</name>
                 </application>
                 <application>
                     <name>Network Limits</name>
@@ -66,8 +80,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Maximum number of opened files</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>kernel.maxfiles</key>
-                    <delay>3600</delay>
-                    <history>27d</history>
+                    <delay>1h</delay>
                     <description>It could be increased by using sysctrl utility or modifying file /etc/sysctl.conf.</description>
                     <applications>
                         <application>
@@ -77,7 +90,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <triggers>
                         <trigger>
                             <expression>{last(0)}&lt;1024</expression>
-                            <name>Configured max number of opened files is too low on {HOST.NAME}</name>
+                            <name>Configured max number of opened files is too low</name>
                             <priority>INFO</priority>
                         </trigger>
                     </triggers>
@@ -86,8 +99,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Maximum number of processes</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>kernel.maxproc</key>
-                    <delay>3600</delay>
-                    <history>27d</history>
+                    <delay>1h</delay>
                     <description>It could be increased by using sysctrl utility or modifying file /etc/sysctl.conf.</description>
                     <applications>
                         <application>
@@ -97,7 +109,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <triggers>
                         <trigger>
                             <expression>{last(0)}&lt;256</expression>
-                            <name>Configured max number of processes is too low on {HOST.NAME}</name>
+                            <name>Configured max number of processes is too low</name>
                             <priority>INFO</priority>
                         </trigger>
                     </triggers>
@@ -106,8 +118,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Used memory (calc)</name>
                     <type>CALCULATED</type>
                     <key>kt.mem.used</key>
-                    <delay>60</delay>
-                    <history>28d</history>
                     <units>B</units>
                     <params>last(vm.memory.size[total]) - last(vm.memory.size[available])</params>
                     <applications>
@@ -136,8 +146,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>MBUF Cache</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.mbuf.cache</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <applications>
                         <application>
                             <name>Network Limits</name>
@@ -148,8 +156,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>MBUF Current</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.mbuf.current</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <applications>
                         <application>
                             <name>Network Limits</name>
@@ -160,8 +166,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>MBUF Max</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.mbuf.max</key>
-                    <delay>600</delay>
-                    <history>27d</history>
+                    <delay>10m</delay>
                     <applications>
                         <application>
                             <name>Network Limits</name>
@@ -172,8 +177,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>MBUF Total Used (percent)</name>
                     <type>CALCULATED</type>
                     <key>pfsense.mbuf.ptotal</key>
-                    <delay>60</delay>
-                    <history>28d</history>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <params>((last(pfsense.mbuf.current) + last(pfsense.mbuf.cache)) * 100) / last(pfsense.mbuf.max)</params>
@@ -199,8 +202,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>States Table Current</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.states.current</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <applications>
                         <application>
                             <name>Network Limits</name>
@@ -211,8 +212,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>States Table Max</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.states.max</key>
-                    <delay>600</delay>
-                    <history>27d</history>
+                    <delay>10m</delay>
                     <applications>
                         <application>
                             <name>Network Limits</name>
@@ -223,8 +223,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>States Table Current (percent)</name>
                     <type>CALCULATED</type>
                     <key>pfsense.states.pused</key>
-                    <delay>60</delay>
-                    <history>28d</history>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <params>(last(pfsense.states.current) * 100) / last(pfsense.states.max)</params>
@@ -263,7 +261,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <triggers>
                         <trigger>
                             <expression>{last()}&gt;2</expression>
-                            <name>CARP  Problems on {HOST.NAME}</name>
+                            <name>CARP Problems</name>
                             <priority>HIGH</priority>
                             <description>CARP Problems</description>
                         </trigger>
@@ -277,10 +275,89 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     </triggers>
                 </item>
                 <item>
+                    <name>Certificates Manager: latest &quot;validFrom&quot;</name>
+                    <key>pfsense.value[cert_date,validFrom.max]</key>
+                    <units>unixtime</units>
+                    <description>This item will return will return the latest date &quot;validFrom&quot; from all the certificates (including CA). This is used to find new/renewed certificates.</description>
+                    <applications>
+                        <application>
+                            <name>Certificate Manager</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>DISCARD_UNCHANGED_HEARTBEAT</type>
+                            <params>1d</params>
+                        </step>
+                    </preprocessing>
+                    <triggers>
+                        <trigger>
+                            <expression>({now()}-{last()})&lt;1d</expression>
+                            <name>One or more certificates have been renewed in the past 24h</name>
+                            <opdata>Latest &quot;Valid From&quot;: {ITEM.LASTVALUE1}</opdata>
+                            <priority>INFO</priority>
+                            <manual_close>YES</manual_close>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>Certificates Manager: earliest &quot;validTo&quot;</name>
+                    <key>pfsense.value[cert_date,validTo.min]</key>
+                    <units>unixtime</units>
+                    <description>This item will return will return the earliest date &quot;validTo&quot; from all the certificates (including CA). This is used to find expiring certificates.</description>
+                    <applications>
+                        <application>
+                            <name>Certificate Manager</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>DISCARD_UNCHANGED_HEARTBEAT</type>
+                            <params>1d</params>
+                        </step>
+                    </preprocessing>
+                    <triggers>
+                        <trigger>
+                            <expression>{last()}&lt;{now()}</expression>
+                            <name>One or more certificates are expired</name>
+                            <opdata>Earliest &quot;Valid To&quot;: {ITEM.LASTVALUE1}</opdata>
+                            <priority>HIGH</priority>
+                        </trigger>
+                        <trigger>
+                            <expression>({last()}-{now()})&lt;{$PFSENSE_CERT_EXPIRATION.AVERAGE}</expression>
+                            <name>One or more certificates are expiring less than {$PFSENSE_CERT_EXPIRATION.AVERAGE}</name>
+                            <opdata>Earliest &quot;Valid To&quot;: {ITEM.LASTVALUE1}</opdata>
+                            <priority>AVERAGE</priority>
+                            <dependencies>
+                                <dependency>
+                                    <name>One or more certificates are expired</name>
+                                    <expression>{Template pfSense Active:pfsense.value[cert_date,validTo.min].last()}&lt;{Template pfSense Active:pfsense.value[cert_date,validTo.min].now()}</expression>
+                                </dependency>
+                            </dependencies>
+                        </trigger>
+                        <trigger>
+                            <expression>({last()}-{now()})&lt;{$PFSENSE_CERT_EXPIRATION.WARN}</expression>
+                            <name>One or more certificates are expiring less than {$PFSENSE_CERT_EXPIRATION.WARN}</name>
+                            <opdata>Earliest &quot;Valid To&quot;: {ITEM.LASTVALUE1}</opdata>
+                            <priority>WARNING</priority>
+                            <dependencies>
+                                <dependency>
+                                    <name>One or more certificates are expired</name>
+                                    <expression>{Template pfSense Active:pfsense.value[cert_date,validTo.min].last()}&lt;{Template pfSense Active:pfsense.value[cert_date,validTo.min].now()}</expression>
+                                </dependency>
+                                <dependency>
+                                    <name>One or more certificates are expiring less than {$PFSENSE_CERT_EXPIRATION.AVERAGE}</name>
+                                    <expression>({Template pfSense Active:pfsense.value[cert_date,validTo.min].last()}-{Template pfSense Active:pfsense.value[cert_date,validTo.min].now()})&lt;{$PFSENSE_CERT_EXPIRATION.AVERAGE}</expression>
+                                </dependency>
+                            </dependencies>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
                     <name>DHCP Failover Pool Problems</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.value[dhcp,failover]</key>
-                    <delay>120s</delay>
+                    <delay>2m</delay>
                     <description>This value indicates, in a HA scenario, if DHCP failover pool partners are out of sync.</description>
                     <applications>
                         <application>
@@ -292,7 +369,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Gateway Status Raw</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.value[gw_status]</key>
-                    <delay>60s</delay>
                     <trends>0</trends>
                     <value_type>TEXT</value_type>
                     <description>Gateway Status Raw</description>
@@ -306,7 +382,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <expression>{diff()}&gt;0</expression>
                             <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
                             <recovery_expression>{diff()}=0</recovery_expression>
-                            <name>pfSense Gateway Status Changed on {HOST.NAME}</name>
+                            <name>pfSense Gateway Status Changed</name>
                             <priority>AVERAGE</priority>
                             <description>Gateway Status Change, for use with an acion Script (e.g. update DNS record)</description>
                             <manual_close>YES</manual_close>
@@ -317,7 +393,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>SMART Status</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.value[smart_status]</key>
-                    <delay>1800s</delay>
+                    <delay>30m</delay>
                     <description>pfSense SMART Status</description>
                     <applications>
                         <application>
@@ -330,7 +406,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <triggers>
                         <trigger>
                             <expression>{last()}=1</expression>
-                            <name>SMART Errors on {HOST.NAME}</name>
+                            <name>SMART Errors</name>
                             <priority>HIGH</priority>
                             <description>pfSense has detected SMART Problems on one or more drives.</description>
                         </trigger>
@@ -365,10 +441,16 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <triggers>
                         <trigger>
                             <expression>{last()}=1</expression>
-                            <name>New Version of pfSense Available on {HOST.NAME}</name>
+                            <name>New Version of pfSense Available</name>
                             <priority>INFO</priority>
                             <description>A new version of pfSense is available for update.</description>
                             <manual_close>YES</manual_close>
+                            <dependencies>
+                                <dependency>
+                                    <name>New Version of pfSense {ITEM.LASTVALUE} Available</name>
+                                    <expression>({Template pfSense Active:pfsense.value[system,version].last()}&lt;&gt;{Template pfSense Active:pfsense.value[system,installed_version].last()})=1</expression>
+                                </dependency>
+                            </dependencies>
                         </trigger>
                     </triggers>
                 </item>
@@ -386,7 +468,8 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <triggers>
                         <trigger>
                             <expression>{last()}&gt;0</expression>
-                            <name>Packages Update Available on {HOST.NAME}</name>
+                            <name>Packages Update Available</name>
+                            <opdata>{ITEM.LASTVALUE}</opdata>
                             <priority>INFO</priority>
                             <description>New version of packages are available</description>
                         </trigger>
@@ -409,8 +492,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Number of running processes</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>proc.num[,,run]</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <description>Number of processes in running state.</description>
                     <applications>
                         <application>
@@ -420,7 +501,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <triggers>
                         <trigger>
                             <expression>{avg(5m)}&gt;30</expression>
-                            <name>Too many processes running on {HOST.NAME}</name>
+                            <name>Too many processes running</name>
                             <priority>WARNING</priority>
                         </trigger>
                     </triggers>
@@ -429,8 +510,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Number of processes</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>proc.num[]</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <description>Total number of processes in any state.</description>
                     <applications>
                         <application>
@@ -440,7 +519,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <triggers>
                         <trigger>
                             <expression>{avg(5m)}&gt;300</expression>
-                            <name>Too many processes on {HOST.NAME}</name>
+                            <name>Too many processes</name>
                             <priority>WARNING</priority>
                         </trigger>
                     </triggers>
@@ -449,8 +528,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Host boot time</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.boottime</key>
-                    <delay>600</delay>
-                    <history>27d</history>
+                    <delay>10m</delay>
                     <units>unixtime</units>
                     <applications>
                         <application>
@@ -462,8 +540,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Interrupts per second</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.intr</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <units>ips</units>
                     <applications>
                         <application>
@@ -481,8 +557,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Processor load (1min/core)</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.load[percpu,avg1]</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <value_type>FLOAT</value_type>
                     <description>The processor load is calculated as system CPU load divided by number of CPU cores.</description>
                     <applications>
@@ -493,7 +567,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <triggers>
                         <trigger>
                             <expression>{avg(5m)}&gt;5</expression>
-                            <name>Processor load is too high on {HOST.NAME}</name>
+                            <name>Processor load is too high</name>
                             <priority>WARNING</priority>
                         </trigger>
                     </triggers>
@@ -502,8 +576,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Processor load (5min/core)</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.load[percpu,avg5]</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <value_type>FLOAT</value_type>
                     <description>The processor load is calculated as system CPU load divided by number of CPU cores.</description>
                     <applications>
@@ -516,8 +588,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Processor load (15min/core)</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.load[percpu,avg15]</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <value_type>FLOAT</value_type>
                     <description>The processor load is calculated as system CPU load divided by number of CPU cores.</description>
                     <applications>
@@ -530,8 +600,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Context switches per second</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.switches</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <units>sps</units>
                     <applications>
                         <application>
@@ -549,8 +617,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>CPU $2 time</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.util[,idle]</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <description>The time the CPU has spent doing nothing.</description>
@@ -564,8 +630,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>CPU $2 time</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.util[,interrupt]</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <description>The amount of time the CPU has been servicing hardware interrupts.</description>
@@ -579,8 +643,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>CPU $2 time</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.util[,nice]</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <description>The time the CPU has spent running users' processes that have been niced.</description>
@@ -594,8 +656,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>CPU $2 time</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.util[,system]</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <description>The time the CPU has spent running the kernel and its processes.</description>
@@ -609,8 +669,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>CPU $2 time</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.util[,user]</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <description>The time the CPU has spent running users' processes that are not niced.</description>
@@ -624,8 +682,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Host name</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.hostname</key>
-                    <delay>3600</delay>
-                    <history>27d</history>
+                    <delay>1h</delay>
                     <trends>0</trends>
                     <value_type>CHAR</value_type>
                     <description>System host name.</description>
@@ -638,7 +695,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <triggers>
                         <trigger>
                             <expression>{diff(0)}&gt;0</expression>
-                            <name>Hostname was changed on {HOST.NAME}</name>
+                            <name>Hostname was changed</name>
                             <priority>INFO</priority>
                         </trigger>
                     </triggers>
@@ -647,8 +704,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Host local time</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.localtime</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <units>unixtime</units>
                     <applications>
                         <application>
@@ -660,8 +715,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Free swap space</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.swap.size[,free]</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <units>B</units>
                     <applications>
                         <application>
@@ -673,8 +726,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Free swap space in %</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.swap.size[,pfree]</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <applications>
@@ -685,7 +736,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <triggers>
                         <trigger>
                             <expression>{last(0)}&lt;50</expression>
-                            <name>Lack of free swap space on {HOST.NAME}</name>
+                            <name>Lack of free swap space</name>
                             <priority>WARNING</priority>
                             <description>It probably means that the systems requires more physical memory.</description>
                         </trigger>
@@ -695,8 +746,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Total swap space</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.swap.size[,total]</key>
-                    <delay>3600</delay>
-                    <history>27d</history>
+                    <delay>1h</delay>
                     <units>B</units>
                     <applications>
                         <application>
@@ -708,8 +758,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Used swap space</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.swap.size[,used]</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <units>B</units>
                     <applications>
                         <application>
@@ -721,8 +769,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>System information</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.uname</key>
-                    <delay>3600</delay>
-                    <history>27d</history>
+                    <delay>1h</delay>
                     <trends>0</trends>
                     <value_type>CHAR</value_type>
                     <description>The information as normally returned by 'uname -a'.</description>
@@ -735,7 +782,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <triggers>
                         <trigger>
                             <expression>{diff(0)}&gt;0</expression>
-                            <name>Host information was changed on {HOST.NAME}</name>
+                            <name>Host information was changed</name>
                             <priority>INFO</priority>
                         </trigger>
                     </triggers>
@@ -744,8 +791,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>System uptime</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.uptime</key>
-                    <delay>600</delay>
-                    <history>27d</history>
+                    <delay>10m</delay>
                     <units>uptime</units>
                     <applications>
                         <application>
@@ -755,7 +801,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <triggers>
                         <trigger>
                             <expression>{change(0)}&lt;0</expression>
-                            <name>{HOST.NAME} has just been restarted</name>
+                            <name>Host has just been restarted</name>
                             <priority>INFO</priority>
                         </trigger>
                     </triggers>
@@ -764,8 +810,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Number of logged in users</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.users.num</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <description>Number of users who are currently logged in.</description>
                     <applications>
                         <application>
@@ -777,8 +821,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Checksum of $1</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vfs.file.cksum[/etc/passwd]</key>
-                    <delay>3600</delay>
-                    <history>27d</history>
+                    <delay>1h</delay>
                     <applications>
                         <application>
                             <name>OS</name>
@@ -787,7 +830,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <triggers>
                         <trigger>
                             <expression>{diff(0)}&gt;0</expression>
-                            <name>/etc/passwd has been changed on {HOST.NAME}</name>
+                            <name>/etc/passwd has been changed</name>
                             <priority>WARNING</priority>
                         </trigger>
                     </triggers>
@@ -796,8 +839,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Active memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[active]</key>
-                    <delay>60</delay>
-                    <history>28d</history>
                     <units>B</units>
                     <description>Memory used by processes</description>
                     <applications>
@@ -810,8 +851,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Available memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[available]</key>
-                    <delay>60</delay>
-                    <history>27d</history>
                     <units>B</units>
                     <description>Available memory is defined as free+cached+buffers memory.</description>
                     <applications>
@@ -822,7 +861,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <triggers>
                         <trigger>
                             <expression>{last(0)}&lt;20M</expression>
-                            <name>Lack of available memory on server {HOST.NAME}</name>
+                            <name>Lack of available memory</name>
                             <priority>AVERAGE</priority>
                         </trigger>
                     </triggers>
@@ -831,8 +870,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Buffered memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[buffers]</key>
-                    <delay>60</delay>
-                    <history>28d</history>
                     <status>DISABLED</status>
                     <units>B</units>
                     <description>Cache d'entrées des IO disque.&#13;
@@ -848,8 +885,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Cached memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[cached]</key>
-                    <delay>60</delay>
-                    <history>28d</history>
                     <units>B</units>
                     <description>amount of memory used to cache data</description>
                     <applications>
@@ -862,8 +897,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Free memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[free]</key>
-                    <delay>60</delay>
-                    <history>28d</history>
                     <units>B</units>
                     <description>amount of memory completely free and ready to be used directly.</description>
                     <applications>
@@ -876,8 +909,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Inactive memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[inactive]</key>
-                    <delay>60</delay>
-                    <history>28d</history>
                     <units>B</units>
                     <description>amount of memory that contains data that is no longer used (can be directly freed if needed)</description>
                     <applications>
@@ -890,8 +921,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Available memory (percent)</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[pavailable]</key>
-                    <delay>60</delay>
-                    <history>28d</history>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <description>Available memory is defined as free+cached+buffers memory.</description>
@@ -911,8 +940,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Shared memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[shared]</key>
-                    <delay>60</delay>
-                    <history>28d</history>
                     <status>DISABLED</status>
                     <units>B</units>
                     <description>quantité de mémoire partagée entre plusieurs processus&#13;
@@ -928,8 +955,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Total memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[total]</key>
-                    <delay>3600</delay>
-                    <history>27d</history>
+                    <delay>1h</delay>
                     <units>B</units>
                     <description>quantité de mémoire totale</description>
                     <applications>
@@ -942,8 +968,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Used memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[used]</key>
-                    <delay>60</delay>
-                    <history>28d</history>
                     <status>DISABLED</status>
                     <units>B</units>
                     <description>Item désactivé car non utilisé</description>
@@ -957,8 +981,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Wired memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[wired]</key>
-                    <delay>60</delay>
-                    <history>28d</history>
                     <units>B</units>
                     <description>amount of memory used by the kernel, can neither be unloaded in swap, nor compressed.</description>
                     <applications>
@@ -973,7 +995,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Gateways Discovery</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.discovery[gw]</key>
-                    <delay>300s</delay>
+                    <delay>5m</delay>
                     <description>Gateway Discovery</description>
                     <item_prototypes>
                         <item_prototype>
@@ -1125,7 +1147,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Network interface discovery</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.discovery[interfaces]</key>
-                    <delay>3600s</delay>
+                    <delay>1h</delay>
                     <filter>
                         <conditions>
                             <condition>
@@ -1142,20 +1164,23 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>Incoming Errors on {#IFDESCR}</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>net.if.in[{#IFNAME},errors]</key>
-                            <delay>60</delay>
-                            <history>7d</history>
                             <applications>
                                 <application>
                                     <name>Network interfaces</name>
                                 </application>
                             </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>CHANGE_PER_SECOND</type>
+                                    <params/>
+                                </step>
+                            </preprocessing>
                         </item_prototype>
                         <item_prototype>
                             <name>Incoming network traffic on {#IFDESCR}</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>net.if.in[{#IFNAME}]</key>
-                            <delay>60</delay>
-                            <history>7d</history>
+                            <delay>2m</delay>
                             <units>bps</units>
                             <applications>
                                 <application>
@@ -1177,20 +1202,23 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>Outgoing errors on {#IFDESCR}</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>net.if.out[{#IFNAME},errors]</key>
-                            <delay>60</delay>
-                            <history>7d</history>
                             <applications>
                                 <application>
                                     <name>Network interfaces</name>
                                 </application>
                             </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>CHANGE_PER_SECOND</type>
+                                    <params/>
+                                </step>
+                            </preprocessing>
                         </item_prototype>
                         <item_prototype>
                             <name>Outgoing network traffic on {#IFDESCR}</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>net.if.out[{#IFNAME}]</key>
-                            <delay>60</delay>
-                            <history>7d</history>
+                            <delay>2m</delay>
                             <units>bps</units>
                             <applications>
                                 <application>
@@ -1241,14 +1269,13 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>OpenVPN Client Discovery</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.discovery[openvpn_client]</key>
-                    <delay>300s</delay>
+                    <delay>5m</delay>
                     <description>OpenVPN Client Discovery</description>
                     <item_prototypes>
                         <item_prototype>
                             <name>OpenVPN Client  {#NAME} Tunnel Status</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[openvpn_clientvalue,{#CLIENT},status]</key>
-                            <delay>60s</delay>
                             <applications>
                                 <application>
                                     <name>OpenVPN Client</name>
@@ -1272,13 +1299,12 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>OpenVPN Server Discovery</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.discovery[openvpn_server]</key>
-                    <delay>300s</delay>
+                    <delay>5m</delay>
                     <item_prototypes>
                         <item_prototype>
                             <name>OpenVPN Server {#NAME} Clients Connected</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[openvpn_servervalue,{#SERVER},conns]</key>
-                            <delay>60s</delay>
                             <applications>
                                 <application>
                                     <name>OpenVPN Server</name>
@@ -1289,7 +1315,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>OpenVPN Server {#NAME} Mode</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[openvpn_servervalue,{#SERVER},mode]</key>
-                            <delay>300s</delay>
+                            <delay>5m</delay>
                             <applications>
                                 <application>
                                     <name>OpenVPN Server</name>
@@ -1303,7 +1329,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>OpenVPN Server {#NAME} Port</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[openvpn_servervalue,{#SERVER},port]</key>
-                            <delay>300s</delay>
+                            <delay>5m</delay>
                             <applications>
                                 <application>
                                     <name>OpenVPN Server</name>
@@ -1314,7 +1340,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>OpenVPN Server {#NAME} Tunnel Status</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[openvpn_servervalue,{#SERVER},status]</key>
-                            <delay>60s</delay>
                             <applications>
                                 <application>
                                     <name>OpenVPN Server</name>
@@ -1338,22 +1363,13 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Services Discovery</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.discovery[services]</key>
-                    <delay>300s</delay>
-                    <filter>
-                        <conditions>
-                            <condition>
-                                <macro>{#SERVICE}</macro>
-                                <value>@pfSense service names for discovery</value>
-                                <formulaid>A</formulaid>
-                            </condition>
-                        </conditions>
-                    </filter>
+                    <delay>5m</delay>
                     <item_prototypes>
                         <item_prototype>
-                            <name>Service {#DESCRIPTION}  enabled on CARP Slave</name>
+                            <name>Service {#DESCRIPTION} enabled on CARP Slave</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[service_value,{#SERVICE},run_on_carp_slave]</key>
-                            <delay>600s</delay>
+                            <delay>10m</delay>
                             <applications>
                                 <application>
                                     <name>Services</name>
@@ -1367,7 +1383,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>Service {#DESCRIPTION} Status</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[service_value,{#SERVICE},status]</key>
-                            <delay>60s</delay>
                             <applications>
                                 <application>
                                     <name>Services</name>
@@ -1380,7 +1395,8 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     </item_prototypes>
                     <trigger_prototypes>
                         <trigger_prototype>
-                            <expression>{Template pfSense Active:pfsense.value[service_value,{#SERVICE},status].last()}=0 and (&#13;
+                            <expression>{Template pfSense Active:pfsense.value[service_value,{#SERVICE},status].last()}=0 &#13;
+and {$PFSENSE_SRVC_MONITORING:&quot;{#SERVICE}&quot;}=1 and (&#13;
 &#13;
 ({Template pfSense Active:pfsense.value[service_value,{#SERVICE},run_on_carp_slave].last()}=1 and &#13;
 {Template pfSense Active:pfsense.value[carp_status].last()}=2)&#13;
@@ -1395,7 +1411,26 @@ or&#13;
 )</expression>
                             <name>Service {#DESCRIPTION} is not running</name>
                             <priority>HIGH</priority>
-                            <description>Service is not running</description>
+                            <description>Service is not running&#13;
+&#13;
+If you want to skip the trigger for this service, add the macro $PFSENSE_SRVC_MONITORING:&quot;{#SERVICE}&quot;=0&#13;
+&#13;
+0 = Service monitoring disabled&#13;
+1 = Service monitoring check if running&#13;
+2 = Service monitoring check if not running</description>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <expression>{Template pfSense Active:pfsense.value[service_value,{#SERVICE},status].last()}=1 and {$PFSENSE_SRVC_MONITORING:&quot;{#SERVICE}&quot;}=2 and (({Template pfSense Active:pfsense.value[service_value,{#SERVICE},run_on_carp_slave].last()}=1 and {Template pfSense Active:pfsense.value[carp_status].last()}=2) or {Template pfSense Active:pfsense.value[carp_status].last()}=1 or {Template pfSense Active:pfsense.value[carp_status].last()}=0)</expression>
+                            <name>Service {#DESCRIPTION} is running</name>
+                            <priority>HIGH</priority>
+                            <description>Service is running&#13;
+&#13;
+If you want to skip the trigger for this service, remove the macro $PFSENSE_SRVC_MONITORING:&quot;{#SERVICE}&quot;=2&#13;
+Alternatively you can also set the macro to 1 or 0.&#13;
+&#13;
+0 = Service monitoring disabled&#13;
+1 = Service monitoring check if running&#13;
+2 = Service monitoring check if not running</description>
                         </trigger_prototype>
                     </trigger_prototypes>
                 </discovery_rule>
@@ -1403,7 +1438,7 @@ or&#13;
                     <name>Mounted filesystem discovery</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vfs.fs.discovery</key>
-                    <delay>3600</delay>
+                    <delay>1h</delay>
                     <filter>
                         <conditions>
                             <condition>
@@ -1420,7 +1455,6 @@ or&#13;
                             <name>Free inodes on $1 (percentage)</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>vfs.fs.inode[{#FSNAME},pfree]</key>
-                            <delay>60</delay>
                             <history>7d</history>
                             <value_type>FLOAT</value_type>
                             <units>%</units>
@@ -1441,7 +1475,6 @@ or&#13;
                             <name>Free disk space on $1</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>vfs.fs.size[{#FSNAME},free]</key>
-                            <delay>60</delay>
                             <history>7d</history>
                             <units>B</units>
                             <applications>
@@ -1454,7 +1487,6 @@ or&#13;
                             <name>Free disk space on $1 (percentage)</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>vfs.fs.size[{#FSNAME},pfree]</key>
-                            <delay>60</delay>
                             <history>7d</history>
                             <value_type>FLOAT</value_type>
                             <units>%</units>
@@ -1475,7 +1507,7 @@ or&#13;
                             <name>Total disk space on $1</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>vfs.fs.size[{#FSNAME},total]</key>
-                            <delay>3600</delay>
+                            <delay>1h</delay>
                             <history>7d</history>
                             <units>B</units>
                             <applications>
@@ -1488,7 +1520,6 @@ or&#13;
                             <name>Used disk space on $1</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>vfs.fs.size[{#FSNAME},used]</key>
-                            <delay>60</delay>
                             <history>7d</history>
                             <units>B</units>
                             <applications>
@@ -1554,6 +1585,34 @@ or&#13;
                 <macro>
                     <macro>{$EXPECTED_CARP_STATUS}</macro>
                     <value>0</value>
+                </macro>
+                <macro>
+                    <macro>{$PFSENSE_CERT_EXPIRATION.AVERAGE}</macro>
+                    <value>48h</value>
+                </macro>
+                <macro>
+                    <macro>{$PFSENSE_CERT_EXPIRATION.WARN}</macro>
+                    <value>10d</value>
+                </macro>
+                <macro>
+                    <macro>{$PFSENSE_SRVC_MONITORING}</macro>
+                    <value>1</value>
+                    <description>Enable monitoring of Services</description>
+                </macro>
+                <macro>
+                    <macro>{$PFSENSE_SRVC_MONITORING:&quot;dnsbl&quot;}</macro>
+                    <value>2</value>
+                    <description>Enable monitoring of Service pfBlockerNG DNSBL Web Server (check if NOT running)</description>
+                </macro>
+                <macro>
+                    <macro>{$PFSENSE_SRVC_MONITORING:&quot;iperf&quot;}</macro>
+                    <value>0</value>
+                    <description>Disable monitoring of Service iperf Network Performance Testing Daemon/Client</description>
+                </macro>
+                <macro>
+                    <macro>{$PFSENSE_SRVC_MONITORING:&quot;pcscd&quot;}</macro>
+                    <value>2</value>
+                    <description>Enable monitoring of PC/SC Smart Card Daemon (check if NOT running) https://redmine.pfsense.org/issues/12095</description>
                 </macro>
             </macros>
             <screens>
@@ -1658,15 +1717,16 @@ or&#13;
     <triggers>
         <trigger>
             <expression>{Template pfSense Active:pfsense.expected_carp_status.last()}&lt;&gt;0 and {Template pfSense Active:pfsense.value[carp_status].last()}&lt;&gt;{$EXPECTED_CARP_STATUS}</expression>
-            <name>CARP Status not Expected on {HOST.NAME}</name>
+            <name>CARP Status not Expected</name>
             <priority>HIGH</priority>
             <description>pfSense CARP is not in the state Expected. This means that a failover could be in process.</description>
         </trigger>
         <trigger>
             <expression>({Template pfSense Active:pfsense.value[system,version].last()}&lt;&gt;{Template pfSense Active:pfsense.value[system,installed_version].last()})=1</expression>
-            <name>New Version Available on {HOST.NAME}</name>
+            <name>New Version of pfSense {ITEM.LASTVALUE} Available</name>
+            <opdata>Current: {ITEM.LASTVALUE2}</opdata>
             <priority>INFO</priority>
-            <description>Noify of new version of pfsense available</description>
+            <description>Notify of new version of pfsense available</description>
         </trigger>
     </triggers>
     <graphs>
