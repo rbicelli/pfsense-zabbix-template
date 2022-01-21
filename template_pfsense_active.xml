@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>5.0</version>
-    <date>2022-01-07T10:04:09Z</date>
+    <date>2022-01-21T12:04:27Z</date>
     <groups>
         <group>
             <name>Templates/Futur-Tech/Applications</name>
@@ -20,7 +20,7 @@ https://github.com/Futur-Tech/futur-tech-zabbix-pfsense</description>
                     <name>pfSense Active Speedtest</name>
                 </template>
                 <template>
-                    <name>Template Futur-Tech Module Zabbix agent active</name>
+                    <name>Template Module Zabbix agent active</name>
                 </template>
                 <template>
                     <name>Template pfSense Active IPsec</name>
@@ -276,6 +276,7 @@ https://github.com/Futur-Tech/futur-tech-zabbix-pfsense</description>
                 </item>
                 <item>
                     <name>Certificates Manager: latest &quot;validFrom&quot;</name>
+                    <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.value[cert_date,validFrom.max]</key>
                     <units>unixtime</units>
                     <description>This item will return will return the latest date &quot;validFrom&quot; from all the certificates (including CA). This is used to find new/renewed certificates.</description>
@@ -302,6 +303,7 @@ https://github.com/Futur-Tech/futur-tech-zabbix-pfsense</description>
                 </item>
                 <item>
                     <name>Certificates Manager: earliest &quot;validTo&quot;</name>
+                    <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.value[cert_date,validTo.min]</key>
                     <units>unixtime</units>
                     <description>This item will return will return the earliest date &quot;validTo&quot; from all the certificates (including CA). This is used to find expiring certificates.</description>
