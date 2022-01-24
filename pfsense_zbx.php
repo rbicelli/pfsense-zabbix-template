@@ -1069,6 +1069,29 @@ function pfz_get_smart_status(){
 	echo $status;
 }
 
+// Certificats validity date
+function pfz_get_cert_date($valuekey){
+    global $config;
+    
+    $value = 0;
+	foreach (array("cert", "ca") as $cert_type) {
+		switch ($valuekey){
+		case "validFrom.max":
+			foreach ($config[$cert_type] as $cert) {
+				$certinfo = openssl_x509_parse(base64_decode($cert[crt]));
+				if ($value == 0 or $value < $certinfo['validFrom_time_t']) $value = $certinfo['validFrom_time_t'];
+            }
+			break;
+		case "validTo.min":
+			foreach ($config[$cert_type] as $cert) {
+				$certinfo = openssl_x509_parse(base64_decode($cert[crt]));
+				if ($value == 0 or $value > $certinfo['validTo_time_t']) $value = $certinfo['validTo_time_t'];
+			}
+			break;
+		}
+	}
+	echo $value;
+}
 
 // File is present
 function pfz_file_exists($filename) {
@@ -1269,6 +1292,9 @@ switch (strtolower($argv[1])){
      case "smart_status":
           pfz_get_smart_status();
           break;     	  
+     case "cert_date":
+          pfz_get_cert_date($argv[2]);
+          break;
      default:
           pfz_test();
 }
