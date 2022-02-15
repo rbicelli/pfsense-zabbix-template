@@ -19,6 +19,7 @@ Tested with pfSense 2.5.x, Zabbix 4.0, Zabbix 5.0
  - Basic Service Discovery and Monitoring (Service Status)
  - pfSense Version/Update Available
  - Packages Update Available
+ - Certificats Monitoring
  
 **Template pfSense Active: OpenVPN Server User Auth**
 
@@ -46,8 +47,9 @@ From **Diagnostics/Command Prompt** input this one-liner:
 curl --create-dirs -o /root/scripts/pfsense_zbx.php https://raw.githubusercontent.com/rbicelli/pfsense-zabbix-template/master/pfsense_zbx.php
 ```
 
-Then install package "Zabbix Agent 4" on your pfSense Box
+> You can add this command to **Services** > **Shellcmd** (which is available in pfSense Package Manager) in order to download the latest version of the script, each time you reboot or restore a config backup.
 
+Then install package "Zabbix Agent 5" (or "Zabbix Agent 4") on your pfSense Box
 
 In Advanced Features-> User Parameters
 
@@ -87,8 +89,10 @@ For running speedtests on WAN interfaces you have to install the speedtest packa
 From **Diagnostics/Command Prompt** input this commands:
 
 ```bash
-pkg update && pkg install -y py38-speedtest-cli
+pkg update && pkg install -y  -g 'py*-speedtest-cli'
 ```
+
+> You can add this command also to **Services** > **Shellcmd** if you want automatic install at boot.
 
 Speedtest python package could be broken at the moment, so you could need an extra step, *only if manually executing speedtest results in an error*: download the latest version from package author's github repo.
 
