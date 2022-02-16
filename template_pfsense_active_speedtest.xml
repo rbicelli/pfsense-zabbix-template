@@ -33,14 +33,14 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>WAN Interfaces</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.discovery[wan]</key>
-                    <delay>300s</delay>
+                    <delay>6h</delay>
                     <description>Discover WAN Interfaces</description>
                     <item_prototypes>
                         <item_prototype>
                             <name>Speedtest Download on {#IFDESCR}</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[if_speedtest_value,{#IFNAME},download]</key>
-                            <delay>3600s</delay>
+                            <delay>30m</delay>
                             <value_type>FLOAT</value_type>
                             <units>bps</units>
                             <description>Download speed determined by Ookla Speedtest package</description>
@@ -54,7 +54,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>Speedtest Ping on {#IFDESCR}</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[if_speedtest_value,{#IFNAME},ping]</key>
-                            <delay>3600s</delay>
+                            <delay>30m</delay>
                             <value_type>FLOAT</value_type>
                             <units>ms</units>
                             <description>Ping determined by Ookla Speedtest package</description>
@@ -68,7 +68,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>Speedtest Upload on {#IFDESCR}</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[if_speedtest_value,{#IFNAME},upload]</key>
-                            <delay>3600s</delay>
+                            <delay>30m</delay>
                             <value_type>FLOAT</value_type>
                             <units>bps</units>
                             <description>Ping determined by Ookla Speedtest package</description>
