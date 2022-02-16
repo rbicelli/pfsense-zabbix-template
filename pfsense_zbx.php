@@ -45,10 +45,10 @@ define('COMMAND_HANDLERS', [
     }),
     "ipsec_ph1" => $exec_2(fn($p0, $p1) => pfz_ipsec_ph1($p0, $p1)),
     "ipsec_ph2" => $exec_2(fn($p0, $p1) => pfz_ipsec_ph2($p0, $p1)),
-    "openvpn_clientvalue" => $exec_2(fn($p0, $p1) => pfz_openvpn_clientvalue($p0, $p1)),
+    "openvpn_clientvalue" => $exec_2(fn($p0, $p1) => pfz_openvpn_client_value($p0, $p1)),
     "openvpn_server_uservalue" => $exec_2(fn($p0, $p1) => pfz_openvpn_server_uservalue($p0, $p1)),
     "openvpn_server_uservalue_numeric" => $exec_2(fn($p0, $p1) => pfz_openvpn_server_uservalue($p0, $p1, "0")),
-    "openvpn_servervalue" => $exec_2(fn($p0, $p1) => pfz_openvpn_servervalue($p0, $p1)),
+    "openvpn_servervalue" => $exec_2(fn($p0, $p1) => pfz_openvpn_server_value($p0, $p1)),
     "service_value" => $exec_2(fn($p0, $p1) => pfz_service_value($p0, $p1)),
     "speedtest_cron" => $exec_0(function () {
         pfz_speedtest_cron_install();
@@ -521,25 +521,25 @@ function pfz_replacespecialchars($inputstr,$reverse=false){
 	 return ($resultstr);
 }
 
-function pfz_openvpn_clientvalue($client_id, $valuekey, $default="none"){
-     $clients = openvpn_get_active_clients();     
-     foreach($clients as $client) {
-          if($client['vpnid']==$client_id)
-               $value = $client[$valuekey];
-     }
+function pfz_openvpn_client_value($client_id, $value_key, $fallback_value = "none")
+{
+    $clients = openvpn_get_active_clients();
 
-     switch ($valuekey){        
-               
-          case "status":
-               $value = pfz_value_mapping("openvpn.client.status", $value);
-               break;
+    $client = array_first($clients, fn($client) => $client['vpnid'] == $client_id);
 
-     }
+    if (empty($client)) {
+        return $fallback_value;
+    }
 
-     if ($value=="") $value=$default;
-     echo $value;
+    $maybe_value = $client[$value_key];
+
+    $is_known_value_key = array_key_exists($value_key, OPENVPN_CLIENT_VALUE);
+    if ($is_known_value_key) {
+        return OPENVPN_CLIENT_VALUE[$value_key]($maybe_value);
+    }
+
+    return ($maybe_value == "") ? $fallback_value : $maybe_value;
 }
-
 
 // Services Discovery
 // 2020-03-27: Added space replace with __ for issue #12
