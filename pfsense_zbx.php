@@ -665,11 +665,7 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 	$a_phase1 = &$config['ipsec']['phase1'];
 	$conmap = array();
 	foreach ($a_phase1 as $ph1ent) {
-		if (get_ipsecifnum($ph1ent['ikeid'], 0)) {
-			$cname = "con" . get_ipsecifnum($ph1ent['ikeid'], 0);
-		} else {
-			$cname = "con{$ph1ent['ikeid']}00000";
-		}
+		$cname = ipsec_conid($ph1ent);
 		$conmap[$cname] = $ph1ent['ikeid'];
 	}
 
