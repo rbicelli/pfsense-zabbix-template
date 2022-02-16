@@ -137,6 +137,11 @@ define("OPENVPN_SERVER_VALUES", [
     "mode" => fn($server_value) => pfz_value_mapping("openvpn.server.mode", $server_value)
 ]);
 
+define("IPSEC_PH1_VALUES", [
+    'status' => fn($ike_id) => pfz_ipsec_status($ike_id),
+    'disabled' => fn() => "0",
+]);
+
 require_once('globals.inc');
 require_once('functions.inc');
 require_once('config.inc');
@@ -166,6 +171,12 @@ function array_first(array $haystack, Callback $match)
     }
 
     return null;
+}
+
+function pfz_cfg() { // Abstract global variable from code
+    global $config;
+
+    return $config;
 }
 
 //Testing function, for template creating purpose
@@ -202,7 +213,7 @@ function pfz_test(){
         echo "IPsec: \n";
 	
 		require_once("ipsec.inc");
-		global $config;
+		$config = pfz_cfg();
 		init_config_arr(array('ipsec', 'phase1'));
 		init_config_arr(array('ipsec', 'phase2'));
 		$a_phase2 = &$config['ipsec']['phase2'];
@@ -682,7 +693,7 @@ function pfz_gw_value($gw, $valuekey) {
 function pfz_ipsec_discovery_ph1(){
 	
 	require_once("ipsec.inc");	
-	global $config;
+	$config = pfz_cfg();
 	init_config_arr(array('ipsec', 'phase1'));
 	$a_phase1 = &$config['ipsec']['phase1'];
 	
@@ -701,43 +712,45 @@ function pfz_ipsec_discovery_ph1(){
 	
 }
 
-function pfz_ipsec_ph1($ikeid,$valuekey){	
-	// Get Value from IPsec Phase 1 Configuration
-	// If Getting "disabled" value only check item presence in config array
+function pfz_ipsec_ph1($ike_id, $value_key)
+{
+    // Get Value from IPsec Phase 1 Configuration
+    // If Getting "disabled" value only check item presence in config array
+    require_once("ipsec.inc");
+    $config = pfz_cfg();
+    init_config_arr(array('ipsec', 'phase1'));
+    $a_phase1 = &$config['ipsec']['phase1'];
 
-	require_once("ipsec.inc");
-	global $config;
-	init_config_arr(array('ipsec', 'phase1'));
-	$a_phase1 = &$config['ipsec']['phase1'];	
+    $is_known_ipsec_key = array_key_exists($value_key, IPSEC_PH1_VALUES);
+    if ($is_known_ipsec_key) {
+        echo IPSEC_PH1_VALUES[$value_key]($ike_id);
+        return;
+    }
 
-	$value = "";	
-	switch ($valuekey) {
-		case 'status':
-			$value = pfz_ipsec_status($ikeid);
-			break;
-		case 'disabled':
-			$value = "0";		
-		default:
-			foreach ($a_phase1 as $data) {
-				if ($data['ikeid'] == $ikeid) {
-					if(array_key_exists($valuekey,$data)) {
-					if ($valuekey=='disabled')
-						$value = "1";
-					else
-						$value = pfz_value_mapping("ipsec." . $valuekey, $data[$valuekey], $data[$valuekey]);
-					break;
-					}
-				}
-			}		
-	}
-	echo $value;
+    $maybe_ike_match = array_first($a_phase1, fn($d) => $d["ikeid"] == $ike_id);
+    if (empty($maybe_ike_match)) {
+        echo "";
+        return;
+    }
+
+    if (!array_key_exists($value_key, $maybe_ike_match)) {
+        echo "";
+        return;
+    }
+
+    if ($value_key == 'disabled') {
+        echo "1";
+        return;
+    }
+
+    echo pfz_value_mapping("ipsec." . $value_key, $maybe_ike_match[$value_key]);
 }
 
 function pfz_ipsec_discovery_ph2(){
 	
 	require_once("ipsec.inc");
 	
-	global $config;
+	$config = pfz_cfg();
 	init_config_arr(array('ipsec', 'phase2'));
 	$a_phase2 = &$config['ipsec']['phase2'];
 	
@@ -761,7 +774,7 @@ function pfz_ipsec_discovery_ph2(){
 
 function pfz_ipsec_ph2($uniqid, $valuekey){
 	require_once("ipsec.inc");
-	global $config;
+	$config = pfz_cfg();
 	init_config_arr(array('ipsec', 'phase2'));
 	$a_phase2 = &$config['ipsec']['phase2'];	
 	
@@ -795,7 +808,7 @@ function pfz_ipsec_ph2($uniqid, $valuekey){
 function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 		
 	require_once("ipsec.inc");
-	global $config;
+	$config = pfz_cfg();
 	init_config_arr(array('ipsec', 'phase1'));
 	
 	$a_phase1 = &$config['ipsec']['phase1'];
@@ -917,7 +930,7 @@ function pfz_get_temperature($sensorid){
 
 function pfz_carp_status($echo = true){
      //Detect CARP Status
-     global $config;
+     $config = pfz_cfg();
      $status_return = 0;
      $status = get_carp_status();
      $carp_detected_problems = get_single_sysctl("net.inet.carp.demotion");
@@ -1228,7 +1241,7 @@ function pfz_get_smart_status()
 
 // Certificats validity date
 function pfz_get_cert_date($valuekey){
-    global $config;
+    $config = pfz_cfg();
     
     $value = 0;
 	foreach (array("cert", "ca") as $cert_type) {
