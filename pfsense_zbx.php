@@ -1151,20 +1151,15 @@ function pfz_dhcp($section, $valuekey=""){
 	}
 }
 
-//Packages
-function pfz_packages_uptodate(){
-	require_once("pkg-utils.inc");
-	$installed_packages = get_pkg_info('all', false, true);
-		
-	$ret = 0;
+// Packages
+function pfz_packages_uptodate()
+{
+    require_once("pkg-utils.inc");
+    $installed_packages = get_pkg_info("all", false, true);
 
-	foreach ($installed_packages as $package){
-		if ($package['version']!=$package['installed_version']){
-			$ret ++;
-		}
-	}
-	
-	return $ret;
+    return count(array_filter(
+        $installed_packages,
+        fn($p) => $p["version"] != $p["installed_version"]));
 }
 
 // System Information
