@@ -110,6 +110,20 @@ define("VALUE_MAPPINGS", [
         "installed" => 1,
         "rekeyed" => 2]]);
 
+const SMART_DEV_PASSED = "PASSED";
+const SMART_DEV_OK = "OK";
+const SMART_DEV_UNKNOWN = "";
+
+const SMART_OK = 0;
+const SMART_UNKNOWN = 2;
+const SMART_ERROR = 1;
+
+define('SMART_DEV_STATUS', [
+    SMART_DEV_PASSED => SMART_OK,
+    SMART_DEV_OK => SMART_OK,
+    SMART_DEV_UNKNOWN => SMART_UNKNOWN
+]);
+
 require_once('globals.inc');
 require_once('functions.inc');
 require_once('config.inc');
@@ -1164,10 +1178,7 @@ function pfz_get_system_value($section){
                break;
           case "new_version_available":
                $pkgver = get_system_pkg_version();
-               if ($pkgver['version']==$pkgver['installed_version'])
-                    echo "0";
-               else
-                    echo "1";
+               echo pfz_bint($pkgver['version']==$pkgver['installed_version']);
                break;
           case "packages_update":
           		echo pfz_packages_uptodate();
@@ -1177,35 +1188,23 @@ function pfz_get_system_value($section){
 
 //S.M.A.R.T Status
 // Taken from /usr/local/www/widgets/widgets/smart_status.widget.php
-function pfz_get_smart_status(){
-
-	$devs = get_smart_drive_list();
-	$status = 0;
-	foreach ($devs as $dev)  { ## for each found drive do                
-                $smartdrive_is_displayed = true;
-                $dev_ident = exec("diskinfo -v /dev/$dev | grep ident   | awk '{print $1}'"); ## get identifier from drive
-                $dev_state = trim(exec("smartctl -H /dev/$dev | awk -F: '/^SMART overall-health self-assessment test result/ {print $2;exit}
+function pfz_get_smart_status()
+{
+    foreach (get_smart_drive_list() as $dev) { ## for each found drive do                
+        $dev_state = trim(exec("smartctl -H /dev/$dev | awk -F: '/^SMART overall-health self-assessment test result/ {print $2;exit}
 /^SMART Health Status/ {print $2;exit}'")); ## get SMART state from drive
-                switch ($dev_state) {
-                        case "PASSED":
-                        case "OK":
-                                //OK
-                                $status=0;                                
-                                break;
-                        case "":
-                                //Unknown
-                                $status=2;
-                                return $status;
-                                break;
-                        default:
-                        		//Error
-                                $status=1;
-                                return $status;
-                                break;
-                }
-	}
-	
-	echo $status;
+        $is_known_state = array_key_exists($dev_state, SMART_DEV_STATUS);
+        if (!$is_known_state) {
+            return SMART_ERROR; // ED This is probably a bug, status should be echoed
+        }
+
+        $status = SMART_DEV_STATUS[$dev_state];
+        if ($status !== SMART_OK) {
+            return $status; // ED This is probably a bug, status should be echoed
+        }
+    }
+
+    echo SMART_OK;
 }
 
 // Certificats validity date
@@ -1234,10 +1233,7 @@ function pfz_get_cert_date($valuekey){
 
 // File is present
 function pfz_file_exists($filename) {
-	if (file_exists($filename))
-		echo "1";
-	else
-		echo "0";
+    echo pfz_bint(file_exists($filename));
 }
 
 // Value mappings
