@@ -1167,23 +1167,26 @@ function pfz_packages_uptodate(){
 	return $ret;
 }
 
-//System Information
-function pfz_get_system_value($section){
-     switch ($section){
-          case "version":
-               echo( get_system_pkg_version()['version']);
-               break;
-          case "installed_version":
-               echo( get_system_pkg_version()['installed_version']);
-               break;
-          case "new_version_available":
-               $pkgver = get_system_pkg_version();
-               echo pfz_bint($pkgver['version']==$pkgver['installed_version']);
-               break;
-          case "packages_update":
-          		echo pfz_packages_uptodate();
-          		break;
-     }
+// System Information
+function pfz_get_system_value($section)
+{
+    if ($section === "packages_update") {
+        echo pfz_packages_uptodate();
+        return;
+    }
+
+    $system_pkg_version = get_system_pkg_version();
+    $version = $system_pkg_version["version"];
+    $installed_version = $system_pkg_version["installed_version"];
+
+    if ($section === "new_version_available") {
+        echo pfz_bint($version, $installed_version);
+        return;
+    }
+
+    if (array_key_exists($section, $system_pkg_version)) {
+        echo $system_pkg_version[$section];
+    }
 }
 
 //S.M.A.R.T Status
