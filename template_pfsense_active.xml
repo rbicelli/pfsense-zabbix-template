@@ -40,6 +40,9 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Memory</name>
                 </application>
                 <application>
+                    <name>Network Interfaces</name>
+                </application>
+                <application>
                     <name>Network Limits</name>
                 </application>
                 <application>
@@ -1149,7 +1152,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <history>7d</history>
                             <applications>
                                 <application>
-                                    <name>Network interfaces</name>
+                                    <name>Network Interfaces</name>
                                 </application>
                             </applications>
                         </item_prototype>
@@ -1161,7 +1164,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <units>bps</units>
                             <applications>
                                 <application>
-                                    <name>Network interfaces</name>
+                                    <name>Network Interfaces</name>
                                 </application>
                             </applications>
                             <preprocessing>
@@ -1182,7 +1185,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <history>7d</history>
                             <applications>
                                 <application>
-                                    <name>Network interfaces</name>
+                                    <name>Network Interfaces</name>
                                 </application>
                             </applications>
                         </item_prototype>
@@ -1194,7 +1197,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <units>bps</units>
                             <applications>
                                 <application>
-                                    <name>Network interfaces</name>
+                                    <name>Network Interfaces</name>
                                 </application>
                             </applications>
                             <preprocessing>
