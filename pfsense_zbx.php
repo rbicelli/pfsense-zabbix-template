@@ -130,6 +130,13 @@ define("DHCP_SECTIONS", [
     },
 ]);
 
+define("OPENVPN_SERVER_VALUES", [
+    // Client Connections: is an array so it is sufficient to count elements                    
+    "conns" => fn($server_value) => is_array($server_value) ? count($server_value) : 0,
+    "status" => fn($server_value) => pfz_value_mapping("openvpn.server.status", $server_value),
+    "mode" => fn($server_value) => pfz_value_mapping("openvpn.server.mode", $server_value)
+]);
+
 require_once('globals.inc');
 require_once('functions.inc');
 require_once('config.inc');
@@ -148,6 +155,18 @@ require_once("service-utils.inc");
 require_once('pkg-utils.inc'); 
 
 //For DHCP
+
+// Utilities
+function array_first(array $haystack, Callback $match)
+{
+    foreach ($haystack as $needle) {
+        if ($match($needle)) {
+            return $needle;
+        }
+    }
+
+    return null;
+}
 
 //Testing function, for template creating purpose
 function pfz_test(){
@@ -373,48 +392,47 @@ function pfz_openvpn_serverdiscovery() {
      echo $json_string;
 }
 
+function pfz_retrieve_server_value($maybe_server, $value_key)
+{
+    if (empty($maybe_server)) {
+        return null;
+    }
+
+    $raw_value = $maybe_server[$value_key];
+
+    if (in_array($maybe_server["mode"], ["server_user", "server_tls_user", "server_tls"])) {
+        return $raw_value == "" ? "server_user_listening" : $raw_value;
+    }
+
+    if ($maybe_server["mode"] == "p2p_tls") {
+        // For p2p_tls, ensure we have one client, and return up if it's the case
+        if ($raw_value == "") {
+            $has_at_least_one_connection =
+                is_array($maybe_server["conns"]) && count($maybe_server["conns"]) > 0;
+
+            return $has_at_least_one_connection ? "up" : "down";
+        }
+    }
+
+    return $raw_value;
+}
 
 // Get OpenVPN Server Value
-function pfz_openvpn_servervalue($server_id,$valuekey){
-     $servers = pfz_openvpn_get_all_servers();     
-     
-     foreach($servers as $server) {
-          if($server['vpnid']==$server_id){
-               $value = $server[$valuekey];
-               if ($valuekey=="status") {
-                    if ( ($server['mode']=="server_user") || ($server['mode']=="server_tls_user") || ($server['mode']=="server_tls") ){
-                         if ($value=="") $value="server_user_listening";                    
-                    } else if ($server['mode']=="p2p_tls"){
-                        // For p2p_tls, ensure we have one client, and return up if it's the case
-                        if ($value=="")
-                            $value=(is_array($server["conns"]) && count($server["conns"]) > 0) ? "up" : "down";
-                    }                  
-               }
-          }
-     }
-     
-     switch ($valuekey){     
-          
-          case "conns":
-               //Client Connections: is an array so it is sufficient to count elements                    
-               if (is_array($value))
-                    $value = count($value);
-               else
-                    $value = "0";
-               break;     
-               
-          case "status":
-               
-               $value = pfz_value_mapping("openvpn.server.status", $value);
-               break;
+function pfz_openvpn_server_value($server_id, $value_key)
+{
+    $servers = pfz_openvpn_get_all_servers();
 
-          case "mode":
-               $value = pfz_value_mapping("openvpn.server.mode", $value);
-               break;
-     }
-     
-     //if ($value=="") $value="none";
-     echo $value;
+    $maybe_server = array_first($servers, fn($s) => $s['vpnid'] == $server_id);
+
+    $server_value = pfz_retrieve_server_value($maybe_server, $value_key);
+
+    $is_known_value_key = array_key_exists($value_key, OPENVPN_SERVER_VALUES);
+    if ($is_known_value_key) {
+        echo OPENVPN_SERVER_VALUES[$value_key]($server_value);
+        return;
+    }
+
+    echo $server_value;
 }
 
 //OpenVPN Server/User-Auth Discovery
