@@ -58,6 +58,58 @@ define('COMMAND_HANDLERS', [
     "system" => $exec_1(fn($p0) => pfz_get_system_value($p0)),
     "temperature" => $exec_1(fn($p0) => pfz_get_temperature($p0)),
 ]);
+
+define("VALUE_MAPPINGS", [
+    "openvpn.server.status" => [
+        "down" => "0",
+        "up" => "1",
+        "none" => "2",
+        "reconnecting; ping-restart" => "3",
+        "waiting" => "4",
+        "server_user_listening" => "5"],
+    "openvpn.client.status" => [
+        "up" => "1",
+        "down" => "0",
+        "none" => "0",
+        "reconnecting; ping-restart" => "2"],
+    "openvpn.server.mode" => [
+        "p2p_tls" => "1",
+        "p2p_shared_key" => "2",
+        "server_tls" => "3",
+        "server_user" => "4",
+        "server_tls_user" => "5"],
+    "gateway.status" => [
+        "online" => "0",
+        "none" => "0",
+        "loss" => "1",
+        "highdelay" => "2",
+        "highloss" => "3",
+        "force_down" => "4",
+        "down" => "5"],
+    "ipsec.iketype" => [
+        "auto" => 0,
+        "ikev1" => 1,
+        "ikev2" => 2],
+    "ipsec.mode" => [
+        "main" => 0,
+        "aggressive" => 1],
+    "ipsec.protocol" => [
+        "both" => 0,
+        "inet" => 1,
+        "inet6" => 2],
+    "ipsec_ph2.mode" => [
+        "transport" => 0,
+        "tunnel" => 1,
+        "tunnel6" => 2],
+    "ipsec_ph2.protocol" => [
+        "esp" => 1,
+        "ah" => 2],
+    "ipsec.state" => [
+        "established" => 1,
+        "connecting" => 2,
+        "installed" => 1,
+        "rekeyed" => 2]]);
+
 require_once('globals.inc');
 require_once('functions.inc');
 require_once('config.inc');
@@ -333,11 +385,11 @@ function pfz_openvpn_servervalue($server_id,$valuekey){
                
           case "status":
                
-               $value = pfz_valuemap("openvpn.server.status", $value);
+               $value = pfz_value_mapping("openvpn.server.status", $value);
                break;
 
           case "mode":
-               $value = pfz_valuemap("openvpn.server.mode", $value);
+               $value = pfz_value_mapping("openvpn.server.mode", $value);
                break;
      }
      
@@ -441,7 +493,7 @@ function pfz_openvpn_clientvalue($client_id, $valuekey, $default="none"){
      switch ($valuekey){        
                
           case "status":
-               $value = pfz_valuemap("openvpn.client.status", $value);
+               $value = pfz_value_mapping("openvpn.client.status", $value);
                break;
 
      }
@@ -581,7 +633,7 @@ function pfz_gw_value($gw, $valuekey) {
                if ($gws[$gw]["substatus"]<>"none") 
                     $value = $gws[$gw]["substatus"];
                
-               $value = pfz_valuemap("gateway.status", $value);
+               $value = pfz_value_mapping("gateway.status", $value);
           }     
           echo $value;         
      }
@@ -634,7 +686,7 @@ function pfz_ipsec_ph1($ikeid,$valuekey){
 					if ($valuekey=='disabled')
 						$value = "1";
 					else
-						$value = pfz_valuemap("ipsec." . $valuekey, $data[$valuekey], $data[$valuekey]);
+						$value = pfz_value_mapping("ipsec." . $valuekey, $data[$valuekey], $data[$valuekey]);
 					break;
 					}
 				}
@@ -694,7 +746,7 @@ function pfz_ipsec_ph2($uniqid, $valuekey){
 			if ($valuekey=='disabled')
 				$value = "1";
 			else
-				$value = pfz_valuemap("ipsec_ph2." . $valuekey, $data[$valuekey], $data[$valuekey]);
+				$value = pfz_value_mapping("ipsec_ph2." . $valuekey, $data[$valuekey], $data[$valuekey]);
 			break;
 			}
 		}
@@ -776,7 +828,7 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 	
 	switch($valuekey) {
 					case 'state':
-						$value = pfz_valuemap('ipsec.state', strtolower($tmp_value));
+						$value = pfz_value_mapping('ipsec.state', strtolower($tmp_value));
 						if ($carp_status!=0) $value = $value + (10 * ($carp_status-1));						
 						break;
 					default:
@@ -1190,96 +1242,22 @@ function pfz_file_exists($filename) {
 
 // Value mappings
 // Each value map is represented by an associative array
-function pfz_valuemap($valuename, $value, $default="0"){
-     switch ($valuename){     
+function pfz_value_mapping($value_name, $value, $default_value = "0")
+{
+    $is_known_value_name = array_key_exists($value_name, VALUE_MAPPINGS);
+    if (!$is_known_value_name) {
+        return $default_value;
+    }
 
-          case "openvpn.server.status":          
-                    $valuemap = array(
-                         "down" => "0",
-                         "up" => "1",
-                         "none" => "2",
-                         "reconnecting; ping-restart" => "3",
-                         "waiting" => "4",
-                         "server_user_listening" => "5");          
-          break;
-          
-          case "openvpn.client.status":          
-                    $valuemap = array(
-                         "up" => "1",
-                         "down" => "0",
-                         "none" => "0",
-                         "reconnecting; ping-restart" => "2");          
-          break;
+    $value_mapping = VALUE_MAPPINGS[$value_name];
+    if (!is_array($value_mapping)) {
+        return $default_value;
+    }
 
-          case "openvpn.server.mode":
-                    $valuemap = array(
-                         "p2p_tls" => "1",
-                         "p2p_shared_key" => "2",
-                         "server_tls" => "3",
-                         "server_user" => "4",
-                         "server_tls_user" => "5");          
-          break;
-          
-          case "gateway.status":
-                    $valuemap = array(
-                         "online" => "0",
-                         "none" => "0",
-                         "loss" => "1",
-                         "highdelay" => "2",
-                         "highloss" => "3",
-                         "force_down" => "4",
-                         "down" => "5");          
-          break;    
-          
-          case "ipsec.iketype":
-          			$valuemap = array (
-          				"auto" => 0,
-          				"ikev1" => 1,
-          				"ikev2" => 2);
-          break;
-          
-          case "ipsec.mode":
-          			$valuemap = array (
-          				"main" => 0,
-          				"aggressive" => 1);
-          break;
-          
-          case "ipsec.protocol":
-          			$valuemap = array (
-          				"both" => 0,
-          				"inet" => 1,
-          				"inet6" => 2);
-          break;
-          
-          case "ipsec_ph2.mode":
-          			$valuemap = array (
-          				"transport" => 0,
-          				"tunnel" => 1,
-          				"tunnel6" => 2);
-          break;
-          
-          case "ipsec_ph2.protocol":
-          			$valuemap = array (
-          				"esp" => 1,
-          				"ah" => 2);
-          break;
+    $value = strtolower($value);
+    $is_value_with_known_mapping = array_key_exists($value, $value_mapping);
 
-		  case "ipsec.state":
-          			$valuemap = array (
-          				"established" => 1,
-          				"connecting" => 2,
-          				"installed" => 1,
-          				"rekeyed" => 2);
-          break;
-
-     }
-
-     if (is_array($valuemap)) {
-     	$value = strtolower($value);
-     	if (array_key_exists($value, $valuemap))
-          	return $valuemap[$value];
-     }
-     return $default;
+    return $is_value_with_known_mapping ? $value_mapping[$value] : $default_value;
 }
 
 function pfz_discovery($section)
