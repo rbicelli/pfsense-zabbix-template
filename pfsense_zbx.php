@@ -7,12 +7,28 @@ Written by Riccardo Bicelli <r.bicelli@gmail.com>
 This program is licensed under Apache 2.0 License
 */
 
-//Some Useful defines
-define('SPEEDTEST_INTERVAL', 8); //Speedtest Interval (in hours)
-
 $exec_0 = fn(callable $f) => $f;
 $exec_1 = fn(callable $f) => fn($parameters) => $f($parameters[0]);
 $exec_2 = fn(callable $f) => fn($parameters) => $f($parameters[0], $parameters[1]);
+
+//Some Useful defines
+define('SPEEDTEST_INTERVAL', 8); //Speedtest Interval (in hours)
+
+// Argument parsers for Discovery
+define('DISCOVERY_SECTION_HANDLERS', [
+    "gw" => $exec_0(fn() => pfz_gw_discovery()),
+    "wan" => $exec_0(fn() => pfz_interface_discovery(true)),
+    "openvpn_server" => $exec_0(fn() => pfz_openvpn_serverdiscovery()),
+    "openvpn_server_user" => $exec_0(fn() => pfz_openvpn_server_userdiscovery()),
+    "openvpn_client" => $exec_0(fn() => pfz_openvpn_clientdiscovery()),
+    "services" => $exec_0(fn() => pfz_services_discovery()),
+    "interfaces" => $exec_0(fn() => pfz_interface_discovery()),
+    "ipsec_ph1" => $exec_0(fn() => pfz_ipsec_discovery_ph1()),
+    "ipsec_ph2" => $exec_0(fn() => pfz_ipsec_discovery_ph2()),
+    "dhcpfailover" => $exec_0(fn() => pfz_dhcpfailover_discovery()),
+    "temperature_sensors" => $exec_0(fn() => pfz_temperature_sensors_discovery()),
+]);
+
 define('COMMAND_HANDLERS', [
     "carp_status" => $exec_0(fn() => pfz_carp_status()),
     "cert_date" => $exec_1(fn($p0) => pfz_get_cert_date($p0)),
@@ -1266,43 +1282,14 @@ function pfz_valuemap($valuename, $value, $default="0"){
      return $default;
 }
 
-//Argument parsers for Discovery
-function pfz_discovery($section){
-     switch (strtolower($section)){     
-          case "gw":
-               pfz_gw_discovery();
-               break;
-          case "wan":
-          	   pfz_interface_discovery(true);
-               break;
-          case "openvpn_server":
-               pfz_openvpn_serverdiscovery();
-               break;
-          case "openvpn_server_user":
-               pfz_openvpn_server_userdiscovery();
-               break;
-          case "openvpn_client":
-               pfz_openvpn_clientdiscovery();
-               break;
-          case "services":
-               pfz_services_discovery();
-               break;
-          case "interfaces":
-               pfz_interface_discovery();
-               break;
-          case "ipsec_ph1":
-          	   pfz_ipsec_discovery_ph1();
-               break;
-          case "ipsec_ph2":
-          	   pfz_ipsec_discovery_ph2();
-               break;
-          case "dhcpfailover":
-          	   pfz_dhcpfailover_discovery();
-               break;
-          case "temperature_sensors":
-               pfz_temperature_sensors_discovery();
-               break;
-     }         
+function pfz_discovery($section)
+{
+    $is_known_section = array_key_exists(strtolower($section), DISCOVERY_SECTION_HANDLERS);
+    if (!$is_known_section) {
+        return;
+    }
+
+    DISCOVERY_SECTION_HANDLERS[$section]();
 }
 
 function main($arguments)
