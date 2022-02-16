@@ -142,6 +142,23 @@ define("IPSEC_PH1_VALUES", [
     'disabled' => fn() => "0",
 ]);
 
+define("SERVICES_VALUES", [
+    "status" => function ($service) {
+        $status = get_service_status($service);
+
+        return ($status == "") ? 0 : $status;
+    },
+    "name" => function ($service, $name) {
+        echo $name;
+    },
+    "enabled" => function ($service, $name, $short_name) {
+        return pfz_bint(is_service_enabled($short_name));
+    },
+    "run_on_carp_slave" => function ($service, $name, $short_name, $carpcfr, $stopped_on_carp_slave) {
+        return pfz_bint(in_array($carpcfr, $stopped_on_carp_slave));
+    }
+]);
+
 require_once('globals.inc');
 require_once('functions.inc');
 require_once('config.inc');
@@ -177,6 +194,10 @@ function pfz_cfg() { // Abstract global variable from code
     global $config;
 
     return $config;
+}
+
+function pfz_bint(boolean $b) {
+    return (int)$b;
 }
 
 //Testing function, for template creating purpose
@@ -586,77 +607,48 @@ function pfz_services_discovery(){
 // Get service value
 // 2020-03-27: Added space replace in service name for issue #12
 // 2020-09-28: Corrected Space Replace
-function pfz_service_value($name,$value){
-     $services = get_services();     
-     $name = str_replace("__"," ",$name);
-           
-     //List of service which are stopped on CARP Slave.
-     //For now this is the best way i found for filtering out the triggers
-     //Waiting for a way in Zabbix to use Global Regexp in triggers with items discovery
-     $stopped_on_carp_slave = array("haproxy","radvd","openvpn.","openvpn","avahi");
-     
-     foreach ($services as $service){
-          $namecfr = $service["name"];
-          $carpcfr = $service["name"];          
+function pfz_service_value($name, $value)
+{
+    $services = get_services();
+    $name = str_replace("__", " ", $name);
 
-          //OpenVPN          
-          if (!empty($service['id'])) {                           
-               $namecfr = $service['name'] . "." . $service["id"];
-               $carpcfr = $service['name'] . ".";          
-          }
+    // List of service which are stopped on CARP Slave.
+    // For now this is the best way i found for filtering out the triggers
+    // Waiting for a way in Zabbix to use Global Regexp in triggers with items discovery
+    $stopped_on_carp_slave = array("haproxy", "radvd", "openvpn.", "openvpn", "avahi");
 
-          //Captive Portal
-          if (!empty($service['zone'])) {                           
-               $namecfr = $service['name'] . "." . $service["zone"];
-               $carpcfr = $service['name'] . ".";          
-          }          
+    $matching_services = array_filter($services, function ($server, $n) {
+        foreach (["id", "zone"] as $key) {
+            if (!empty($server[$key])) {
+                return printf("%s.%s", $server["name"], $server[$key]) == $n;
+            }
+        }
 
-          if ($namecfr == $name){
-               switch ($value) {
-               
-                    case "status":
-                         $status = get_service_status($service);
-                         if ($status=="") $status = 0;
-                         echo $status;
-                         break;               
+        return false;
+    });
 
-                    case "name":
-                         echo $namecfr;
-                         break;
+    foreach ($matching_services as $service) {
+        $short_name = $service["name"];
+        $carpcfr = $short_name . ".";
 
-                    case "enabled":
-                         if (is_service_enabled($service['name']))
-                              echo 1;
-                         else
-                              echo 0;
-                         break;
+        $is_known_service_value = array_key_exists($value, SERVICES_VALUES);
+        if (!$is_known_service_value) {
+            echo $service[$value];
+            continue;
+        }
 
-                    case "run_on_carp_slave":
-                         if (in_array($carpcfr,$stopped_on_carp_slave))
-                              echo 0;
-                         else
-                              echo 1;
-                         break;
-                    default:               
-                         echo $service[$value];
-                         break;
-               }
-          }                                              
+        echo SERVICES_VALUES[$value]($service, $name, $short_name, $carpcfr, $stopped_on_carp_slave);
     }
 }
 
-
-//Gateway Discovery
-function pfz_gw_rawstatus() {
-     // Return a Raw Gateway Status, useful for action Scripts (e.g. Update Cloudflare DNS config)
-     $gws = return_gateways_status(true);
-     $gw_string="";
-     foreach ($gws as $gw){
-          $gw_string .= ($gw['name'] . '.' . $gw['status'] .",");
-     }
-     echo rtrim($gw_string,",");
+// Gateway Discovery
+function pfz_gw_rawstatus()
+{
+    echo implode(",",
+        array_map(
+            fn($gw) => sprintf("%s.%s", $gw['name'], $gw['status']),
+            return_gateways_status(true)));
 }
-
 
 function pfz_gw_discovery() {
      $gws = return_gateways_status(true);
@@ -1209,7 +1201,7 @@ function pfz_get_system_value($section)
     $installed_version = $system_pkg_version["installed_version"];
 
     if ($section === "new_version_available") {
-        echo pfz_bint($version, $installed_version);
+        echo pfz_bint($version != $installed_version);
         return;
     }
 
