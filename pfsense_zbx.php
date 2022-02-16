@@ -124,6 +124,12 @@ define('SMART_DEV_STATUS', [
     SMART_DEV_UNKNOWN => SMART_UNKNOWN
 ]);
 
+define("DHCP_SECTIONS", [
+    "failover" => function () {
+        echo pfz_dhcp_check_failover();
+    },
+]);
+
 require_once('globals.inc');
 require_once('functions.inc');
 require_once('config.inc');
@@ -1128,27 +1134,24 @@ function pfz_dhcpfailover_discovery(){
     echo $json_string;
 }
 
-function pfz_dhcp_check_failover(){
-	// Check DHCP Failover Status
-	// Returns number of failover pools which state is not normal or
-	// different than peer state
-	$failover = pfz_dhcp_get("failover");
-	$ret = 0;
-	foreach ($failover as $f){
-		if ( ($f["mystate"]!="normal") || ($f["mystate"]!=$f["peerstate"])) {
-			$ret++;
-		}
-	}		
-	return $ret;	
+function pfz_dhcp_check_failover()
+{
+    // Check DHCP Failover Status
+    // Returns number of failover pools which state is not normal or
+    // different than peer state
+    $failover = pfz_dhcp_get("failover");
+
+    return count(array_filter($failover, fn($f) => ($f["mystate"] != "normal") || ($f["mystate"] != $f["peerstate"])));
 }
 
-function pfz_dhcp($section, $valuekey=""){
-	switch ($section){
-		case "failover":
-			echo pfz_dhcp_check_failover();
-			break;
-		default:		
-	}
+function pfz_dhcp($section, $valuekey = "")
+{
+    $is_known_section = array_key_exists($section, DHCP_SECTIONS);
+    if (!$is_known_section) {
+        return;
+    }
+
+    DHCP_SECTIONS[$section]();
 }
 
 // Packages
