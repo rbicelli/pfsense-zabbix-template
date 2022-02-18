@@ -632,7 +632,7 @@ class PfzCommands
                 if ($gws[$gw]["substatus"] <> "none")
                     $value = $gws[$gw]["substatus"];
 
-                $value = self::pfz_value_mapping("gateway.status", $value);
+                $value = self::get_value_mapping("gateway.status", $value);
             }
             echo $value;
         }
@@ -654,7 +654,7 @@ class PfzCommands
 
     public static function pfz_openvpn_servervalue($server_id, $value_key)
     {
-        $servers = self::get_all_openvpn_servers();
+        $servers = PfzOpenVpn::get_all_openvpn_servers();
 
         $maybe_server = Util::array_first($servers, fn($s) => $s['vpnid'] == $server_id);
 
@@ -666,7 +666,7 @@ class PfzCommands
         }
 
         if (in_array($value_key, ["status", "mode"])) {
-            echo PfzCommands::pfz_value_mapping("openvpn.server.status", $server_value);
+            echo self::get_value_mapping("openvpn.server.status", $server_value);
             return;
         }
 
@@ -847,7 +847,7 @@ class PfzCommands
     }
 
     // System Information
-    public static function pfz_get_system_value($section)
+    public static function pfz_system($section)
     {
         if ($section === "packages_update") {
             echo self::get_outdated_packages();
@@ -898,7 +898,7 @@ class PfzCommands
             return;
         }
 
-        echo self::pfz_value_mapping("ipsec." . $value_key, $maybe_ike_match[$value_key]);
+        echo self::get_value_mapping("ipsec." . $value_key, $maybe_ike_match[$value_key]);
     }
 
     public static function pfz_ipsec_ph2($uniqid, $value_key)
@@ -927,7 +927,7 @@ class PfzCommands
                     if ($value_key == 'disabled')
                         $value = "1";
                     else
-                        $value = self::pfz_value_mapping("ipsec_ph2." . $value_key, $data[$value_key], $data[$value_key]);
+                        $value = self::get_value_mapping("ipsec_ph2." . $value_key, $data[$value_key], $data[$value_key]);
                     break;
                 }
             }
@@ -1184,7 +1184,7 @@ class PfzCommands
         }
 
         if ($value_key == "state") {
-            $v = self::pfz_value_mapping('ipsec.state', strtolower($tmp_value));
+            $v = self::get_value_mapping('ipsec.state', strtolower($tmp_value));
 
             return ($carp_status != 0) ? $v + (10 * ($carp_status - 1)) : $v;
         }
@@ -1385,7 +1385,7 @@ class PfzCommands
 
     // Value mappings
     // Each value map is represented by an associative array
-    public static function pfz_value_mapping($value_name, $value, $default_value = "0")
+    private static function get_value_mapping($value_name, $value, $default_value = "0")
     {
         $is_known_value_name = array_key_exists($value_name, VALUE_MAPPINGS);
         if (!$is_known_value_name) {
