@@ -119,7 +119,7 @@ class PfzServices
         echo $name;
     }
 
-    public static function status(string $service) : int
+    public static function status(string $service): int
     {
         $status = PfEnv::get_service_status($service);
 
@@ -511,7 +511,8 @@ class PfzDiscoveries
             $has_public_ip =
                 filter_var(
                     $iface_info_ext["ipaddr"],
-                    FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+                    FILTER_VALIDATE_IP,
+                    FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
             $is_vpn = strpos($iface_info_ext["if"], "ovpn") !== false;
 
             return ($has_gw || $has_public_ip) && !$is_vpn;
@@ -742,21 +743,18 @@ class PfzCommands
 
     public static function carp_status($echo_result = true): int
     {
-        // Detect CARP Status
         $config = PfEnv::cfg();
         $carp_status = PfEnv::get_carp_status();
         $carp_detected_problems = PfEnv::get_single_sysctl("net.inet.carp.demotion");
 
         $is_carp_enabled = $carp_status != 0;
         if (!$is_carp_enabled) { // CARP is disabled
-            if ($echo_result) echo CARP_STATUS_DISABLED;
-            return CARP_STATUS_DISABLED;
+            return Util::result(CARP_STATUS_DISABLED, $echo_result);
         }
 
         if ($carp_detected_problems != 0) {
             // There's some Major Problems with CARP
-            if ($echo_result) echo CARP_STATUS_PROBLEM;
-            return CARP_STATUS_PROBLEM;
+            return Util::result(CARP_STATUS_PROBLEM, $echo_result);
         }
 
         $virtual_ips = $config['virtualip']['vip'];
