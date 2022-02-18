@@ -428,7 +428,7 @@ class PfzDiscoveries
         echo $json_string;
     }
 
-    public static function interfaces($is_wan = false, $is_cron = false)
+    public static function interfaces()
     {
         self::discover_interface();
     }
