@@ -329,7 +329,7 @@ class PfzDiscoveries
 
         self::print_json(array_map(fn($server) => [
             "{#SERVER}" => $server['vpnid'],
-            "{#NAME}" => self::sanitize_server_name($server["name"])],
+            "{#NAME}" => self::sanitize_name($server["name"])],
             $servers));
     }
 
@@ -353,48 +353,27 @@ class PfzDiscoveries
     {
         $clients = PfEnv::openvpn_get_active_clients();
 
-        $json_string = '{"data":[';
-
-        foreach ($clients as $client) {
-            $name = trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $client['name']));
-            $json_string .= '{"{#CLIENT}":"' . $client['vpnid'] . '"';
-            $json_string .= ',"{#NAME}":"' . $name . '"';
-            $json_string .= '},';
-        }
-
-        $json_string = rtrim($json_string, ",");
-        $json_string .= "]}";
-
-        echo $json_string;
+        self::print_json(array_map(fn($client) => [
+            "{#CLIENT}" => $client['vpnid'],
+            "{#NAME}", self::sanitize_name($client["name"]),
+        ], $clients));
     }
 
     public static function services()
     {
         $services = PfEnv::get_services();
 
-        $json_string = '{"data":[';
+        $named_services = array_filter($services, fn($service) => !empty($service['name']));
 
-        foreach ($services as $service) {
-            if (!empty($service['name'])) {
+        self::print_json(array_map(function ($service) {
+            $maybe_id = Util::array_first(array_keys($service), fn($key) => in_array($key, ["id", "zone"]));
+            $id = is_null($maybe_id) ? "" : $service[$maybe_id];
 
-                $status = PfEnv::get_service_status($service);
-                if ($status = "") $status = 0;
-
-                $id = "";
-                //id for OpenVPN               
-                if (!empty($service['id'])) $id = "." . $service["id"];
-                //zone for Captive Portal
-                if (!empty($service['zone'])) $id = "." . $service["zone"];
-
-                $json_string .= '{"{#SERVICE}":"' . str_replace(" ", "__", $service['name']) . $id . '"';
-                $json_string .= ',"{#DESCRIPTION}":"' . $service['description'] . '"';
-                $json_string .= '},';
-            }
-        }
-        $json_string = rtrim($json_string, ",");
-        $json_string .= "]}";
-
-        echo $json_string;
+            return [
+                "{#SERVICE}" => str_replace(" ", "__", $service['name']) . $id,
+                "{#DESCRIPTION}" => $service['description'],
+            ];
+        }, $named_services));
     }
 
     public static function interfaces()
@@ -402,28 +381,17 @@ class PfzDiscoveries
         self::discover_interface();
     }
 
-    // IPSEC Discovery
     public static function ipsec_ph1()
     {
-
         require_once("ipsec.inc");
         $config = PfEnv::cfg();
         PfEnv::init_config_arr(array('ipsec', 'phase1'));
         $a_phase1 = &$config['ipsec']['phase1'];
 
-        $json_string = '{"data":[';
-
-        foreach ($a_phase1 as $data) {
-            $json_string .= '{"{#IKEID}":"' . $data['ikeid'] . '"';
-            $json_string .= ',"{#NAME}":"' . $data['descr'] . '"';
-            $json_string .= '},';
-        }
-
-        $json_string = rtrim($json_string, ",");
-        $json_string .= "]}";
-
-        echo $json_string;
-
+        self::print_json(array_map(fn($data) => [
+            "{#IKEID}" => $data['ikeid'],
+            "{#NAME}" => $data['descr'],
+        ], $a_phase1));
     }
 
     public static function ipsec_ph2()
@@ -434,22 +402,13 @@ class PfzDiscoveries
         PfEnv::init_config_arr(array('ipsec', 'phase2'));
         $a_phase2 = &$config['ipsec']['phase2'];
 
-        $json_string = '{"data":[';
-
-        foreach ($a_phase2 as $data) {
-            $json_string .= '{"{#IKEID}":"' . $data['ikeid'] . '"';
-            $json_string .= ',"{#NAME}":"' . $data['descr'] . '"';
-            $json_string .= ',"{#UNIQID}":"' . $data['uniqid'] . '"';
-            $json_string .= ',"{#REQID}":"' . $data['reqid'] . '"';
-            $json_string .= ',"{#EXTID}":"' . $data['ikeid'] . '.' . $data['reqid'] . '"';
-            $json_string .= '},';
-        }
-
-        $json_string = rtrim($json_string, ",");
-        $json_string .= "]}";
-
-        echo $json_string;
-
+        self::print_json(array_map(fn($data) => [
+            "{#IKEID}" => $data['ikeid'],
+            "{#NAME}" => $data['descr'],
+            "{#UNIQID}" => $data['uniqid'],
+            "{#REQID}" => $data['reqid'],
+            "{#EXTID}" => $data['ikeid'] . '.' . $data['reqid'],
+        ], $a_phase2));
     }
 
     public static function dhcpfailover()
@@ -479,7 +438,7 @@ class PfzDiscoveries
         ]);
     }
 
-    private static function sanitize_server_name(string $raw_name): string
+    private static function sanitize_name(string $raw_name): string
     {
         return trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $raw_name));
     }
@@ -505,7 +464,7 @@ class PfzDiscoveries
     private static function map_server(array $server): array
     {
         return self::map_conns(
-            self::sanitize_server_name($server["name"]),
+            self::sanitize_name($server["name"]),
             $server["vpnid"],
             $server["conns"]);
     }
