@@ -1410,11 +1410,17 @@ function main($arguments)
     $command = strtolower($arguments[1]);
     $parameters = array_slice($arguments, 2);
 
+
+    if ($command == "help") {
+        print_r(COMMAND_HANDLERS);
+        exit;
+    }
+
     $is_known_command = in_array($command, COMMAND_HANDLERS);
 
     if (!$is_known_command) {
         PfzCommands::pfz_test();
-        return;
+        exit;
     }
 
     PfzCommands::{"pfz_$command"}(...$parameters);
