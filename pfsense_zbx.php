@@ -82,6 +82,11 @@ define("VALUE_MAPPINGS", [
         "installed" => 1,
         "rekeyed" => 2]]);
 
+define("CERT_VK_TO_FIELD", [
+    "validFrom.max" => "validFrom_time_t",
+    "validTo.min" => "validTo_time_t",
+]);
+
 const SMART_DEV_PASSED = "PASSED";
 const SMART_DEV_OK = "OK";
 const SMART_DEV_UNKNOWN = "";
@@ -95,6 +100,21 @@ const SMART_DEV_STATUS = [
     SMART_DEV_OK => SMART_OK,
     SMART_DEV_UNKNOWN => SMART_UNKNOWN
 ];
+
+const CARP_INCONSISTENT = "INCONSISTENT";
+const CARP_MASTER = "MASTER";
+
+const CARP_STATUS_DISABLED = 0;
+const CARP_STATUS_OK = 1;
+const CARP_STATUS_UNKNOWN = 2;
+const CARP_STATUS_INCONSISTENT = 3;
+const CARP_STATUS_PROBLEM = 4;
+
+const CARP_RES = [
+    CARP_INCONSISTENT => CARP_STATUS_INCONSISTENT,
+    CARP_MASTER => CARP_STATUS_OK
+];
+
 
 define("SERVICES_VALUES", [
     "status" => function ($service) {
@@ -266,20 +286,30 @@ class Util
         return (int)$b;
     }
 
-    public static function replace_special_chars($inputstr, $reverse = false)
+    public static function replace_special_chars(string $input, bool $decode = false): string
     {
-        $specialchars = ",',\",`,*,?,[,],{,},~,$,!,&,;,(,),<,>,|,#,@,0x0a";
-        $specialchars = explode(",", $specialchars);
-        $resultstr = $inputstr;
+        $special_chars = explode(",", ",',\",`,*,?,[,],{,},~,$,!,&,;,(,),<,>,|,#,@,0x0a");
 
-        for ($n = 0; $n < count($specialchars); $n++) {
-            if ($reverse == false)
-                $resultstr = str_replace($specialchars[$n], '%%' . $n . '%', $resultstr);
-            else
-                $resultstr = str_replace('%%' . $n . '%', $specialchars[$n], $resultstr);
+        $result = $input;
+
+        foreach ($special_chars as $idx => $plain) {
+            $encoded = "%%$idx%";
+
+            list($search, $replace) = $decode ? [$encoded, $plain] : [$plain, $encoded];
+
+            $result = str_replace($search, $replace, $result);
         }
 
-        return $resultstr;
+        return $result;
+    }
+
+    public static function result($result, bool $echo_result = false)
+    {
+        if ($echo_result) {
+            echo $echo_result;
+        }
+
+        return $result;
     }
 }
 
@@ -351,19 +381,15 @@ class PfzDiscoveries
 
     public static function openvpn_client()
     {
-        $clients = PfEnv::openvpn_get_active_clients();
-
         self::print_json(array_map(fn($client) => [
             "{#CLIENT}" => $client['vpnid'],
             "{#NAME}", self::sanitize_name($client["name"]),
-        ], $clients));
+        ], PfEnv::openvpn_get_active_clients()));
     }
 
     public static function services()
     {
-        $services = PfEnv::get_services();
-
-        $named_services = array_filter($services, fn($service) => !empty($service['name']));
+        $named_services = array_filter(PfEnv::get_services(), fn($service) => !empty($service['name']));
 
         self::print_json(array_map(function ($service) {
             $maybe_id = Util::array_first(array_keys($service), fn($key) => in_array($key, ["id", "zone"]));
@@ -413,7 +439,7 @@ class PfzDiscoveries
 
     public static function dhcpfailover()
     {
-        //System public static functions regarding DHCP Leases will be available in the upcoming release of pfSense, so let's wait
+        // System public static functions regarding DHCP Leases will be available in the upcoming release of pfSense, so let's wait
         require_once("system.inc");
         $leases = PfEnv::system_get_dhcpleases();
 
@@ -432,9 +458,8 @@ class PfzDiscoveries
 
     private static function sanitize_name(string $raw_name): string
     {
-        return trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $raw_name));
+        return trim(preg_replace('/\w{3}(\d)?:\d{4,5}/i', '', $raw_name));
     }
-
 
     private static function map_conn(string $server_name, string $vpn_id, array $conn): array
     {
@@ -567,8 +592,8 @@ class PfzOpenVpn
     {
         $servers = PfEnv::openvpn_get_active_servers();
         $sk_servers = PfEnv::openvpn_get_active_servers("p2p");
-        $servers = array_merge($servers, $sk_servers);
-        return ($servers);
+
+        return array_merge($servers, $sk_servers);
     }
 }
 
@@ -587,17 +612,22 @@ class PfzCommands
     public static function gw_value($gw, $value_key)
     {
         $gws = PfEnv::return_gateways_status(true);
-        if (array_key_exists($gw, $gws)) {
-            $value = $gws[$gw][$value_key];
-            if ($value_key == "status") {
-                //Issue #70: Gateway Forced Down
-                if ($gws[$gw]["substatus"] <> "none")
-                    $value = $gws[$gw]["substatus"];
 
-                $value = self::get_value_mapping("gateway.status", $value);
-            }
-            echo $value;
+        $is_known_gw = array_key_exists($gw, $gws);
+        if (!$is_known_gw) {
+            return;
         }
+
+        $value = $gws[$gw][$value_key];
+        if ($value_key != "status") {
+            echo $value;
+            return;
+        }
+
+        // Issue #70: Gateway Forced Down
+        $v = ($gws[$gw]["substatus"] != "none") ? $gws[$gw]["substatus"] : $value;
+
+        echo self::get_value_mapping("gateway.status", $v);
     }
 
     public static function gw_status()
@@ -699,7 +729,6 @@ class PfzCommands
         }
     }
 
-
     public static function temperature($sensorid)
     {
         exec("sysctl '$sensorid' | cut -d ':' -f 2", $value, $code);
@@ -711,55 +740,49 @@ class PfzCommands
         echo trim($value[0]);
     }
 
-    public static function carp_status($echo = true): int
+    public static function carp_status($echo_result = true): int
     {
-        //Detect CARP Status
+        // Detect CARP Status
         $config = PfEnv::cfg();
-        $status_return = 0;
-        $status = PfEnv::get_carp_status();
+        $carp_status = PfEnv::get_carp_status();
         $carp_detected_problems = PfEnv::get_single_sysctl("net.inet.carp.demotion");
 
-        //CARP is disabled
-        $ret = 0;
-
-        if ($status != 0) { //CARP is enabled
-
-            if ($carp_detected_problems != 0) {
-                //There's some Major Problems with CARP
-                $ret = 4;
-                if ($echo == true) echo $ret;
-                return $ret;
-            }
-
-            $status_changed = false;
-            $prev_status = "";
-            foreach ($config['virtualip']['vip'] as $carp) {
-                if ($carp['mode'] != "carp") {
-                    continue;
-                }
-                $if_status = PfEnv::get_carp_interface_status("_vip{$carp['uniqid']}");
-
-                if (($prev_status != $if_status) && (empty($if_status) == false)) { //Some glitches with GUI
-                    if ($prev_status != "") $status_changed = true;
-                    $prev_status = $if_status;
-                }
-            }
-            if ($status_changed) {
-                //CARP Status is inconsistent across interfaces
-                $ret = 3;
-                echo 3;
-            } else {
-                if ($prev_status == "MASTER")
-                    $ret = 1;
-                else
-                    $ret = 2;
-            }
+        $is_carp_enabled = $carp_status != 0;
+        if (!$is_carp_enabled) { // CARP is disabled
+            if ($echo_result) echo CARP_STATUS_DISABLED;
+            return CARP_STATUS_DISABLED;
         }
 
-        if ($echo == true) echo $ret;
-        return $ret;
+        if ($carp_detected_problems != 0) {
+            // There's some Major Problems with CARP
+            if ($echo_result) echo CARP_STATUS_PROBLEM;
+            return CARP_STATUS_PROBLEM;
+        }
 
+        $virtual_ips = $config['virtualip']['vip'];
+        $just_carps = array_filter($virtual_ips, fn($virtual_ip) => $virtual_ip['mode'] != "carp");
+        $status_str = array_reduce($just_carps, function ($status, $carp) {
+            $if_status = PfEnv::get_carp_interface_status("_vip{$carp['uniqid']}");
+
+            $state_differs_from_previous_interface = ($status != $if_status) && (!empty($if_status));
+            if (!$state_differs_from_previous_interface) {
+                return $status;
+            }
+
+            if ($status != "") {
+                return CARP_INCONSISTENT;
+            }
+
+            return $if_status;
+        }, "");
+
+        $is_known_carp_status = array_key_exists($status_str, CARP_RES);
+
+        $result = $is_known_carp_status ? CARP_RES[$status_str] : CARP_STATUS_UNKNOWN;
+
+        return Util::result($result, $echo_result);
     }
+
 
     // System Information
     public static function system($section)
@@ -789,7 +812,7 @@ class PfzCommands
         // If Getting "disabled" value only check item presence in config array
         require_once("ipsec.inc");
         $config = PfEnv::cfg();
-        PfEnv::init_config_arr(array('ipsec', 'phase1'));
+        PfEnv::init_config_arr(['ipsec', 'phase1']);
         $a_phase1 = &$config['ipsec']['phase1'];
 
         if ($value_key == "status") {
@@ -825,29 +848,23 @@ class PfzCommands
 
         $valuecfr = explode(".", $value_key);
 
-        switch ($valuecfr[0]) {
-            case 'status':
-                $idarr = explode(".", $uniqid);
-                $statuskey = "state";
-                if (isset($valuecfr[1])) $statuskey = $valuecfr[1];
-                $value = self::get_ipsec_status($idarr[0], $idarr[1], $statuskey);
-                break;
-            case 'disabled':
-                $value = "0";
+        $value = "0";
+        if ($valuecfr[0] == 'status') {
+            $ids = explode(".", $uniqid);
+            $status_key = (isset($valuecfr[1])) ? $valuecfr[1] : "state";
+            $value = self::get_ipsec_status($ids[0], $ids[1], $status_key);
         }
 
-        foreach ($a_phase2 as $data) {
-            if ($data['uniqid'] == $uniqid) {
-                if (array_key_exists($value_key, $data)) {
-                    if ($value_key == 'disabled')
-                        $value = "1";
-                    else
-                        $value = self::get_value_mapping("ipsec_ph2." . $value_key, $data[$value_key], $data[$value_key]);
-                    break;
-                }
-            }
+        $maybe_data = Util::array_first($a_phase2, fn($data) => $data['uniqid'] == $uniqid);
+        if (is_null($maybe_data) || !array_key_exists($value_key, $maybe_data)) {
+            return Util::result($value, true);
         }
-        echo $value;
+
+        $result = ($value_key == 'disabled') ?
+            "1" :
+            self::get_value_mapping("ipsec_ph2." . $value_key, $maybe_data[$value_key]);
+
+        return Util::result($result, true);
     }
 
     public static function dhcp($section)
@@ -856,7 +873,7 @@ class PfzCommands
             return;
         }
 
-        echo PfzCommands::check_dhcp_failover();
+        echo self::check_dhcp_failover();
     }
 
     // File is present
@@ -869,11 +886,8 @@ class PfzCommands
     {
         require_once("services.inc");
         $ifdescrs = PfEnv::get_configured_interface_with_descr(true);
-        $ifaces = PfEnv::get_interface_arr();
-        $pf_interface_name = '';
-        $subvalue = false;
 
-        $ifcs = PfzDiscoveries::interface_discovery(true, true);
+        $ifcs = PfzDiscoveries::interfaces(); // FIXME ED Retrieve interfaces
 
         foreach ($ifcs as $if_name) {
 
@@ -898,45 +912,38 @@ class PfzCommands
     // Taken from /usr/local/www/widgets/widgets/smart_status.widget.php
     public static function smart_status()
     {
-        foreach (PfEnv::get_smart_drive_list() as $dev) { ## for each found drive do                
+        foreach (PfEnv::get_smart_drive_list() as $dev) {
             $dev_state = trim(exec("smartctl -H /dev/$dev | awk -F: '/^SMART overall-health self-assessment test result/ {print $2;exit}
 /^SMART Health Status/ {print $2;exit}'")); ## get SMART state from drive
             $is_known_state = array_key_exists($dev_state, SMART_DEV_STATUS);
             if (!$is_known_state) {
-                return SMART_ERROR; // ED This is probably a bug, status should be echoed
+                return Util::result(SMART_ERROR, true);
             }
 
             $status = SMART_DEV_STATUS[$dev_state];
             if ($status !== SMART_OK) {
-                return $status; // ED This is probably a bug, status should be echoed
+                return Util::result($status, true);
             }
         }
 
-        echo SMART_OK;
+        return Util::result(SMART_OK, true);
     }
 
     public static function cert_date($value_key)
     {
-        $config = PfEnv::cfg();
-
-        $value = 0;
-        foreach (array("cert", "ca") as $cert_type) {
-            switch ($value_key) {
-                case "validFrom.max":
-                    foreach ($config[$cert_type] as $cert) {
-                        $certinfo = openssl_x509_parse(base64_decode($cert[PfEnv::CRT]));
-                        if ($value == 0 or $value < $certinfo['validFrom_time_t']) $value = $certinfo['validFrom_time_t'];
-                    }
-                    break;
-                case "validTo.min":
-                    foreach ($config[$cert_type] as $cert) {
-                        $certinfo = openssl_x509_parse(base64_decode($cert[PfEnv::CRT]));
-                        if ($value == 0 or $value > $certinfo['validTo_time_t']) $value = $certinfo['validTo_time_t'];
-                    }
-                    break;
-            }
+        if (!array_key_exists($value_key, CERT_VK_TO_FIELD)) {
+            return Util::result(0, true);
         }
-        echo $value;
+
+        $field = CERT_VK_TO_FIELD[$value_key];
+        $config = PfEnv::cfg();
+        $all_certs = array_merge(...array_map(fn($cert_type) => $config[$cert_type], ["cert", "ca"]));
+
+        return Util::result(array_reduce($all_certs, function ($value, $certificate) use ($field) {
+            $cert_info = openssl_x509_parse(base64_decode($certificate[PfEnv::CRT]));
+
+            return ($value == 0 || $value < $cert_info[$field]) ? $cert_info[$field] : $value;
+        }, 0));
     }
 
     // Testing function, for template creating purpose
@@ -977,7 +984,6 @@ class PfzCommands
         $config = PfEnv::cfg();
         PfEnv::init_config_arr(array('ipsec', 'phase1'));
         PfEnv::init_config_arr(array('ipsec', 'phase2'));
-        $a_phase2 = &$config['ipsec']['phase2'];
         $status = PfEnv::ipsec_list_sa();
         echo "IPsec Status: \n";
         print_r($status);
@@ -1003,22 +1009,19 @@ class PfzCommands
     private static function get_openvpn_server_uservalue_($unique_id, $value_key, $default = "")
     {
         $unique_id = Util::replace_special_chars($unique_id, true);
-        $atpos = strpos($unique_id, '+');
-        $server_id = substr($unique_id, 0, $atpos);
-        $user_id = substr($unique_id, $atpos + 1);
+
+        list($server_id, $user_id) = explode("+", $unique_id);
 
         $servers = PfzOpenVpn::get_all_openvpn_servers();
-        foreach ($servers as $server) {
-            if ($server['vpnid'] == $server_id) {
-                foreach ($server['conns'] as $conn) {
-                    if ($conn['common_name'] == $user_id) {
-                        $value = $conn[$value_key];
-                    }
-                }
-            }
+        $maybe_server = Util::array_first($servers, fn($server) => $server['vpnid'] == $server_id);
+
+        if (!$maybe_server) {
+            return $default;
         }
 
-        return ($value == "") ? $default : $value;
+        $maybe_conn = Util::array_first($maybe_server["conns"], fn($conn) => ($conn['common_name'] == $user_id));
+
+        return $maybe_conn[$value_key] ?: $default;
     }
 
     private static function get_server_value($maybe_server, $value_key)
@@ -1033,14 +1036,12 @@ class PfzCommands
             return $raw_value == "" ? "server_user_listening" : $raw_value;
         }
 
-        if ($maybe_server["mode"] == "p2p_tls") {
-            // For p2p_tls, ensure we have one client, and return up if it's the case
-            if ($raw_value == "") {
-                $has_at_least_one_connection =
-                    is_array($maybe_server["conns"]) && count($maybe_server["conns"]) > 0;
+        // For p2p_tls, ensure we have one client, and return up if it's the case
+        if ($maybe_server["mode"] == "p2p_tls" && $raw_value == "") {
+            $has_at_least_one_connection =
+                is_array($maybe_server["conns"]) && count($maybe_server["conns"]) > 0;
 
-                return $has_at_least_one_connection ? "up" : "down";
-            }
+            return $has_at_least_one_connection ? "up" : "down";
         }
 
         return $raw_value;
@@ -1130,23 +1131,24 @@ class PfzCommands
     // DHCP Checks (copy of status_dhcp_leases.php, waiting for pfsense 2.5)
     private static function remove_duplicates($array, $field): array
     {
+        $cmp = [];
+        $new = [];
+
         foreach ($array as $sub) {
             $cmp[] = $sub[$field];
         }
+
         $unique = array_unique(array_reverse($cmp, true));
         foreach ($unique as $k => $rien) {
             $new[] = $array[$k];
         }
+
         return $new;
     }
 
     // Get DHCP Arrays (copied from status_dhcp_leases.php, waiting for pfsense 2.5, in order to use system_get_dhcpleases();)
     private static function get_dhcp($value_key)
     {
-
-
-        $leasesfile = "{$g['dhcpd_chroot_path']}/var/db/dhcpd.leases";
-
         $awk = "/usr/bin/awk";
         /* this pattern sticks comments into a single array item */
         $cleanpattern = "'{ gsub(\"#.*\", \"\");} { gsub(\";\", \"\"); print;}'";
@@ -1358,7 +1360,6 @@ function main($arguments)
 {
     $command = strtolower($arguments[1]);
     $parameters = array_slice($arguments, 2);
-
 
     if ($command == "help") {
         print_r(COMMAND_HANDLERS);
