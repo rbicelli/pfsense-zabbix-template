@@ -797,7 +797,7 @@ function pfz_ipsec_ph2($uniqid, $valuekey){
 	echo $value;
 }
 
-function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
+function pfz_ipsec_status($ike_id, $req_id=-1, $value_key='state'){
 		
 	require_once("ipsec.inc");
 	$config = pfz_cfg();
@@ -831,7 +831,7 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 			if (isset($ikesa['con-id'])) {
 				$con_id = substr($ikesa['con-id'], 3);
 			} else {
-				$con_id = filter_var($ikeid, FILTER_SANITIZE_NUMBER_INT);
+				$con_id = filter_var($ike_id, FILTER_SANITIZE_NUMBER_INT);
 			}
 			$con_name = "con" . $con_id;
 			if ($ikesa['version'] == 1) {
@@ -846,22 +846,22 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 					$ipsecconnected[$con_id] = $ph1idx = $con_id;
 				}
 			}
-			if ($ph1idx == $ikeid){
-				if ($reqid!=-1) {
+			if ($ph1idx == $ike_id){
+				if ($req_id!=-1) {
 					// Asking for Phase2 Status Value
 					foreach ($ikesa['child-sas'] as $childsas) {
-						if ($childsas['reqid']==$reqid) {
+						if ($childsas['reqid']==$req_id) {
 							if (strtolower($childsas['state']) == 'rekeyed') {
 								//if state is rekeyed go on
-								$tmp_value = $childsas[$valuekey];
+								$tmp_value = $childsas[$value_key];
 							} else {
-								$tmp_value = $childsas[$valuekey];
+								$tmp_value = $childsas[$value_key];
 								break;
 							}
 						}						
 					}
 				} else {
-					$tmp_value = $ikesa[$valuekey];
+					$tmp_value = $ikesa[$value_key];
 				}
 								
 				break;
@@ -869,17 +869,13 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 		}	
 	}
 	
-	switch($valuekey) {
-					case 'state':
-						$value = pfz_value_mapping('ipsec.state', strtolower($tmp_value));
-						if ($carp_status!=0) $value = $value + (10 * ($carp_status-1));						
-						break;
-					default:
-						$value = $tmp_value;
-						break;
-	}
-	
-	return $value;
+    if ($value_key == "state") {
+        $v = pfz_value_mapping('ipsec.state', strtolower($tmp_value));
+        
+        return ($carp_status!=0) ? $v + (10 * ($carp_status-1)) : $v;
+    }
+    
+    return $tmp_value;
 }
 
 // Temperature sensors Discovery
