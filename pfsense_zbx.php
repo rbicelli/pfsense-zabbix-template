@@ -417,18 +417,10 @@ class PfzDiscoveries
         require_once("system.inc");
         $leases = PfEnv::system_get_dhcpleases();
 
-        $json_string = '{"data":[';
+        self::print_json(array_map(fn($data) => [
+            "{#FAILOVER_GROUP}" => str_replace(" ", "__", $data['name']),
+        ], $leases["failover"]));
 
-        if (count($leases['failover']) > 0) {
-            foreach ($leases['failover'] as $data) {
-                $json_string .= '{"{#FAILOVER_GROUP}":"' . str_replace(" ", "__", $data['name']) . '"';
-            }
-        }
-
-        $json_string = rtrim($json_string, ",");
-        $json_string .= "]}";
-
-        echo $json_string;
     }
 
     private static function print_json(array $json)
@@ -469,53 +461,61 @@ class PfzDiscoveries
             $server["conns"]);
     }
 
-    private static function discover_interface($is_wan = false, $is_cron = false)
+    private static function discover_interface($is_wan = false, $is_cron = false): array
     {
         $ifdescrs = PfEnv::get_configured_interface_with_descr(true);
         $ifaces = PfEnv::get_interface_arr();
-        $ifcs = array();
-        $if_ret = array();
 
-        $json_string = '{"data":[';
-
-        foreach ($ifdescrs as $ifname => $ifdescr) {
-            $ifinfo = PfEnv::get_interface_info($ifname);
-            $ifinfo["description"] = $ifdescr;
-            $ifcs[$ifname] = $ifinfo;
-        }
-
-        foreach ($ifaces as $hwif) {
-
-            $ifdescr = $hwif;
-            $has_gw = false;
-            $is_vpn = false;
-            $has_public_ip = false;
-
-            foreach ($ifcs as $ifc => $ifinfo) {
-                if ($ifinfo["hwif"] == $hwif) {
-                    $ifdescr = $ifinfo["description"];
-                    if (array_key_exists("gateway", $ifinfo)) $has_gw = true;
-                    //	Issue #81 - https://stackoverflow.com/a/13818647/15093007
-                    if (filter_var($ifinfo["ipaddr"], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) $has_public_ip = true;
-                    if (strpos($ifinfo["if"], "ovpn") !== false) $is_vpn = true;
-                    break;
-                }
+        if (!$is_wan) {
+            if (!$is_cron) {
+                self::print_json([]);
             }
 
-            if (($is_wan == false) || (($is_wan == true) && (($has_gw == true) || ($has_public_ip == true)) && ($is_vpn == false))) {
-                $if_ret[] = $hwif;
-                $json_string .= '{"{#IFNAME}":"' . $hwif . '"';
-                $json_string .= ',"{#IFDESCR}":"' . $ifdescr . '"';
-                $json_string .= '},';
+            return [];
+        }
+
+        $ifcs = array_reduce(array_keys($ifdescrs), function ($p, $c) use ($ifdescrs) {
+            return [
+                ...$p,
+                $c => [
+                    ...PfEnv::get_interface_info($c),
+                    "description" => $ifdescrs[$c],
+                ]];
+        }, []);
+
+        $ifaces_filtered = array_filter($ifaces, function ($hwif) use ($ifcs) {
+            $maybe_ifinfo = Util::array_first($ifcs, fn($v) => ($v["hwif"] == $hwif));
+            if (!$maybe_ifinfo) {
+                return false;
             }
 
+            $has_gw = array_key_exists("gateway", $maybe_ifinfo);
+            //	Issue #81 - https://stackoverflow.com/a/13818647/15093007
+            $has_public_ip =
+                filter_var(
+                    $maybe_ifinfo["ipaddr"],
+                    FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+            $is_vpn = strpos($maybe_ifinfo["if"], "ovpn") !== false;
+
+            return ($has_gw || $has_public_ip) && !$is_vpn;
+        });
+
+        $json_dict = array_map(function ($is_wan, $hwif) use ($ifcs) {
+            $maybe_ifinfo = Util::array_first($ifcs, fn($v) => ($v["hwif"] == $hwif));
+
+            $ifdescr = $maybe_ifinfo["description"];
+
+            return [
+                "{#IFNAME}" => $hwif,
+                "{#IFDESCR}" => $ifdescr,
+            ];
+        }, $ifaces_filtered);
+
+        if (!$is_cron) {
+            self::print_json($json_dict);
         }
-        $json_string = rtrim($json_string, ",");
-        $json_string .= "]}";
 
-        if ($is_cron) return $if_ret;
-
-        echo $json_string;
+        return $ifaces_filtered;
     }
 }
 
@@ -545,7 +545,6 @@ class PfzSpeedtest
             }
         }
     }
-
 
     // Installs a cron job for speedtests
     public static function speedtest_cron_install($enable = true)
@@ -977,7 +976,7 @@ class PfzCommands
         echo $line;
 
         $ifdescrs = PfEnv::get_configured_interface_with_descr(true);
-        $ifaces = array();
+        $ifaces = [];
         foreach ($ifdescrs as $ifdescr => $ifname) {
             $ifinfo = PfEnv::get_interface_info($ifdescr);
             $ifaces[$ifname] = $ifinfo;
@@ -1076,7 +1075,7 @@ class PfzCommands
         PfEnv::init_config_arr(array('ipsec', 'phase1'));
 
         $a_phase1 = &$config['ipsec']['phase1'];
-        $conmap = array();
+        $conmap = [];
         foreach ($a_phase1 as $ph1ent) {
             if (function_exists('get_ipsecifnum')) {
                 if (PfEnv::get_ipsecifnum($ph1ent['ikeid'], 0)) {
@@ -1091,7 +1090,7 @@ class PfzCommands
         }
 
         $status = PfEnv::ipsec_list_sa();
-        $ipsecconnected = array();
+        $ipsecconnected = [];
 
         $carp_status = self::carp_status(false);
 
