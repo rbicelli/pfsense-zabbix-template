@@ -300,7 +300,7 @@ class PfzDiscoveries
         echo $json_string;
     }
 
-    public static function wan($is_wan = false, $is_cron = false)
+    public static function wan()
     {
         self::discover_interface(true);
     }
@@ -399,7 +399,7 @@ class PfzDiscoveries
 
     // Services Discovery
     // 2020-03-27: Added space replace with __ for issue #12
-    public static function services_discovery()
+    public static function services()
     {
         $services = PfEnv::get_services();
 
