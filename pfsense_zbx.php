@@ -285,19 +285,18 @@ class Util
 
 class PfzDiscoveries
 {
+    private static function print_json(array $json)
+    {
+        echo json_encode([
+            "data" => $json
+        ]);
+    }
+
     public static function gw()
     {
         $gws = PfEnv::return_gateways_status(true);
 
-        $json_string = '{"data":[';
-        foreach ($gws as $gw) {
-            $json_string .= '{"{#GATEWAY}":"' . $gw['name'] . '"';
-            $json_string .= '},';
-        }
-        $json_string = rtrim($json_string, ",");
-        $json_string .= "]}";
-
-        echo $json_string;
+        self::print_json(array_map(fn($gw) => ["{#GATEWAY}" => $gw["name"]], $gws));
     }
 
     public static function wan()
@@ -326,23 +325,44 @@ class PfzDiscoveries
         echo $json_string;
     }
 
+    private static function sanitize_server_name(string $raw_name): string
+    {
+        return trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $raw_name));
+    }
+
     public static function openvpn_server()
     {
         $servers = PfzOpenVpn::get_all_openvpn_servers();
 
-        $json_string = '{"data":[';
+        self::print_json(array_map(fn($server) => [
+            "{#SERVER}" => $server['vpnid'],
+            "{#NAME}" => self::sanitize_server_name($server["name"])],
+            $servers));
+    }
 
-        foreach ($servers as $server) {
-            $name = trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $server['name']));
-            $json_string .= '{"{#SERVER}":"' . $server['vpnid'] . '"';
-            $json_string .= ',"{#NAME}":"' . $name . '"';
-            $json_string .= '},';
-        }
+    private static function map_conn(string $server_name, string $vpn_id, array $conn): array
+    {
+        return [
+            "{#SERVERID}" => $vpn_id,
+            "{#SERVERNAME}" => $server_name,
+            "{#UNIQUEID}" => sprintf("%s+%s", $vpn_id, Util::replace_special_chars($conn['common_name'])),
+            "{#USERID}" => Util::replace_special_chars($conn['common_name']),
+        ];
+    }
 
-        $json_string = rtrim($json_string, ",");
-        $json_string .= "]}";
+    private static function map_conns(string $server_name, string $vpn_id, array $conns): array
+    {
+        return array_map(
+            fn($conn) => self::map_conn($server_name, $vpn_id, $conn),
+            $conns);
+    }
 
-        echo $json_string;
+    private static function map_server(array $server): array
+    {
+        return self::map_conns(
+            self::sanitize_server_name($server["name"]),
+            $server["vpnid"],
+            $server["conns"]);
     }
 
     // OpenVPN Server/User-Auth Discovery
@@ -350,31 +370,16 @@ class PfzDiscoveries
     {
         $servers = PfzOpenVpn::get_all_openvpn_servers();
 
-        $json_string = '{"data":[';
+        $servers_with_relevant_mode =
+            array_filter(
+                $servers,
+                fn($server) => in_array($server["mode"], ["server_user", "server_tls_user", "server_tls"]));
 
-        foreach ($servers as $server) {
-            if (($server['mode'] == 'server_user') || ($server['mode'] == 'server_tls_user') || ($server['mode'] == 'server_tls')) {
-                if (is_array($server['conns'])) {
-                    $name = trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $server['name']));
+        $servers_with_conns = array_filter(
+            $servers_with_relevant_mode,
+            fn($server) => is_array($server["conns"]));
 
-                    foreach ($server['conns'] as $conn) {
-
-                        $common_name = Util::replace_special_chars($conn['common_name']);
-
-                        $json_string .= '{"{#SERVERID}":"' . $server['vpnid'] . '"';
-                        $json_string .= ',"{#SERVERNAME}":"' . $name . '"';
-                        $json_string .= ',"{#UNIQUEID}":"' . $server['vpnid'] . '+' . $common_name . '"';
-                        $json_string .= ',"{#USERID}":"' . $conn['common_name'] . '"';
-                        $json_string .= '},';
-                    }
-                }
-            }
-        }
-
-        $json_string = rtrim($json_string, ",");
-        $json_string .= "]}";
-
-        echo $json_string;
+        self::print_json(array_merge(...array_map(fn($s) => self::map_server($s), $servers_with_conns)));
     }
 
     // OpenVPN Client Discovery
@@ -399,7 +404,8 @@ class PfzDiscoveries
 
     // Services Discovery
     // 2020-03-27: Added space replace with __ for issue #12
-    public static function services()
+    public
+    static function services()
     {
         $services = PfEnv::get_services();
 
@@ -428,13 +434,15 @@ class PfzDiscoveries
         echo $json_string;
     }
 
-    public static function interfaces()
+    public
+    static function interfaces()
     {
         self::discover_interface();
     }
 
     // IPSEC Discovery
-    public static function ipsec_ph1()
+    public
+    static function ipsec_ph1()
     {
 
         require_once("ipsec.inc");
@@ -457,7 +465,8 @@ class PfzDiscoveries
 
     }
 
-    public static function ipsec_ph2()
+    public
+    static function ipsec_ph2()
     {
         require_once("ipsec.inc");
 
@@ -483,7 +492,8 @@ class PfzDiscoveries
 
     }
 
-    public static function dhcpfailover()
+    public
+    static function dhcpfailover()
     {
         //System public static functions regarding DHCP Leases will be available in the upcoming release of pfSense, so let's wait
         require_once("system.inc");
@@ -505,7 +515,8 @@ class PfzDiscoveries
 
     // Interface Discovery
     // Improved performance
-    private static function discover_interface($is_wan = false, $is_cron = false)
+    private
+    static function discover_interface($is_wan = false, $is_cron = false)
     {
         $ifdescrs = PfEnv::get_configured_interface_with_descr(true);
         $ifaces = PfEnv::get_interface_arr();
@@ -765,7 +776,7 @@ class PfzCommands
             echo "";
             return;
         }
-       
+
         echo trim($value[0]);
     }
 
