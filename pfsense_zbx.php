@@ -10,28 +10,20 @@ require_once("config.inc");
 require_once('globals.inc');
 require_once('functions.inc');
 require_once("util.inc");
-
-// For Interfaces Discovery
 require_once('interfaces.inc');
-
-// For OpenVPN Discovery
 require_once('openvpn.inc');
-
-// For Service Discovery
 require_once("service-utils.inc");
-
-// For System
 require_once('pkg-utils.inc');
-
-//Some Useful defines
-define('SPEEDTEST_INTERVAL', 8); // Speedtest Interval (in hours)
 
 define("COMMAND_HANDLERS", build_method_lookup(PfzCommands::class));
 
-// Argument parsers for Discovery
 define('DISCOVERY_SECTION_HANDLERS', build_method_lookup(PfzDiscoveries::class));
 
-define("VALUE_MAPPINGS", [
+define('SERVICES_VALUES', build_method_lookup(PfzServices::class));
+
+const SPEEDTEST_INTERVAL = 8; // Speedtest Interval (in hours)
+
+const VALUE_MAPPINGS = [
     "openvpn.server.status" => [
         "down" => "0",
         "up" => "1",
@@ -80,12 +72,12 @@ define("VALUE_MAPPINGS", [
         "established" => 1,
         "connecting" => 2,
         "installed" => 1,
-        "rekeyed" => 2]]);
+        "rekeyed" => 2]];
 
-define("CERT_VK_TO_FIELD", [
+const CERT_VK_TO_FIELD = [
     "validFrom.max" => "validFrom_time_t",
     "validTo.min" => "validTo_time_t",
-]);
+];
 
 const SMART_DEV_PASSED = "PASSED";
 const SMART_DEV_OK = "OK";
@@ -115,23 +107,31 @@ const CARP_RES = [
     CARP_MASTER => CARP_STATUS_OK
 ];
 
+class PfzServices
+{
+    public static function enabled($service, $name, $short_name): int
+    {
+        return Util::b2int(PfEnv::is_service_enabled($short_name));
+    }
 
-define("SERVICES_VALUES", [
-    "status" => function ($service) {
+    public static function name($service, string $name)
+    {
+        echo $name;
+    }
+
+    public static function status(string $service) : int
+    {
         $status = PfEnv::get_service_status($service);
 
         return ($status == "") ? 0 : $status;
-    },
-    "name" => function ($service, $name) {
-        echo $name;
-    },
-    "enabled" => function ($service, $name, $short_name) {
-        return Util::b2int(PfEnv::is_service_enabled($short_name));
-    },
-    "run_on_carp_slave" => function ($service, $name, $short_name, $carpcfr, $stopped_on_carp_slave) {
+
+    }
+
+    public static function run_on_carp_slave($service, $name, $short_name, $carpcfr, $stopped_on_carp_slave): int
+    {
         return Util::b2int(in_array($carpcfr, $stopped_on_carp_slave));
     }
-]);
+}
 
 // Abstract undefined symbols and globals from code
 class PfEnv
@@ -860,9 +860,9 @@ class PfzCommands
             return Util::result($value, true);
         }
 
-        $result = ($value_key == 'disabled') ?
-            "1" :
-            self::get_value_mapping("ipsec_ph2." . $value_key, $maybe_data[$value_key]);
+        $result = ($value_key != 'disabled') ?
+            self::get_value_mapping("ipsec_ph2." . $value_key, $maybe_data[$value_key]) :
+            "1";
 
         return Util::result($result, true);
     }
@@ -1055,35 +1055,38 @@ class PfzCommands
         PfEnv::init_config_arr(array('ipsec', 'phase1'));
 
         $a_phase1 = &$config['ipsec']['phase1'];
-        $conmap = [];
-        foreach ($a_phase1 as $ph1ent) {
+
+        $conmap = array_reduce($a_phase1, function ($p, $ph1ent) {
+            $ike_id = $ph1ent['ikeid'];
             if (function_exists('get_ipsecifnum')) {
-                if (PfEnv::get_ipsecifnum($ph1ent['ikeid'], 0)) {
-                    $cname = "con" . PfEnv::get_ipsecifnum($ph1ent['ikeid'], 0);
-                } else {
-                    $cname = "con{$ph1ent['ikeid']}00000";
-                }
+                $id_name = (PfEnv::get_ipsecifnum($ike_id, 0));
+
+                $cname = $id_name ? "con$id_name" : "con{$ike_id}00000";
             } else {
                 $cname = ipsec_conid($ph1ent);
             }
-            $conmap[$cname] = $ph1ent['ikeid'];
-        }
+
+            return [
+                ...$p,
+                $cname => $ph1ent[$ike_id],
+            ];
+        }, []);
 
         $status = PfEnv::ipsec_list_sa();
         $ipsecconnected = [];
 
         $carp_status = self::carp_status(false);
 
-        //Phase-Status match borrowed from status_ipsec.php	
+        // Phase-Status match borrowed from status_ipsec.php	
         if (is_array($status)) {
-            foreach ($status as $l_ikeid => $ikesa) {
+            foreach ($status as $ikesa) {
 
-                if (isset($ikesa['con-id'])) {
-                    $con_id = substr($ikesa['con-id'], 3);
-                } else {
-                    $con_id = filter_var($ike_id, FILTER_SANITIZE_NUMBER_INT);
-                }
+                $con_id = isset($ikesa['con-id']) ?
+                    substr($ikesa['con-id'], 3) :
+                    filter_var($ike_id, FILTER_SANITIZE_NUMBER_INT);
+
                 $con_name = "con" . $con_id;
+
                 if ($ikesa['version'] == 1) {
                     $ph1idx = $conmap[$con_name];
                     $ipsecconnected[$ph1idx] = $ph1idx;
@@ -1096,16 +1099,15 @@ class PfzCommands
                         $ipsecconnected[$con_id] = $ph1idx = $con_id;
                     }
                 }
+
                 if ($ph1idx == $ike_id) {
                     if ($req_id != -1) {
                         // Asking for Phase2 Status Value
                         foreach ($ikesa['child-sas'] as $childsas) {
                             if ($childsas['reqid'] == $req_id) {
+                                //if state is rekeyed go on
+                                $tmp_value = $childsas[$value_key];
                                 if (strtolower($childsas['state']) == 'rekeyed') {
-                                    //if state is rekeyed go on
-                                    $tmp_value = $childsas[$value_key];
-                                } else {
-                                    $tmp_value = $childsas[$value_key];
                                     break;
                                 }
                             }
