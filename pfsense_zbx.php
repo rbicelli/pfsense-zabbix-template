@@ -6,21 +6,21 @@
  * Written by Riccardo Bicelli <r.bicelli@gmail.com>
  * This program is licensed under Apache 2.0 License
  */
+require_once("config.inc");
 require_once('globals.inc');
 require_once('functions.inc');
-require_once('config.inc');
-require_once('util.inc');
+require_once("util.inc");
 
-//For Interfaces Discovery
+// For Interfaces Discovery
 require_once('interfaces.inc');
 
-//For OpenVPN Discovery
+// For OpenVPN Discovery
 require_once('openvpn.inc');
 
-//For Service Discovery
+// For Service Discovery
 require_once("service-utils.inc");
 
-//For System
+// For System
 require_once('pkg-utils.inc');
 
 //Some Useful defines
@@ -98,25 +98,25 @@ define('SMART_DEV_STATUS', [
 
 define("DHCP_SECTIONS", [
     "failover" => function () {
-        echo self::pfz_dhcp_check_failover();
+        echo PfzCommands::pfz_dhcp_check_failover();
     },
 ]);
 
 define("OPENVPN_SERVER_VALUES", [
     // Client Connections: is an array so it is sufficient to count elements                    
     "conns" => fn($server_value) => is_array($server_value) ? count($server_value) : 0,
-    "status" => fn($server_value) => self::pfz_value_mapping("openvpn.server.status", $server_value),
-    "mode" => fn($server_value) => self::pfz_value_mapping("openvpn.server.mode", $server_value)
+    "status" => fn($server_value) => PfzCommands::pfz_value_mapping("openvpn.server.status", $server_value),
+    "mode" => fn($server_value) => PfzCommands::pfz_value_mapping("openvpn.server.mode", $server_value)
 ]);
 
 define("IPSEC_PH1_VALUES", [
-    'status' => fn($ike_id) => self::pfz_ipsec_status($ike_id),
+    'status' => fn($ike_id) => PfzCommands::pfz_ipsec_status($ike_id),
     'disabled' => fn() => "0",
 ]);
 
 define("SERVICES_VALUES", [
     "status" => function ($service) {
-        $status = get_service_status($service);
+        $status = PfEnv::get_service_status($service);
 
         return ($status == "") ? 0 : $status;
     },
@@ -124,21 +124,145 @@ define("SERVICES_VALUES", [
         echo $name;
     },
     "enabled" => function ($service, $name, $short_name) {
-        return Util::b2int(is_service_enabled($short_name));
+        return Util::b2int(PfEnv::is_service_enabled($short_name));
     },
     "run_on_carp_slave" => function ($service, $name, $short_name, $carpcfr, $stopped_on_carp_slave) {
         return Util::b2int(in_array($carpcfr, $stopped_on_carp_slave));
     }
 ]);
 
+// Abstract undefined symbols and globals from code
 class PfEnv
 {
+    public const CRT = crt;
+
     public static function cfg()
     {
-        // Abstract global variable from code
         global $config;
 
         return $config;
+    }
+
+    private static function call_pfsense_method_with_same_name_and_arguments()
+    {
+        $caller_function_name = debug_backtrace()[1]['function'];
+
+        return call_user_func($caller_function_name, ...func_get_args());
+    }
+
+    public static function openvpn_get_active_servers()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function install_cron_job()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function openvpn_get_active_clients()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function system_get_dhcpleases()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function get_configured_interface_list()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function get_services()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function get_configured_interface_with_descr()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function get_interface_arr()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function get_interface_info()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function get_smart_drive_list()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function is_service_enabled()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function get_service_status()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function init_config_arr()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function get_ipsecifnum()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function ipsec_list_sa()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function return_gateways_status()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function get_pkg_info()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function convert_friendly_interface_to_friendly_descr()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function get_carp_interface_status()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function get_single_sysctl()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function get_carp_status()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function ipsec_ikeid_used()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
+    public static function get_system_pkg_version()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
     }
 }
 
@@ -183,15 +307,15 @@ class PfzDiscoveries
     // Improved performance
     public static function pfz_interface_discovery($is_wan = false, $is_cron = false)
     {
-        $ifdescrs = get_configured_interface_with_descr(true);
-        $ifaces = get_interface_arr();
+        $ifdescrs = PfEnv::get_configured_interface_with_descr(true);
+        $ifaces = PfEnv::get_interface_arr();
         $ifcs = array();
         $if_ret = array();
 
         $json_string = '{"data":[';
 
         foreach ($ifdescrs as $ifname => $ifdescr) {
-            $ifinfo = get_interface_info($ifname);
+            $ifinfo = PfEnv::get_interface_info($ifname);
             $ifinfo["description"] = $ifdescr;
             $ifcs[$ifname] = $ifinfo;
         }
@@ -232,7 +356,7 @@ class PfzDiscoveries
 
     public static function pfz_openvpn_serverdiscovery()
     {
-        $servers = self::pfz_openvpn_get_all_servers();
+        $servers = PfzCommands::pfz_openvpn_get_all_servers();
 
         $json_string = '{"data":[';
 
@@ -252,7 +376,7 @@ class PfzDiscoveries
     // OpenVPN Server/User-Auth Discovery
     public static function pfz_openvpn_server_userdiscovery()
     {
-        $servers = self::pfz_openvpn_get_all_servers();
+        $servers = PfzCommands::pfz_openvpn_get_all_servers();
 
         $json_string = '{"data":[';
 
@@ -283,7 +407,7 @@ class PfzDiscoveries
 
     public static function pfz_gw_discovery()
     {
-        $gws = return_gateways_status(true);
+        $gws = PfEnv::return_gateways_status(true);
 
         $json_string = '{"data":[';
         foreach ($gws as $gw) {
@@ -302,7 +426,7 @@ class PfzDiscoveries
 
         require_once("ipsec.inc");
         $config = PfEnv::cfg();
-        init_config_arr(array('ipsec', 'phase1'));
+        PfEnv::init_config_arr(array('ipsec', 'phase1'));
         $a_phase1 = &$config['ipsec']['phase1'];
 
         $json_string = '{"data":[';
@@ -326,7 +450,7 @@ class PfzDiscoveries
         require_once("ipsec.inc");
 
         $config = PfEnv::cfg();
-        init_config_arr(array('ipsec', 'phase2'));
+        PfEnv::init_config_arr(array('ipsec', 'phase2'));
         $a_phase2 = &$config['ipsec']['phase2'];
 
         $json_string = '{"data":[';
@@ -351,7 +475,7 @@ class PfzDiscoveries
     {
         //System public static functions regarding DHCP Leases will be available in the upcoming release of pfSense, so let's wait
         require_once("system.inc");
-        $leases = system_get_dhcpleases();
+        $leases = PfEnv::system_get_dhcpleases();
 
         $json_string = '{"data":[';
 
@@ -370,7 +494,7 @@ class PfzDiscoveries
     // OpenVPN Client Discovery
     public static function pfz_openvpn_clientdiscovery()
     {
-        $clients = openvpn_get_active_clients();
+        $clients = PfEnv::openvpn_get_active_clients();
 
         $json_string = '{"data":[';
 
@@ -391,14 +515,14 @@ class PfzDiscoveries
     // 2020-03-27: Added space replace with __ for issue #12
     public static function pfz_services_discovery()
     {
-        $services = get_services();
+        $services = PfEnv::get_services();
 
         $json_string = '{"data":[';
 
         foreach ($services as $service) {
             if (!empty($service['name'])) {
 
-                $status = get_service_status($service);
+                $status = PfEnv::get_service_status($service);
                 if ($status = "") $status = 0;
 
                 $id = "";
@@ -431,24 +555,24 @@ class PfzCommands
         print_r($ovpn_servers);
         echo $line;
 
-        $ovpn_clients = openvpn_get_active_clients();
+        $ovpn_clients = PfEnv::openvpn_get_active_clients();
         echo "OPENVPN Clients:\n";
         print_r($ovpn_clients);
         echo $line;
 
-        $ifdescrs = self::get_configured_interface_with_descr(true);
+        $ifdescrs = PfEnv::get_configured_interface_with_descr(true);
         $ifaces = array();
         foreach ($ifdescrs as $ifdescr => $ifname) {
-            $ifinfo = self::get_interface_info($ifdescr);
+            $ifinfo = PfEnv::get_interface_info($ifdescr);
             $ifaces[$ifname] = $ifinfo;
         }
         echo "Network Interfaces:\n";
         print_r($ifaces);
-        print_r(self::get_interface_arr());
-        print_r(self::get_configured_interface_list());
+        print_r(PfEnv::get_interface_arr());
+        print_r(PfEnv::get_configured_interface_list());
         echo $line;
 
-        $services = self::get_services();
+        $services = PfEnv::get_services();
         echo "Services: \n";
         print_r($services);
         echo $line;
@@ -457,10 +581,10 @@ class PfzCommands
 
         require_once("ipsec.inc");
         $config = PfEnv::cfg();
-        self::init_config_arr(array('ipsec', 'phase1'));
-        self::init_config_arr(array('ipsec', 'phase2'));
+        PfEnv::init_config_arr(array('ipsec', 'phase1'));
+        PfEnv::init_config_arr(array('ipsec', 'phase2'));
         $a_phase2 = &$config['ipsec']['phase2'];
-        $status = self::ipsec_list_sa();
+        $status = PfEnv::ipsec_list_sa();
         echo "IPsec Status: \n";
         print_r($status);
 
@@ -478,7 +602,7 @@ class PfzCommands
         //Packages
         echo "Packages: \n";
         require_once("pkg-utils.inc");
-        $installed_packages = self::get_pkg_info('all', false, true);
+        $installed_packages = PfEnv::get_pkg_info('all', false, true);
         print_r($installed_packages);
     }
 
@@ -512,8 +636,8 @@ class PfzCommands
     public static function pfz_speedtest_cron()
     {
         require_once("services.inc");
-        $ifdescrs = get_configured_interface_with_descr(true);
-        $ifaces = get_interface_arr();
+        $ifdescrs = PfEnv::get_configured_interface_with_descr(true);
+        $ifaces = PfEnv::get_interface_arr();
         $pf_interface_name = '';
         $subvalue = false;
 
@@ -522,7 +646,7 @@ class PfzCommands
         foreach ($ifcs as $ifname) {
 
             foreach ($ifdescrs as $ifn => $ifd) {
-                $ifinfo = get_interface_info($ifn);
+                $ifinfo = PfEnv::get_interface_info($ifn);
                 if ($ifinfo['hwif'] == $ifname) {
                     $pf_interface_name = $ifn;
                     break;
@@ -539,7 +663,7 @@ class PfzCommands
     {
         //Install Cron Job
         $command = "/usr/local/bin/php " . __FILE__ . " speedtest_cron";
-        install_cron_job($command, $enable, $minute = "*/15", "*", "*", "*", "*", "root", true);
+        PfEnv::install_cron_job($command, $enable, $minute = "*/15", "*", "*", "*", "*", "root", true);
     }
 
     public static function pfz_speedtest_exec($ifname, $ipaddr): bool
@@ -573,8 +697,8 @@ class PfzCommands
     // OpenVPN Server Discovery
     public static function pfz_openvpn_get_all_servers()
     {
-        $servers = openvpn_get_active_servers();
-        $sk_servers = openvpn_get_active_servers("p2p");
+        $servers = PfEnv::openvpn_get_active_servers();
+        $sk_servers = PfEnv::openvpn_get_active_servers("p2p");
         $servers = array_merge($servers, $sk_servers);
         return ($servers);
     }
@@ -623,7 +747,7 @@ class PfzCommands
     }
 
     // Get OpenVPN User Connected Value
-    public static function pfz_openvpn_server_uservalue($unique_id, $valuekey, $default = "")
+    public static function pfz_openvpn_server_uservalue($unique_id, $value_key, $default = "")
     {
         $unique_id = Util::replace_special_chars($unique_id, true);
         $atpos = strpos($unique_id, '+');
@@ -635,7 +759,7 @@ class PfzCommands
             if ($server['vpnid'] == $server_id) {
                 foreach ($server['conns'] as $conn) {
                     if ($conn['common_name'] == $user_id) {
-                        $value = $conn[$valuekey];
+                        $value = $conn[$value_key];
                     }
                 }
             }
@@ -646,7 +770,7 @@ class PfzCommands
 
     public static function pfz_openvpn_client_value($client_id, $value_key, $fallback_value = "none")
     {
-        $clients = openvpn_get_active_clients();
+        $clients = PfEnv::openvpn_get_active_clients();
 
         $client = Util::array_first($clients, fn($client) => $client['vpnid'] == $client_id);
 
@@ -669,7 +793,7 @@ class PfzCommands
     // 2020-09-28: Corrected Space Replace
     public static function pfz_service_value($name, $value)
     {
-        $services = get_services();
+        $services = PfEnv::get_services();
         $name = str_replace("__", " ", $name);
 
         // List of service which are stopped on CARP Slave.
@@ -701,12 +825,12 @@ class PfzCommands
         }
     }
 
-    public static function pfz_gw_value($gw, $valuekey)
+    public static function pfz_gw_value($gw, $value_key)
     {
-        $gws = return_gateways_status(true);
+        $gws = PfEnv::return_gateways_status(true);
         if (array_key_exists($gw, $gws)) {
-            $value = $gws[$gw][$valuekey];
-            if ($valuekey == "status") {
+            $value = $gws[$gw][$value_key];
+            if ($value_key == "status") {
                 //Issue #70: Gateway Forced Down
                 if ($gws[$gw]["substatus"] <> "none")
                     $value = $gws[$gw]["substatus"];
@@ -723,7 +847,7 @@ class PfzCommands
         // If Getting "disabled" value only check item presence in config array
         require_once("ipsec.inc");
         $config = PfEnv::cfg();
-        init_config_arr(array('ipsec', 'phase1'));
+        PfEnv::init_config_arr(array('ipsec', 'phase1'));
         $a_phase1 = &$config['ipsec']['phase1'];
 
         $is_known_ipsec_key = array_key_exists($value_key, IPSEC_PH1_VALUES);
@@ -751,14 +875,14 @@ class PfzCommands
         echo self::pfz_value_mapping("ipsec." . $value_key, $maybe_ike_match[$value_key]);
     }
 
-    public static function pfz_ipsec_ph2($uniqid, $valuekey)
+    public static function pfz_ipsec_ph2($uniqid, $value_key)
     {
         require_once("ipsec.inc");
         $config = PfEnv::cfg();
-        init_config_arr(array('ipsec', 'phase2'));
+        PfEnv::init_config_arr(array('ipsec', 'phase2'));
         $a_phase2 = &$config['ipsec']['phase2'];
 
-        $valuecfr = explode(".", $valuekey);
+        $valuecfr = explode(".", $value_key);
 
         switch ($valuecfr[0]) {
             case 'status':
@@ -773,11 +897,11 @@ class PfzCommands
 
         foreach ($a_phase2 as $data) {
             if ($data['uniqid'] == $uniqid) {
-                if (array_key_exists($valuekey, $data)) {
-                    if ($valuekey == 'disabled')
+                if (array_key_exists($value_key, $data)) {
+                    if ($value_key == 'disabled')
                         $value = "1";
                     else
-                        $value = self::pfz_value_mapping("ipsec_ph2." . $valuekey, $data[$valuekey], $data[$valuekey]);
+                        $value = self::pfz_value_mapping("ipsec_ph2." . $value_key, $data[$value_key], $data[$value_key]);
                     break;
                 }
             }
@@ -790,14 +914,14 @@ class PfzCommands
 
         require_once("ipsec.inc");
         $config = PfEnv::cfg();
-        init_config_arr(array('ipsec', 'phase1'));
+        PfEnv::init_config_arr(array('ipsec', 'phase1'));
 
         $a_phase1 = &$config['ipsec']['phase1'];
         $conmap = array();
         foreach ($a_phase1 as $ph1ent) {
             if (function_exists('get_ipsecifnum')) {
-                if (get_ipsecifnum($ph1ent['ikeid'], 0)) {
-                    $cname = "con" . get_ipsecifnum($ph1ent['ikeid'], 0);
+                if (PfEnv::get_ipsecifnum($ph1ent['ikeid'], 0)) {
+                    $cname = "con" . PfEnv::get_ipsecifnum($ph1ent['ikeid'], 0);
                 } else {
                     $cname = "con{$ph1ent['ikeid']}00000";
                 }
@@ -808,7 +932,7 @@ class PfzCommands
             $conmap[$cname] = $ph1ent['ikeid'];
         }
 
-        $status = ipsec_list_sa();
+        $status = PfEnv::ipsec_list_sa();
         $ipsecconnected = array();
 
         $carp_status = self::pfz_carp_status(false);
@@ -827,7 +951,7 @@ class PfzCommands
                     $ph1idx = $conmap[$con_name];
                     $ipsecconnected[$ph1idx] = $ph1idx;
                 } else {
-                    if (!ipsec_ikeid_used($con_id)) {
+                    if (!PfEnv::ipsec_ikeid_used($con_id)) {
                         // probably a v2 with split connection then
                         $ph1idx = $conmap[$con_name];
                         $ipsecconnected[$ph1idx] = $ph1idx;
@@ -909,8 +1033,8 @@ class PfzCommands
         //Detect CARP Status
         $config = PfEnv::cfg();
         $status_return = 0;
-        $status = get_carp_status();
-        $carp_detected_problems = get_single_sysctl("net.inet.carp.demotion");
+        $status = PfEnv::get_carp_status();
+        $carp_detected_problems = PfEnv::get_single_sysctl("net.inet.carp.demotion");
 
         //CARP is disabled
         $ret = 0;
@@ -930,7 +1054,7 @@ class PfzCommands
                 if ($carp['mode'] != "carp") {
                     continue;
                 }
-                $if_status = get_carp_interface_status("_vip{$carp['uniqid']}");
+                $if_status = PfEnv::get_carp_interface_status("_vip{$carp['uniqid']}");
 
                 if (($prev_status != $if_status) && (empty($if_status) == false)) { //Some glitches with GUI
                     if ($prev_status != "") $status_changed = true;
@@ -968,10 +1092,9 @@ class PfzCommands
     }
 
     // Get DHCP Arrays (copied from status_dhcp_leases.php, waiting for pfsense 2.5, in order to use system_get_dhcpleases();)
-    public static function pfz_dhcp_get($valuekey)
+    public static function pfz_dhcp_get($value_key)
     {
 
-        require_once("config.inc");
 
         $leasesfile = "{$g['dhcpd_chroot_path']}/var/db/dhcpd.leases";
 
@@ -1001,7 +1124,7 @@ class PfzCommands
                 switch ($data[$f]) {
                     case "failover":
                         $pools[$p]['name'] = trim($data[$f + 2], '"');
-                        $pools[$p]['name'] = "{$pools[$p]['name']} (" . convert_friendly_interface_to_friendly_descr(substr($pools[$p]['name'], 5)) . ")";
+                        $pools[$p]['name'] = "{$pools[$p]['name']} (" . PfEnv::convert_friendly_interface_to_friendly_descr(substr($pools[$p]['name'], 5)) . ")";
                         $pools[$p]['mystate'] = $data[$f + 7];
                         $pools[$p]['peerstate'] = $data[$f + 14];
                         $pools[$p]['mydate'] = $data[$f + 10];
@@ -1111,7 +1234,7 @@ class PfzCommands
             asort($pools);
         }
 
-        switch ($valuekey) {
+        switch ($value_key) {
             case "pools":
                 return $pools;
                 break;
@@ -1131,7 +1254,7 @@ class PfzCommands
         echo implode(",",
             array_map(
                 fn($gw) => sprintf("%s.%s", $gw['name'], $gw['status']),
-                self::return_gateways_status(true)));
+                PfEnv::return_gateways_status(true)));
     }
 
     public static function pfz_dhcp_check_failover()
@@ -1144,7 +1267,7 @@ class PfzCommands
         return count(array_filter($failover, fn($f) => ($f["mystate"] != "normal") || ($f["mystate"] != $f["peerstate"])));
     }
 
-    public static function pfz_dhcp($section, $valuekey = "")
+    public static function pfz_dhcp($section, $value_key = "")
     {
         $is_known_section = array_key_exists($section, DHCP_SECTIONS);
         if (!$is_known_section) {
@@ -1158,7 +1281,7 @@ class PfzCommands
     public static function pfz_packages_uptodate()
     {
         require_once("pkg-utils.inc");
-        $installed_packages = self::get_pkg_info("all", false, true);
+        $installed_packages = PfEnv::get_pkg_info("all", false, true);
 
 
         return count(array_filter(
@@ -1174,7 +1297,7 @@ class PfzCommands
             return;
         }
 
-        $system_pkg_version = self::get_system_pkg_version();
+        $system_pkg_version = PfEnv::get_system_pkg_version();
         $version = $system_pkg_version["version"];
         $installed_version = $system_pkg_version["installed_version"];
 
@@ -1192,7 +1315,7 @@ class PfzCommands
     // Taken from /usr/local/www/widgets/widgets/smart_status.widget.php
     public static function pfz_get_smart_status()
     {
-        foreach (get_smart_drive_list() as $dev) { ## for each found drive do                
+        foreach (PfEnv::get_smart_drive_list() as $dev) { ## for each found drive do                
             $dev_state = trim(exec("smartctl -H /dev/$dev | awk -F: '/^SMART overall-health self-assessment test result/ {print $2;exit}
 /^SMART Health Status/ {print $2;exit}'")); ## get SMART state from drive
             $is_known_state = array_key_exists($dev_state, SMART_DEV_STATUS);
@@ -1210,22 +1333,22 @@ class PfzCommands
     }
 
     // Certificats validity date
-    public static function pfz_get_cert_date($valuekey)
+    public static function pfz_get_cert_date($value_key)
     {
         $config = PfEnv::cfg();
 
         $value = 0;
         foreach (array("cert", "ca") as $cert_type) {
-            switch ($valuekey) {
+            switch ($value_key) {
                 case "validFrom.max":
                     foreach ($config[$cert_type] as $cert) {
-                        $certinfo = openssl_x509_parse(base64_decode($cert[crt]));
+                        $certinfo = openssl_x509_parse(base64_decode($cert[PfEnv::CRT]));
                         if ($value == 0 or $value < $certinfo['validFrom_time_t']) $value = $certinfo['validFrom_time_t'];
                     }
                     break;
                 case "validTo.min":
                     foreach ($config[$cert_type] as $cert) {
-                        $certinfo = openssl_x509_parse(base64_decode($cert[crt]));
+                        $certinfo = openssl_x509_parse(base64_decode($cert[PfEnv::CRT]));
                         if ($value == 0 or $value > $certinfo['validTo_time_t']) $value = $certinfo['validTo_time_t'];
                     }
                     break;
