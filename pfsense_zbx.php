@@ -461,61 +461,43 @@ class PfzDiscoveries
             $server["conns"]);
     }
 
-    private static function discover_interface($is_wan = false, $is_cron = false): array
+    private static function discover_interface($is_wan = false)
     {
-        $ifdescrs = PfEnv::get_configured_interface_with_descr(true);
-        $ifaces = PfEnv::get_interface_arr();
 
         if (!$is_wan) {
-            if (!$is_cron) {
-                self::print_json([]);
-            }
-
-            return [];
+            self::print_json([]);
+            return;
         }
 
-        $ifcs = array_reduce(array_keys($ifdescrs), function ($p, $c) use ($ifdescrs) {
+        $if_descriptions = PfEnv::get_configured_interface_with_descr(true);
+
+        $interfaces = array_map(function ($interface) {
+            list ($if_name, $description) = $interface;
+
             return [
-                ...$p,
-                $c => [
-                    ...PfEnv::get_interface_info($c),
-                    "description" => $ifdescrs[$c],
-                ]];
-        }, []);
+                ...PfEnv::get_interface_info($if_name),
+                "description" => $description,
+            ];
+        }, array_map(null, array_keys($if_descriptions), array_values($if_descriptions)));
 
-        $ifaces_filtered = array_filter($ifaces, function ($hwif) use ($ifcs) {
-            $maybe_ifinfo = Util::array_first($ifcs, fn($v) => ($v["hwif"] == $hwif));
-            if (!$maybe_ifinfo) {
-                return false;
-            }
-
-            $has_gw = array_key_exists("gateway", $maybe_ifinfo);
+        $wan_interfaces = array_filter($interfaces, function ($iface_info_ext) {
+            $has_gw = array_key_exists("gateway", $iface_info_ext);
             //	Issue #81 - https://stackoverflow.com/a/13818647/15093007
             $has_public_ip =
                 filter_var(
-                    $maybe_ifinfo["ipaddr"],
+                    $iface_info_ext["ipaddr"],
                     FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
-            $is_vpn = strpos($maybe_ifinfo["if"], "ovpn") !== false;
+            $is_vpn = strpos($iface_info_ext["if"], "ovpn") !== false;
 
             return ($has_gw || $has_public_ip) && !$is_vpn;
         });
 
-        $json_dict = array_map(function ($is_wan, $hwif) use ($ifcs) {
-            $maybe_ifinfo = Util::array_first($ifcs, fn($v) => ($v["hwif"] == $hwif));
-
-            $ifdescr = $maybe_ifinfo["description"];
-
+        self::print_json(array_map(function ($hwif) {
             return [
-                "{#IFNAME}" => $hwif,
-                "{#IFDESCR}" => $ifdescr,
+                "{#IFNAME}" => $hwif['hwif'],
+                "{#IFDESCR}" => $hwif["description"],
             ];
-        }, $ifaces_filtered);
-
-        if (!$is_cron) {
-            self::print_json($json_dict);
-        }
-
-        return $ifaces_filtered;
+        }, $wan_interfaces));
     }
 }
 
@@ -524,26 +506,19 @@ class PfzSpeedtest
     // Interface Speedtest
     public static function interface_speedtest_value($if_name, $value)
     {
-        $tvalue = explode(".", $value);
+        list($tv0, $tv1) = explode(".", $value);
 
-        if (count($tvalue) > 1) {
-            $value = $tvalue[0];
-            $subvalue = $tvalue[1];
-        }
-
-        //If the interface has a gateway is considered WAN, so let's do the speedtest
         $filename = "/tmp/speedtest-$if_name";
-
-        if (file_exists($filename)) {
-            $speedtest_data = json_decode(file_get_contents($filename), true);
-
-            if (array_key_exists($value, $speedtest_data)) {
-                if ($subvalue == false)
-                    echo $speedtest_data[$value];
-                else
-                    echo $speedtest_data[$value][$subvalue];
-            }
+        if (!file_exists($filename)) {
+            return;
         }
+
+        $speedtest_data = json_decode(file_get_contents($filename), true);
+        if (array_key_exists($value, $speedtest_data)) {
+            return;
+        }
+
+        echo empty($tv1) ? $speedtest_data[$value] : $speedtest_data[$tv0][$tv1];
     }
 
     // Installs a cron job for speedtests
@@ -554,7 +529,7 @@ class PfzSpeedtest
         PfEnv::install_cron_job($command, $enable, $minute = "*/15", "*", "*", "*", "*", "root", true);
     }
 
-    public static function speedtest_exec($if_name, $ip_address): bool
+    public static function speedtest_exec($if_name, $ip_address)
     {
 
         $filename = "/tmp/speedtest-$if_name";
@@ -566,19 +541,23 @@ class PfzSpeedtest
         sleep(rand(1, 90));
 
         if ((time() - filemtime($filename) > SPEEDTEST_INTERVAL * 3600) || (file_exists($filename) == false)) {
-            // file is older than SPEEDTEST_INTERVAL
-            if ((time() - filemtime($filerun) > 180)) @unlink($filerun);
-
-            if (file_exists($filerun) == false) {
-                touch($filerun);
-                $st_command = "/usr/local/bin/speedtest --source $ip_address --json > $filetemp";
-                exec($st_command);
-                rename($filetemp, $filename);
-                @unlink($filerun);
-            }
+            return;
         }
 
-        return true;
+        // file is older than SPEEDTEST_INTERVAL
+        if ((time() - filemtime($filerun) > 180)) {
+            @unlink($filerun);
+        }
+
+        if (file_exists($filerun)) {
+            return;
+        }
+
+        touch($filerun);
+        $st_command = "/usr/local/bin/speedtest --source $ip_address --json > $filetemp";
+        exec($st_command);
+        rename($filetemp, $filename);
+        @unlink($filerun);
     }
 }
 
