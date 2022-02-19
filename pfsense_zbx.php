@@ -320,6 +320,36 @@ class Util
     }
 }
 
+class PfzInterfaces
+{
+    public static function retrieve_wan_interfaces(): array
+    {
+        $if_descriptions = PfEnv::get_configured_interface_with_descr(true);
+
+        $interfaces = array_map(function ($interface) {
+            list ($if_name, $description) = $interface;
+
+            return [
+                ...PfEnv::get_interface_info($if_name),
+                "description" => $description,
+            ];
+        }, array_map(null, array_keys($if_descriptions), array_values($if_descriptions)));
+
+        return array_filter($interfaces, function ($iface_info_ext) {
+            $has_gw = array_key_exists("gateway", $iface_info_ext);
+            //	Issue #81 - https://stackoverflow.com/a/13818647/15093007
+            $has_public_ip =
+                filter_var(
+                    $iface_info_ext["ipaddr"],
+                    FILTER_VALIDATE_IP,
+                    FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+            $is_vpn = strpos($iface_info_ext["if"], "ovpn") !== false;
+
+            return ($has_gw || $has_public_ip) && !$is_vpn;
+        });
+    }
+}
+
 class PfzDiscoveries
 {
     public static function gw()
@@ -491,42 +521,17 @@ class PfzDiscoveries
 
     private static function discover_interface($is_wan = false)
     {
-
         if (!$is_wan) {
             self::print_json([]);
             return;
         }
-
-        $if_descriptions = PfEnv::get_configured_interface_with_descr(true);
-
-        $interfaces = array_map(function ($interface) {
-            list ($if_name, $description) = $interface;
-
-            return [
-                ...PfEnv::get_interface_info($if_name),
-                "description" => $description,
-            ];
-        }, array_map(null, array_keys($if_descriptions), array_values($if_descriptions)));
-
-        $wan_interfaces = array_filter($interfaces, function ($iface_info_ext) {
-            $has_gw = array_key_exists("gateway", $iface_info_ext);
-            //	Issue #81 - https://stackoverflow.com/a/13818647/15093007
-            $has_public_ip =
-                filter_var(
-                    $iface_info_ext["ipaddr"],
-                    FILTER_VALIDATE_IP,
-                    FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
-            $is_vpn = strpos($iface_info_ext["if"], "ovpn") !== false;
-
-            return ($has_gw || $has_public_ip) && !$is_vpn;
-        });
 
         self::print_json(array_map(function ($hwif) {
             return [
                 "{#IFNAME}" => $hwif['hwif'],
                 "{#IFDESCR}" => $hwif["description"],
             ];
-        }, $wan_interfaces));
+        }, PfzInterfaces::retrieve_wan_interfaces()));
     }
 }
 
@@ -875,21 +880,8 @@ class PfzCommands
 
     public static function speedtest_cron()
     {
-        $ifdescrs = PfEnv::get_configured_interface_with_descr(true);
-
-        $ifcs = PfzDiscoveries::interfaces(); // FIXME ED Retrieve interfaces
-
-        foreach ($ifcs as $if_name) {
-
-            foreach ($ifdescrs as $ifn => $ifd) {
-                $if_info = PfEnv::get_interface_info($ifn);
-                if ($if_info['hwif'] == $if_name) {
-                    $pf_interface_name = $ifn;
-                    break;
-                }
-            }
-
-            PfzSpeedtest::exec($if_name, $if_info['ipaddr']);
+        foreach (PfzInterfaces::retrieve_wan_interfaces() as $if_info) {
+            PfzSpeedtest::exec($if_info["hwif"], $if_info["ipaddr"]);
         }
     }
 
