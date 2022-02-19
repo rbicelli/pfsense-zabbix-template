@@ -1045,17 +1045,35 @@ class PfzCommands
         return $raw_value;
     }
 
-    private static function get_ipsec_status($ike_id, $req_id = -1, $value_key = 'state')
+    private static function get_ipsec_status($ike_id, $req_id = -1, $value_key = "state")
     {
-
         require_once("ipsec.inc");
+        PfEnv::init_config_arr(array("ipsec", "phase1"));
+
+        $result = "";
+
+        $process_result = function ($vk, $r) {
+            if ($vk != "state") {
+                return $r;
+            }
+
+            $v = self::get_value_mapping("ipsec.state", strtolower($r));
+
+            $carp_status = self::carp_status(false);
+
+            return ($carp_status != 0) ? $v + (10 * ($carp_status - 1)) : $v;
+        };
+
+        $ipsec_list_sa = PfEnv::ipsec_list_sa();
+        if (!is_array($ipsec_list_sa)) {
+            return $process_result($value_key, $result);
+        }
+
         $config = PfEnv::cfg();
-        PfEnv::init_config_arr(array('ipsec', 'phase1'));
 
-        $a_phase1 = &$config['ipsec']['phase1'];
+        $connection_map = array_reduce($config["ipsec"]["phase1"], function ($p, $ph1ent) {
+            $ike_id = $ph1ent["ikeid"];
 
-        $conmap = array_reduce($a_phase1, function ($p, $ph1ent) {
-            $ike_id = $ph1ent['ikeid'];
             if (function_exists('get_ipsecifnum')) {
                 $id_name = (PfEnv::get_ipsecifnum($ike_id, 0));
 
@@ -1070,62 +1088,40 @@ class PfzCommands
             ];
         }, []);
 
-        $status = PfEnv::ipsec_list_sa();
-        $ipsecconnected = [];
-
-        $carp_status = self::carp_status(false);
-
         // Phase-Status match borrowed from status_ipsec.php	
-        if (is_array($status)) {
-            foreach ($status as $ikesa) {
+        $maybe_ike_sa = Util::array_first($ipsec_list_sa, function ($ike_sa) use ($ike_id, $connection_map) {
+            $con_id = isset($ike_sa["con-id"]) ?
+                substr($ike_sa["con-id"], 3) :
+                filter_var($ike_id, FILTER_SANITIZE_NUMBER_INT);
 
-                $con_id = isset($ikesa['con-id']) ?
-                    substr($ikesa['con-id'], 3) :
-                    filter_var($ike_id, FILTER_SANITIZE_NUMBER_INT);
+            $con_name = "con$con_id";
 
-                $con_name = "con" . $con_id;
+            $is_version_1 = $ike_sa['version'] == 1;
+            $is_split_connection = !$is_version_1 && !PfEnv::ipsec_ikeid_used($con_id);
 
-                if ($ikesa['version'] == 1) {
-                    $ph1idx = $conmap[$con_name];
-                    $ipsecconnected[$ph1idx] = $ph1idx;
-                } else {
-                    if (!PfEnv::ipsec_ikeid_used($con_id)) {
-                        // probably a v2 with split connection then
-                        $ph1idx = $conmap[$con_name];
-                        $ipsecconnected[$ph1idx] = $ph1idx;
-                    } else {
-                        $ipsecconnected[$con_id] = $ph1idx = $con_id;
-                    }
-                }
+            $ph1idx = ($is_version_1 || $is_split_connection) ? $connection_map[$con_name] : $con_id;
 
-                if ($ph1idx == $ike_id) {
-                    if ($req_id != -1) {
-                        // Asking for Phase2 Status Value
-                        foreach ($ikesa['child-sas'] as $childsas) {
-                            if ($childsas['reqid'] == $req_id) {
-                                //if state is rekeyed go on
-                                $tmp_value = $childsas[$value_key];
-                                if (strtolower($childsas['state']) == 'rekeyed') {
-                                    break;
-                                }
-                            }
-                        }
-                    } else {
-                        $tmp_value = $ikesa[$value_key];
-                    }
+            return $ph1idx == $ike_id;
+        });
 
-                    break;
-                }
+        if (!$maybe_ike_sa) {
+            return $process_result($value_key, $result);
+        }
+
+        $just_matching_child_sas =
+            array_filter($maybe_ike_sa["child-sas"], fn($child_sa) => ($child_sa["reqid"] == $req_id));
+
+        // Asking for Phase2 Status Value
+        foreach ($just_matching_child_sas as $child_sa) {
+            $result = $child_sa[$value_key];
+
+            // If state is rekeyed go on
+            if (strtolower($child_sa["state"]) == "rekeyed") {
+                break;
             }
         }
 
-        if ($value_key == "state") {
-            $v = self::get_value_mapping('ipsec.state', strtolower($tmp_value));
-
-            return ($carp_status != 0) ? $v + (10 * ($carp_status - 1)) : $v;
-        }
-
-        return $tmp_value;
+        return $process_result($value_key, $result);
     }
 
     // DHCP Checks (copy of status_dhcp_leases.php, waiting for pfsense 2.5)
