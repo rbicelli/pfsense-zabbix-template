@@ -1,19 +1,25 @@
 <?php
-/***
+/**
  * pfsense_zbx.php - pfSense Zabbix Interface
  * Version 1.1.1 - 2021-10-24
  *
  * Written by Riccardo Bicelli <r.bicelli@gmail.com>
  * This program is licensed under Apache 2.0 License
  */
+
+namespace RBicelli\Pfz;
+
 require_once("config.inc");
-require_once('globals.inc');
-require_once('functions.inc');
-require_once("util.inc");
-require_once('interfaces.inc');
-require_once('openvpn.inc');
+require_once("functions.inc");
+require_once("globals.inc");
+require_once("interfaces.inc");
+require_once("ipsec.inc");
+require_once("openvpn.inc");
+require_once("pkg-utils.inc");
 require_once("service-utils.inc");
-require_once('pkg-utils.inc');
+require_once("services.inc");
+require_once("system.inc");
+require_once("util.inc");
 
 define("COMMAND_HANDLERS", build_method_lookup(PfzCommands::class));
 
@@ -21,7 +27,7 @@ define('DISCOVERY_SECTION_HANDLERS', build_method_lookup(PfzDiscoveries::class))
 
 define('SERVICES_VALUES', build_method_lookup(PfzServices::class));
 
-const SPEEDTEST_INTERVAL = 8; // Speedtest Interval (in hours)
+const SPEEDTEST_INTERVAL_HOURS = 8;
 
 const VALUE_MAPPINGS = [
     "openvpn.server.status" => [
@@ -270,7 +276,7 @@ class PfEnv
 
 class Util
 {
-    public static function array_first(array $haystack, Callback $match)
+    public static function array_first(array $haystack, \Closure $match)
     {
         foreach ($haystack as $needle) {
             if ($match($needle)) {
@@ -288,7 +294,7 @@ class Util
 
     public static function replace_special_chars(string $input, bool $decode = false): string
     {
-        $special_chars = explode(",", ",',\",`,*,?,[,],{,},~,$,!,&,;,(,),<,>,|,#,@,0x0a");
+        $special_chars = explode("", "'\"`*?[]{}~$!&;()<>|#@\n");
 
         $result = $input;
 
@@ -409,7 +415,6 @@ class PfzDiscoveries
 
     public static function ipsec_ph1()
     {
-        require_once("ipsec.inc");
         $config = PfEnv::cfg();
         PfEnv::init_config_arr(array('ipsec', 'phase1'));
         $a_phase1 = &$config['ipsec']['phase1'];
@@ -422,8 +427,6 @@ class PfzDiscoveries
 
     public static function ipsec_ph2()
     {
-        require_once("ipsec.inc");
-
         $config = PfEnv::cfg();
         PfEnv::init_config_arr(array('ipsec', 'phase2'));
         $a_phase2 = &$config['ipsec']['phase2'];
@@ -440,7 +443,6 @@ class PfzDiscoveries
     public static function dhcpfailover()
     {
         // System public static functions regarding DHCP Leases will be available in the upcoming release of pfSense, so let's wait
-        require_once("system.inc");
         $leases = PfEnv::system_get_dhcpleases();
 
         self::print_json(array_map(fn($data) => [
@@ -566,7 +568,7 @@ class PfzSpeedtest
         // Sleep random delay in order to avoid problem when 2 pfSense on the same Internet line
         sleep(rand(1, 90));
 
-        if ((time() - filemtime($filename) > SPEEDTEST_INTERVAL * 3600) || (file_exists($filename) == false)) {
+        if ((time() - filemtime($filename) > SPEEDTEST_INTERVAL_HOURS * 3600) || (file_exists($filename) == false)) {
             return;
         }
 
@@ -808,7 +810,6 @@ class PfzCommands
     {
         // Get Value from IPsec Phase 1 Configuration
         // If Getting "disabled" value only check item presence in config array
-        require_once("ipsec.inc");
         $config = PfEnv::cfg();
         PfEnv::init_config_arr(['ipsec', 'phase1']);
         $a_phase1 = &$config['ipsec']['phase1'];
@@ -839,7 +840,6 @@ class PfzCommands
 
     public static function ipsec_ph2($uniqid, $value_key)
     {
-        require_once("ipsec.inc");
         $config = PfEnv::cfg();
         PfEnv::init_config_arr(array('ipsec', 'phase2'));
         $a_phase2 = &$config['ipsec']['phase2'];
@@ -882,7 +882,6 @@ class PfzCommands
 
     public static function speedtest_cron()
     {
-        require_once("services.inc");
         $ifdescrs = PfEnv::get_configured_interface_with_descr(true);
 
         $ifcs = PfzDiscoveries::interfaces(); // FIXME ED Retrieve interfaces
@@ -978,7 +977,6 @@ class PfzCommands
 
         echo "IPsec: \n";
 
-        require_once("ipsec.inc");
         $config = PfEnv::cfg();
         PfEnv::init_config_arr(array('ipsec', 'phase1'));
         PfEnv::init_config_arr(array('ipsec', 'phase2'));
@@ -999,7 +997,6 @@ class PfzCommands
 
         //Packages
         echo "Packages: \n";
-        require_once("pkg-utils.inc");
         $installed_packages = PfEnv::get_pkg_info('all', false, true);
         print_r($installed_packages);
     }
@@ -1047,7 +1044,6 @@ class PfzCommands
 
     private static function get_ipsec_status($ike_id, $req_id = -1, $value_key = "state")
     {
-        require_once("ipsec.inc");
         PfEnv::init_config_arr(array("ipsec", "phase1"));
 
         $result = "";
@@ -1295,7 +1291,7 @@ class PfzCommands
 
     }
 
-    private static function check_dhcp_failover()
+    private static function check_dhcp_failover(): int
     {
         // Check DHCP Failover Status
         // Returns number of failover pools which state is not normal or
@@ -1305,9 +1301,8 @@ class PfzCommands
         return count(array_filter($failover, fn($f) => ($f["mystate"] != "normal") || ($f["mystate"] != $f["peerstate"])));
     }
 
-    private static function get_outdated_packages()
+    private static function get_outdated_packages(): int
     {
-        require_once("pkg-utils.inc");
         $installed_packages = PfEnv::get_pkg_info("all", false, true);
 
 
@@ -1340,14 +1335,14 @@ class PfzCommands
 function build_method_lookup(string $clazz): array
 {
     try {
-        $reflector = new ReflectionClass($clazz);
+        $reflector = new \ReflectionClass($clazz);
 
         $all_methods = $reflector->getMethods();
 
         $commands = array_filter($all_methods, fn($method) => $method->isStatic() && $method->isPublic());
 
-        return array_map(fn(ReflectionMethod $method) => $method->getName(), $commands);
-    } catch (Exception $e) {
+        return array_map(fn(\ReflectionMethod $method) => $method->getName(), $commands);
+    } catch (\Exception $e) {
         return [];
     }
 }
