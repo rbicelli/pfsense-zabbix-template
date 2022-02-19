@@ -156,7 +156,7 @@ class PfEnv
     {
         $caller_function_name = debug_backtrace()[1]['function'];
 
-        return call_user_func($caller_function_name, ...func_get_args());
+        return call_user_func_array($caller_function_name, ...func_get_args());
     }
 
     public static function convert_friendly_interface_to_friendly_descr()
