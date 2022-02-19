@@ -295,7 +295,7 @@ class Util
 
     public static function array_zip(array $keys, array $values): array
     {
-        return array_map(null, array_keys($keys), array_values($values));
+        return array_map(null, $keys, $values);
     }
 
     public static function b2int(bool $b): int
