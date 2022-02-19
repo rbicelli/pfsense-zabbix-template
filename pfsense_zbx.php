@@ -293,6 +293,11 @@ class Util
         return array_merge(...$multi_dimensional_array);
     }
 
+    public static function array_zip(array $keys, array $values): array
+    {
+        return array_map(null, array_keys($keys), array_values($values));
+    }
+
     public static function b2int(bool $b): int
     {
         return (int)$b;
@@ -334,11 +339,11 @@ class PfzInterfaces
         $interfaces = array_map(function ($interface) {
             list ($if_name, $description) = $interface;
 
-            return [
-                ...PfEnv::get_interface_info($if_name),
-                "description" => $description,
-            ];
-        }, array_map(null, array_keys($if_descriptions), array_values($if_descriptions)));
+            return array_merge(
+                PfEnv::get_interface_info($if_name),
+                ["description" => $description],
+            );
+        }, Util::array_zip(array_keys($if_descriptions), array_values($if_descriptions)));
 
         return array_filter($interfaces, function ($iface_info_ext) {
             $has_gw = array_key_exists("gateway", $iface_info_ext);
