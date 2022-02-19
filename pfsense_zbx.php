@@ -28,6 +28,7 @@ define('DISCOVERY_SECTION_HANDLERS', build_method_lookup(PfzDiscoveries::class))
 define('SERVICES_VALUES', build_method_lookup(PfzServices::class));
 
 const SPEEDTEST_INTERVAL_HOURS = 8;
+const SPEEDTEST_INTERVAL_SECONDS = SPEEDTEST_INTERVAL_HOURS * 3600;
 
 const VALUE_MAPPINGS = [
     "openvpn.server.status" => [
@@ -531,12 +532,11 @@ class PfzDiscoveries
 
 class PfzSpeedtest
 {
-    // Interface Speedtest
-    public static function interface_speedtest_value($if_name, $value)
+    public static function interface_value($if_name, $value)
     {
         list($tv0, $tv1) = explode(".", $value);
 
-        $filename = "/tmp/speedtest-$if_name";
+        $filename = self::if_filename($if_name);
         if (!file_exists($filename)) {
             return;
         }
@@ -549,49 +549,42 @@ class PfzSpeedtest
         echo empty($tv1) ? $speedtest_data[$value] : $speedtest_data[$tv0][$tv1];
     }
 
-    // Installs a cron job for speedtests
-    public static function speedtest_cron_install($enable = true)
+    public static function cron_install($enable = true)
     {
-        //Install Cron Job
         $command = "/usr/local/bin/php " . __FILE__ . " speedtest_cron";
-        PfEnv::install_cron_job($command, $enable, $minute = "*/15", "*", "*", "*", "*", "root", true);
+        PfEnv::install_cron_job($command, $enable, "*/15", "*", "*", "*", "*", "root", true);
     }
 
-    public static function speedtest_exec($if_name, $ip_address)
+    public static function exec($if_name, $ip_address)
     {
-
-        $filename = "/tmp/speedtest-$if_name";
-        $filetemp = "$filename.tmp";
-        $filerun = "/tmp/speedtest-run";
+        $output_file_path = self::if_filename($if_name);
+        $tmp_file_path = tempnam(sys_get_temp_dir(), "");
 
         // Issue #82
         // Sleep random delay in order to avoid problem when 2 pfSense on the same Internet line
         sleep(rand(1, 90));
 
-        if ((time() - filemtime($filename) > SPEEDTEST_INTERVAL_HOURS * 3600) || (file_exists($filename) == false)) {
+        $is_output_file_older_than_interval =
+            file_exists($output_file_path) &&
+            (time() - filemtime($output_file_path) > SPEEDTEST_INTERVAL_SECONDS);
+        if (!$is_output_file_older_than_interval) {
             return;
         }
 
-        // file is older than SPEEDTEST_INTERVAL
-        if ((time() - filemtime($filerun) > 180)) {
-            @unlink($filerun);
-        }
-
-        if (file_exists($filerun)) {
-            return;
-        }
-
-        touch($filerun);
-        $st_command = "/usr/local/bin/speedtest --source $ip_address --json > $filetemp";
+        $st_command = "/usr/local/bin/speedtest --source $ip_address --json > $tmp_file_path";
         exec($st_command);
-        rename($filetemp, $filename);
-        @unlink($filerun);
+        rename($tmp_file_path, $output_file_path);
+    }
+
+    private static function if_filename($if_name): string
+    {
+        return implode(DIRECTORY_SEPARATOR, [sys_get_temp_dir(), "speedtest-$if_name"]);
     }
 }
 
 class PfzOpenVpn
 {
-    public static function get_all_openvpn_servers()
+    public static function get_all_openvpn_servers(): array
     {
         $servers = PfEnv::openvpn_get_active_servers();
         $sk_servers = PfEnv::openvpn_get_active_servers("p2p");
@@ -643,8 +636,8 @@ class PfzCommands
 
     public static function if_speedtest_value($if_name, $value)
     {
-        PfzSpeedtest::speedtest_cron_install();
-        PfzSpeedtest::interface_speedtest_value($if_name, $value);
+        PfzSpeedtest::cron_install();
+        PfzSpeedtest::interface_value($if_name, $value);
     }
 
     public static function openvpn_servervalue($server_id, $value_key)
@@ -896,13 +889,13 @@ class PfzCommands
                 }
             }
 
-            PfzSpeedtest::speedtest_exec($if_name, $if_info['ipaddr']);
+            PfzSpeedtest::exec($if_name, $if_info['ipaddr']);
         }
     }
 
     public static function cron_cleanup()
     {
-        PfzSpeedtest::speedtest_cron_install(false);
+        PfzSpeedtest::cron_install(false);
     }
 
     // S.M.A.R.T Status
