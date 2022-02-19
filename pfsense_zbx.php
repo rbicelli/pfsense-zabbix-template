@@ -27,6 +27,14 @@ define('DISCOVERY_SECTION_HANDLERS', build_method_lookup(PfzDiscoveries::class))
 
 define('SERVICES_VALUES', build_method_lookup(PfzServices::class));
 
+define("TEXT_ACTIVE", gettext("active"));
+define("TEXT_DYNAMIC", gettext("dynamic"));
+define("TEXT_EXPIRED", gettext("expired"));
+define("TEXT_NEVER", gettext("Never"));
+define("TEXT_OFFLINE", gettext("offline"));
+define("TEXT_ONLINE", gettext("online"));
+define("TEXT_RESERVED", gettext("reserved"));
+
 const SPEEDTEST_INTERVAL_HOURS = 8;
 const SPEEDTEST_INTERVAL_SECONDS = SPEEDTEST_INTERVAL_HOURS * 3600;
 
@@ -150,6 +158,13 @@ class PfEnv
         global $config;
 
         return $config;
+    }
+
+    public static function g()
+    {
+        global $g;
+
+        return $g;
     }
 
     private static function call_pfsense_method_with_same_name_and_arguments()
@@ -1135,17 +1150,24 @@ class PfzCommands
     // Get DHCP Arrays (copied from status_dhcp_leases.php, waiting for pfsense 2.5, in order to use system_get_dhcpleases();)
     private static function get_dhcp($value_key)
     {
+        $g = PfEnv::g();
+
+        $leases_file = "{$g['dhcpd_chroot_path']}/var/db/dhcpd.leases";
+
         $awk = "/usr/bin/awk";
         /* this pattern sticks comments into a single array item */
-        $cleanpattern = "'{ gsub(\"#.*\", \"\");} { gsub(\";\", \"\"); print;}'";
+        $clean_pattern = "'{ gsub(\"#.*\", \"\");} { gsub(\";\", \"\"); print;}'";
         /* We then split the leases file by } */
-        $splitpattern = "'BEGIN { RS=\"}\";} {for (i=1; i<=NF; i++) printf \"%s \", \$i; printf \"}\\n\";}'";
+        $split_pattern = "'BEGIN { RS=\"}\";} {for (i=1; i<=NF; i++) printf \"%s \", \$i; printf \"}\\n\";}'";
 
         /* stuff the leases file in a proper format into a array by line */
-        @exec("/bin/cat {$leasesfile} 2>/dev/null| {$awk} {$cleanpattern} | {$awk} {$splitpattern}", $leases_content);
+        @exec("/bin/cat {$leases_file} 2>/dev/null| {$awk} {$clean_pattern} | {$awk} {$split_pattern}", $leases_content);
         $leases_count = count($leases_content);
         @exec("/usr/sbin/arp -an", $rawdata);
 
+        $failover = [];
+        $leases = [];
+        $pools = [];
         foreach ($leases_content as $lease) {
             /* split the line by space */
             $data = explode(" ", $lease);
@@ -1173,7 +1195,7 @@ class PfzCommands
                         continue 3;
                     case "lease":
                         $leases[$l]['ip'] = $data[$f + 1];
-                        $leases[$l]['type'] = $dynamic_string;
+                        $leases[$l]['type'] = TEXT_DYNAMIC;
                         $f = $f + 2;
                         break;
                     case "starts":
@@ -1185,7 +1207,7 @@ class PfzCommands
                         if ($data[$f + 1] == "never") {
                             // Quote from dhcpd.leases(5) man page:
                             // If a lease will never expire, date is never instead of an actual date.
-                            $leases[$l]['end'] = gettext("Never");
+                            $leases[$l]['end'] = TEXT_NEVER;
                             $f = $f + 1;
                         } else {
                             $leases[$l]['end'] = $data[$f + 2];
@@ -1208,15 +1230,15 @@ class PfzCommands
                     case "binding":
                         switch ($data[$f + 2]) {
                             case "active":
-                                $leases[$l]['act'] = $active_string;
+                                $leases[$l]['act'] = TEXT_ACTIVE;
                                 break;
                             case "free":
-                                $leases[$l]['act'] = $expired_string;
-                                $leases[$l]['online'] = $offline_string;
+                                $leases[$l]['act'] = TEXT_EXPIRED;
+                                $leases[$l]['online'] = TEXT_OFFLINE;
                                 break;
                             case "backup":
-                                $leases[$l]['act'] = $reserved_string;
-                                $leases[$l]['online'] = $offline_string;
+                                $leases[$l]['act'] = TEXT_RESERVED;
+                                $leases[$l]['online'] = TEXT_OFFLINE;
                                 break;
                         }
                         $f = $f + 1;
@@ -1231,12 +1253,10 @@ class PfzCommands
                         break;
                     case "hardware":
                         $leases[$l]['mac'] = $data[$f + 2];
+                        $arpdata_ip = [];
                         /* check if it's online and the lease is active */
-                        if (in_array($leases[$l]['ip'], $arpdata_ip)) {
-                            $leases[$l]['online'] = $online_string;
-                        } else {
-                            $leases[$l]['online'] = $offline_string;
-                        }
+                        $leases[$l]['online'] =
+                            (in_array($leases[$l]['ip'], $arpdata_ip)) ? TEXT_ONLINE : TEXT_OFFLINE;
                         $f = $f + 2;
                         break;
                     case "client-hostname":
