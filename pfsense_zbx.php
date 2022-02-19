@@ -902,21 +902,20 @@ class PfzCommands
     // Taken from /usr/local/www/widgets/widgets/smart_status.widget.php
     public static function smart_status()
     {
-        foreach (PfEnv::get_smart_drive_list() as $dev) {
-            $dev_state = trim(exec("smartctl -H /dev/$dev | awk -F: '/^SMART overall-health self-assessment test result/ {print $2;exit}
-/^SMART Health Status/ {print $2;exit}'")); ## get SMART state from drive
-            $is_known_state = array_key_exists($dev_state, SMART_DEV_STATUS);
-            if (!$is_known_state) {
-                return Util::result(SMART_ERROR, true);
-            }
+        $dev_states = array_map(
+            fn($dev) => trim(exec("smartctl -H /dev/$dev | awk -F: '/^SMART overall-health self-assessment test result/ {print $2;exit}
+/^SMART Health Status/ {print $2;exit}'")),
+            PfEnv::get_smart_drive_list());
 
-            $status = SMART_DEV_STATUS[$dev_state];
-            if ($status !== SMART_OK) {
-                return Util::result($status, true);
-            }
-        }
+        $maybe_not_ok = Util::array_first($dev_states, function ($dev_state) {
+            $is_ok =
+                array_key_exists($dev_state, SMART_DEV_STATUS) &&
+                SMART_DEV_STATUS[$dev_state] == SMART_OK;
 
-        return Util::result(SMART_OK, true);
+            return !$is_ok;
+        });
+
+        return Util::result($maybe_not_ok ?: SMART_OK, true);
     }
 
     public static function cert_date($value_key)
