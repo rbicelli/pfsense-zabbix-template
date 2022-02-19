@@ -1277,18 +1277,10 @@ class PfzCommands
             asort($pools);
         }
 
-        switch ($value_key) {
-            case "pools":
-                return $pools;
-                break;
-            case "failover":
-                return $failover;
-                break;
-            case "leases":
-            default:
-                return $leases;
-        }
+        $rs = compact("pools", "failover", "leases");
+        $is_known_value_key = array_key_exists($value_key, $rs);
 
+        return ($is_known_value_key) ? $rs[$value_key] : $leases;
     }
 
     private static function check_dhcp_failover(): int
