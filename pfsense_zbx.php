@@ -27,9 +27,7 @@ require_once("system.inc");
 require_once("util.inc");
 
 define("COMMAND_HANDLERS", build_method_lookup(Commands::class));
-
 define("DISCOVERY_SECTION_HANDLERS", build_method_lookup(Discoveries::class));
-
 define("SERVICES_VALUES", build_method_lookup(Services::class));
 
 define("TEXT_ACTIVE", gettext("active"));
@@ -40,8 +38,8 @@ define("TEXT_OFFLINE", gettext("offline"));
 define("TEXT_ONLINE", gettext("online"));
 define("TEXT_RESERVED", gettext("reserved"));
 
-const SPEEDTEST_INTERVAL_HOURS = 8;
-const SPEEDTEST_INTERVAL_SECONDS = SPEEDTEST_INTERVAL_HOURS * 3600;
+const SPEED_TEST_INTERVAL_HOURS = 8;
+const SPEED_TEST_INTERVAL_SECONDS = SPEED_TEST_INTERVAL_HOURS * 3600;
 
 const VALUE_MAPPINGS = [
     "openvpn.server.status" => [
@@ -134,17 +132,16 @@ class Services
         return Util::b2int(PfEnv::is_service_enabled($short_name));
     }
 
-    public static function name($service, string $name)
+    public static function name($service, string $name): string
     {
-        echo $name;
+        return $name;
     }
 
     public static function status(string $service): int
     {
         $status = PfEnv::get_service_status($service);
 
-        return ($status == "") ? 0 : $status;
-
+        return empty($status) ? 0 : $status;
     }
 
     public static function run_on_carp_slave($service, $name, $short_name, $carpcfr, $stopped_on_carp_slave): int
@@ -367,9 +364,9 @@ class Discoveries
 {
     public static function gw()
     {
-        $gws = PfEnv::return_gateways_status(true);
-
-        self::print_json(array_map(fn($gw) => ["{#GATEWAY}" => $gw["name"]], $gws));
+        self::print_json(array_map(
+            fn($gw) => ["{#GATEWAY}" => $gw["name"]],
+            PfEnv::return_gateways_status(true)));
     }
 
     public static function wan()
@@ -405,21 +402,17 @@ class Discoveries
 
     public static function openvpn_server()
     {
-        $servers = OpenVpn::get_all_openvpn_servers();
-
         self::print_json(array_map(fn($server) => [
             "{#SERVER}" => $server["vpnid"],
             "{#NAME}" => self::sanitize_name($server["name"])],
-            $servers));
+            OpenVpn::get_all_servers()));
     }
 
     public static function openvpn_server_user()
     {
-        $servers = OpenVpn::get_all_openvpn_servers();
-
         $servers_with_relevant_mode =
             array_filter(
-                $servers,
+                OpenVpn::get_all_servers(),
                 fn($server) => in_array($server["mode"], ["server_user", "server_tls_user", "server_tls"]));
 
         $servers_with_conns = array_filter(
@@ -459,29 +452,29 @@ class Discoveries
 
     public static function ipsec_ph1()
     {
-        $config = PfEnv::cfg();
         PfEnv::init_config_arr(array("ipsec", "phase1"));
-        $a_phase1 = &$config["ipsec"]["phase1"];
+
+        $config = PfEnv::cfg();
 
         self::print_json(array_map(fn($data) => [
             "{#IKEID}" => $data["ikeid"],
             "{#NAME}" => $data["descr"],
-        ], $a_phase1));
+        ], $config["ipsec"]["phase1"]));
     }
 
     public static function ipsec_ph2()
     {
-        $config = PfEnv::cfg();
         PfEnv::init_config_arr(array("ipsec", "phase2"));
-        $a_phase2 = &$config["ipsec"]["phase2"];
+
+        $config = PfEnv::cfg();
 
         self::print_json(array_map(fn($data) => [
             "{#IKEID}" => $data["ikeid"],
             "{#NAME}" => $data["descr"],
             "{#UNIQID}" => $data["uniqid"],
             "{#REQID}" => $data["reqid"],
-            "{#EXTID}" => $data["ikeid"] . "." . $data["reqid"],
-        ], $a_phase2));
+            "{#EXTID}" => sprintf("%s.%s", $data["ikeid"], $data["reqid"]),
+        ], $config["ipsec"]["phase2"]));
     }
 
     public static function dhcpfailover()
@@ -492,7 +485,6 @@ class Discoveries
         self::print_json(array_map(fn($data) => [
             "{#FAILOVER_GROUP}" => str_replace(" ", "__", $data["name"]),
         ], $leases["failover"]));
-
     }
 
     private static function print_json(array $json)
@@ -584,7 +576,7 @@ class Speedtest
 
         $is_output_file_older_than_interval =
             file_exists($output_file_path) &&
-            (time() - filemtime($output_file_path) > SPEEDTEST_INTERVAL_SECONDS);
+            (time() - filemtime($output_file_path) > SPEED_TEST_INTERVAL_SECONDS);
         if (!$is_output_file_older_than_interval) {
             return;
         }
@@ -602,7 +594,7 @@ class Speedtest
 
 class OpenVpn
 {
-    public static function get_all_openvpn_servers(): array
+    public static function get_all_servers(): array
     {
         $servers = PfEnv::openvpn_get_active_servers();
         $sk_servers = PfEnv::openvpn_get_active_servers("p2p");
@@ -660,23 +652,22 @@ class Commands
 
     public static function openvpn_servervalue(int $server_id, $value_key)
     {
-        $servers = OpenVpn::get_all_openvpn_servers();
-
-        $maybe_server = Util::array_first($servers, fn($s) => $s["vpnid"] == $server_id);
+        $maybe_server = Util::array_first(OpenVpn::get_all_servers(), fn($s) => $s["vpnid"] == $server_id);
+        if (empty($maybe_server)) {
+            return Util::result(0, true);
+        }
 
         $server_value = self::get_server_value($maybe_server, $value_key);
 
         if ($value_key == "conns") {
-            echo is_array($server_value) ? count($server_value) : 0;
-            return;
+            return Util::result(is_array($server_value) ? count($server_value) : 0, true);
         }
 
         if (in_array($value_key, ["status", "mode"])) {
-            echo self::get_value_mapping("openvpn.server.status", $server_value);
-            return;
+            return Util::result(self::get_value_mapping("openvpn.server.status", $server_value), true);
         }
 
-        echo $server_value;
+        return Util::result($server_value, true);
     }
 
     public static function openvpn_server_uservalue($unique_id, $value_key)
@@ -691,15 +682,14 @@ class Commands
 
     public static function openvpn_clientvalue($client_id, $value_key, $fallback_value = "none")
     {
-        $clients = PfEnv::openvpn_get_active_clients();
-
-        $client = Util::array_first($clients, fn($client) => $client["vpnid"] == $client_id);
-
-        if (empty($client)) {
+        $maybe_client = Util::array_first(
+            PfEnv::openvpn_get_active_clients(),
+            fn($client) => $client["vpnid"] == $client_id);
+        if (empty($maybe_client)) {
             return $fallback_value;
         }
 
-        $maybe_value = $client[$value_key];
+        $maybe_value = $maybe_client[$value_key];
 
         $is_known_value_key = array_key_exists($value_key, OPENVPN_CLIENT_VALUE);
         if ($is_known_value_key) {
@@ -709,17 +699,16 @@ class Commands
         return ($maybe_value == "") ? $fallback_value : $maybe_value;
     }
 
-    public static function service_value($name, $value)
+    public static function service_value(string $name, string $value)
     {
-        $services = PfEnv::get_services();
-        $name = str_replace("__", " ", $name);
+        $sanitized_name = str_replace("__", " ", $name);
 
         // List of service which are stopped on CARP Slave.
         // For now this is the best way I found for filtering out the triggers
         // Waiting for a way in Zabbix to use Global Regexp in triggers with items discovery
         $stopped_on_carp_slave = array("haproxy", "radvd", "openvpn.", "openvpn", "avahi");
 
-        $matching_services = array_filter($services, function ($server, $n) {
+        $matching_services = array_filter(PfEnv::get_services(), function ($server, $n) {
             foreach (["id", "zone"] as $key) {
                 if (!empty($server[$key])) {
                     return printf("%s.%s", $server["name"], $server[$key]) == $n;
@@ -731,7 +720,7 @@ class Commands
 
         foreach ($matching_services as $service) {
             $short_name = $service["name"];
-            $carpcfr = $short_name . ".";
+            $carp_cfr = "$short_name.";
 
             $is_known_service_value = array_key_exists($value, SERVICES_VALUES);
             if (!$is_known_service_value) {
@@ -739,7 +728,7 @@ class Commands
                 continue;
             }
 
-            echo SERVICES_VALUES[$value]($service, $name, $short_name, $carpcfr, $stopped_on_carp_slave);
+            echo SERVICES_VALUES[$value]($service, $sanitized_name, $short_name, $carp_cfr, $stopped_on_carp_slave);
         }
     }
 
@@ -756,22 +745,19 @@ class Commands
 
     public static function carp_status($echo_result = true): int
     {
-        $config = PfEnv::cfg();
-        $carp_status = PfEnv::get_carp_status();
-        $carp_detected_problems = PfEnv::get_single_sysctl("net.inet.carp.demotion");
-
-        $is_carp_enabled = $carp_status != 0;
-        if (!$is_carp_enabled) { // CARP is disabled
+        $is_carp_enabled = PfEnv::get_carp_status() != 0;
+        if (!$is_carp_enabled) {
             return Util::result(CARP_STATUS_DISABLED, $echo_result);
         }
 
-        if ($carp_detected_problems != 0) {
-            // There's some Major Problems with CARP
+        $is_carp_demotion_status_ok = PfEnv::get_single_sysctl("net.inet.carp.demotion") == 0;
+        if (!$is_carp_demotion_status_ok) {
             return Util::result(CARP_STATUS_PROBLEM, $echo_result);
         }
 
-        $virtual_ips = $config["virtualip"]["vip"];
-        $just_carps = array_filter($virtual_ips, fn($virtual_ip) => $virtual_ip["mode"] != "carp");
+        $config = PfEnv::cfg();
+
+        $just_carps = array_filter($config["virtualip"]["vip"], fn($virtual_ip) => $virtual_ip["mode"] != "carp");
         $status_str = array_reduce($just_carps, function ($status, $carp) {
             $if_status = PfEnv::get_carp_interface_status("_vip{$carp["uniqid"]}");
 
@@ -789,9 +775,9 @@ class Commands
 
         $is_known_carp_status = array_key_exists($status_str, CARP_RES);
 
-        $result = $is_known_carp_status ? CARP_RES[$status_str] : CARP_STATUS_UNKNOWN;
-
-        return Util::result($result, $echo_result);
+        return Util::result(
+            $is_known_carp_status ? CARP_RES[$status_str] : CARP_STATUS_UNKNOWN,
+            $echo_result);
     }
 
 
@@ -799,8 +785,7 @@ class Commands
     public static function system($section)
     {
         if ($section === "packages_update") {
-            echo self::get_outdated_packages();
-            return;
+            return Util::result(self::get_outdated_packages(), true);
         }
 
         $system_pkg_version = PfEnv::get_system_pkg_version();
@@ -808,13 +793,14 @@ class Commands
         $installed_version = $system_pkg_version["installed_version"];
 
         if ($section === "new_version_available") {
-            echo Util::b2int($version != $installed_version);
-            return;
+            return Util::result(Util::b2int($version != $installed_version), true);
         }
 
         if (array_key_exists($section, $system_pkg_version)) {
-            echo $system_pkg_version[$section];
+            return Util::result($system_pkg_version[$section], true);
         }
+
+        return Util::result("version", true);
     }
 
     public static function ipsec_ph1($ike_id, $value_key)
@@ -945,7 +931,9 @@ class Commands
     {
         $line = "-------------------\n";
 
-        $ovpn_servers = OpenVpn::get_all_openvpn_servers();
+        $config = PfEnv::cfg();
+
+        $ovpn_servers = OpenVpn::get_all_servers();
         echo "OPENVPN Servers:\n";
         print_r($ovpn_servers);
         echo $line;
@@ -973,8 +961,6 @@ class Commands
         echo $line;
 
         echo "IPsec: \n";
-
-        $config = PfEnv::cfg();
         PfEnv::init_config_arr(array("ipsec", "phase1"));
         PfEnv::init_config_arr(array("ipsec", "phase2"));
         $status = PfEnv::ipsec_list_sa();
@@ -992,7 +978,6 @@ class Commands
 
         echo $line;
 
-        //Packages
         echo "Packages: \n";
         $installed_packages = PfEnv::get_pkg_info("all", false, true);
         print_r($installed_packages);
@@ -1002,7 +987,7 @@ class Commands
     {
         list($server_id, $user_id) = explode("+", $unique_id);
 
-        $servers = OpenVpn::get_all_openvpn_servers();
+        $servers = OpenVpn::get_all_servers();
 
         $maybe_server = Util::array_first($servers, fn($server) => $server["vpnid"] == $server_id);
         if (!$maybe_server) {
@@ -1277,11 +1262,8 @@ class Commands
 
     private static function get_outdated_packages(): int
     {
-        $installed_packages = PfEnv::get_pkg_info("all", false, true);
-
-
         return count(array_filter(
-            $installed_packages,
+            PfEnv::get_pkg_info("all", false, true),
             fn($p) => $p["version"] != $p["installed_version"]));
     }
 
@@ -1299,10 +1281,10 @@ class Commands
             return $default_value;
         }
 
-        $value = strtolower($value);
-        $is_value_with_known_mapping = array_key_exists($value, $value_mapping);
+        $sanitized_value = strtolower($value);
+        $is_value_with_known_mapping = array_key_exists($sanitized_value, $value_mapping);
 
-        return $is_value_with_known_mapping ? $value_mapping[$value] : $default_value;
+        return $is_value_with_known_mapping ? $value_mapping[$sanitized_value] : $default_value;
     }
 }
 
