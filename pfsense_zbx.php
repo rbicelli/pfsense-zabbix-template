@@ -709,7 +709,7 @@ class Commands
         return self::get_openvpn_server_uservalue_($unique_id, $value_key, "0");
     }
 
-    public static function openvpn_clientvalue($client_id, $value_key, $fallback_value = "none")
+    public static function openvpn_clientvalue($client_id, $value_key, $fallback_value = 0)
     {
         $maybe_client = Util::array_first(
             PfEnv::openvpn_get_active_clients(),
