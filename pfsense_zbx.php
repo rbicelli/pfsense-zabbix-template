@@ -754,13 +754,13 @@ class Commands
         $short_name = $maybe_service["name"];
         $carp_cfr = "$short_name.";
 
-        $is_known_service_value = array_key_exists($value, SERVICES_VALUE_ACTIONS);
+        $is_known_service_value = in_array($value, SERVICES_VALUE_ACTIONS);
         if (!$is_known_service_value) {
             return Util::result($maybe_service[$value], true);
         }
 
         return Util::result(
-            SERVICES_VALUE_ACTIONS[$value](
+            Services::{$value}(
                 $maybe_service,
                 $sanitized_name,
                 $short_name,
