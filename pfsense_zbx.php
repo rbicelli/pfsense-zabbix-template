@@ -558,15 +558,15 @@ class SpeedTest
 
         $filename = self::if_filename($if_name);
         if (!file_exists($filename)) {
-            return;
+            return Util::result("", true);
         }
 
         $speed_test_data = json_decode(file_get_contents($filename), true);
-        if (array_key_exists($value, $speed_test_data)) {
-            return;
+        if (!array_key_exists($value, $speed_test_data)) {
+            return Util::result("", true);
         }
 
-        echo empty($tv1) ? $speed_test_data[$value] : $speed_test_data[$tv0][$tv1];
+        return Util::result(empty($tv1) ? $speed_test_data[$tv0] : $speed_test_data[$tv0][$tv1], true);
     }
 
     public static function cron_install($enable = true)
@@ -582,21 +582,20 @@ class SpeedTest
     public static function exec($if_name, $ip_address)
     {
         $output_file_path = self::if_filename($if_name);
-        $tmp_file_path = tempnam(sys_get_temp_dir(), "");
+        $tmp_file_path = tempnam(sys_get_temp_dir(), "speedtest.");
 
         // Issue #82
         // Sleep random delay in order to avoid problem when 2 pfSense on the same Internet line
         sleep(rand(1, 90));
 
         $is_output_file_older_than_interval =
-            file_exists($output_file_path) &&
+            !file_exists($output_file_path) ||
             (time() - filemtime($output_file_path) > SPEED_TEST_INTERVAL_SECONDS);
         if (!$is_output_file_older_than_interval) {
             return;
         }
 
-        $st_command = "/usr/local/bin/speedtest --source $ip_address --json > $tmp_file_path";
-        exec($st_command);
+        exec(implode(" ", ["/usr/local/bin/speedtest", "--source", $ip_address, "--json", ">", $tmp_file_path]));
         rename($tmp_file_path, $output_file_path);
     }
 
