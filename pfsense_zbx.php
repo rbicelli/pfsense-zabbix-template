@@ -804,18 +804,15 @@ class Commands
         }
 
         $system_pkg_version = PfEnv::get_system_pkg_version();
-        $version = $system_pkg_version["version"];
-        $installed_version = $system_pkg_version["installed_version"];
-
         if ($section === "new_version_available") {
-            return Util::result(Util::b2int($version != $installed_version), true);
+            return Util::result(
+                Util::b2int($system_pkg_version["version"] != $system_pkg_version["installed_version"]),
+                true);
         }
 
-        if (array_key_exists($section, $system_pkg_version)) {
-            return Util::result($system_pkg_version[$section], true);
-        }
+        $is_known_section = array_key_exists($section, $system_pkg_version);
 
-        return Util::result("version", true);
+        return Util::result($is_known_section ? $system_pkg_version[$section] : "", true);
     }
 
     public static function ipsec_ph1($ike_id, $value_key)
