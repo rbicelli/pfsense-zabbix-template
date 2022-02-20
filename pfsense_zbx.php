@@ -328,6 +328,16 @@ class Util
 
         return $result;
     }
+
+    public static function space_to_underscore($value)
+    {
+        return str_replace(" ", "__", $value);
+    }
+
+    public static function underscore_to_space($value)
+    {
+        return str_replace("__", " ", $value);
+    }
 }
 
 class Interfaces
@@ -439,7 +449,7 @@ class Discoveries
             $id = is_null($maybe_id) ? "" : $service[$maybe_id];
 
             return [
-                "{#SERVICE}" => str_replace(" ", "__", $service["name"]) . $id,
+                "{#SERVICE}" => sprintf("%s%s", Util::space_to_underscore($service["name"]), $id),
                 "{#DESCRIPTION}" => $service["description"],
             ];
         }, $named_services));
@@ -483,7 +493,7 @@ class Discoveries
         $leases = PfEnv::system_get_dhcpleases();
 
         self::print_json(array_map(fn($data) => [
-            "{#FAILOVER_GROUP}" => str_replace(" ", "__", $data["name"]),
+            "{#FAILOVER_GROUP}" => Util::space_to_underscore($data["name"]),
         ], $leases["failover"]));
     }
 
@@ -540,7 +550,7 @@ class Discoveries
     }
 }
 
-class Speedtest
+class SpeedTest
 {
     public static function interface_value($if_name, $value)
     {
@@ -551,18 +561,22 @@ class Speedtest
             return;
         }
 
-        $speedtest_data = json_decode(file_get_contents($filename), true);
-        if (array_key_exists($value, $speedtest_data)) {
+        $speed_test_data = json_decode(file_get_contents($filename), true);
+        if (array_key_exists($value, $speed_test_data)) {
             return;
         }
 
-        echo empty($tv1) ? $speedtest_data[$value] : $speedtest_data[$tv0][$tv1];
+        echo empty($tv1) ? $speed_test_data[$value] : $speed_test_data[$tv0][$tv1];
     }
 
     public static function cron_install($enable = true)
     {
-        $command = "/usr/local/bin/php " . __FILE__ . " speedtest_cron";
-        PfEnv::install_cron_job($command, $enable, "*/15", "*", "*", "*", "*", "root", true);
+        PfEnv::install_cron_job(
+            implode(" ", ["/usr/local/bin/php", __FILE__, "speedtest_cron"]),
+            $enable,
+            "*/15", "*", "*", "*", "*",
+            "root",
+            true);
     }
 
     public static function exec($if_name, $ip_address)
@@ -619,21 +633,22 @@ class Commands
     {
         $gws = PfEnv::return_gateways_status(true);
 
-        $is_known_gw = array_key_exists($gw, $gws);
-        if (!$is_known_gw) {
-            return;
+        $maybe_gw = array_key_exists($gw, $gws) ? $gws[$gw] : null;
+        if (!$maybe_gw) {
+            return Util::result("");
         }
 
-        $value = $gws[$gw][$value_key];
+        $value = $maybe_gw[$value_key];
         if ($value_key != "status") {
-            echo $value;
-            return;
+            return Util::result($value);
         }
 
-        // Issue #70: Gateway Forced Down
-        $v = ($gws[$gw]["substatus"] != "none") ? $gws[$gw]["substatus"] : $value;
+        $substatus = $maybe_gw["substatus"];
+        $has_relevant_substatus = $substatus != "none"; // Issue #70: Gateway Forced Down
 
-        echo self::get_value_mapping("gateway.status", $v);
+        return Util::result(self::get_value_mapping(
+            "gateway.status",
+            $has_relevant_substatus ? $substatus : $value));
     }
 
     public static function gw_status()
@@ -646,8 +661,8 @@ class Commands
 
     public static function if_speedtest_value($if_name, $value)
     {
-        Speedtest::cron_install();
-        Speedtest::interface_value($if_name, $value);
+        SpeedTest::cron_install();
+        SpeedTest::interface_value($if_name, $value);
     }
 
     public static function openvpn_servervalue(int $server_id, $value_key)
@@ -701,7 +716,7 @@ class Commands
 
     public static function service_value(string $name, string $value)
     {
-        $sanitized_name = str_replace("__", " ", $name);
+        $sanitized_name = Util::underscore_to_space($name);
 
         // List of service which are stopped on CARP Slave.
         // For now this is the best way I found for filtering out the triggers
@@ -876,13 +891,13 @@ class Commands
     public static function speedtest_cron()
     {
         foreach (Interfaces::retrieve_wan_interfaces() as $if_info) {
-            Speedtest::exec($if_info["hwif"], $if_info["ipaddr"]);
+            SpeedTest::exec($if_info["hwif"], $if_info["ipaddr"]);
         }
     }
 
     public static function cron_cleanup()
     {
-        Speedtest::cron_install(false);
+        SpeedTest::cron_install(false);
     }
 
     // S.M.A.R.T Status
