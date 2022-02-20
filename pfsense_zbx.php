@@ -162,11 +162,11 @@ class PfEnv
         return $config;
     }
 
-    public static function g()
+    public static function g($key)
     {
         global $g;
 
-        return $g;
+        return $g[$key];
     }
 
     private static function call_pfsense_method_with_same_name_and_arguments()
@@ -619,6 +619,20 @@ class OpenVpn
 
 class Commands
 {
+    private const BINDING_STATES = [
+        "active" => [
+            "act" => TEXT_ACTIVE,
+        ],
+        "free" => [
+            "act" => TEXT_EXPIRED,
+            "online" => TEXT_OFFLINE,
+        ],
+        "backup" => [
+            "act" => TEXT_RESERVED,
+            "online" => TEXT_OFFLINE,
+        ],
+    ];
+
     public static function discovery($section)
     {
         $is_known_section = in_array(strtolower($section), DISCOVERY_SECTION_HANDLERS);
@@ -1105,148 +1119,186 @@ class Commands
         ), []));
     }
 
-    // Get DHCP Arrays (copied from status_dhcp_leases.php, waiting for pfsense 2.5, in order to use system_get_dhcpleases();)
-    private static function get_dhcp($value_key)
+    private static function parse_raw_record(string $raw_lease_data): array
     {
-        $g = PfEnv::g();
+        $lease_data_lines =
+            array_filter(array_map(fn($m) => trim($m), explode(";", $raw_lease_data)));
 
-        $leases_file = "{$g['dhcpd_chroot_path']}/var/db/dhcpd.leases";
+        return array_reduce(
+            $lease_data_lines,
+            function ($p, $lease_data_line) {
+                list($k, $v) = array_pad(explode(" ", $lease_data_line, 2), 2, true);
 
+                return array_merge($p, [$k => $v]);
+            },
+            []);
+    }
+
+    private static function parse_failover_record(array $data): array
+    {
+        list($name, $raw_lease_data) = array_map(fn($m) => trim($m), $data);
+
+        return [
+            "type" => "failover",
+            "data" => array_merge(
+                ["name" => $name],
+                self::parse_raw_record($raw_lease_data))];
+    }
+
+    private static function parse_lease_record(array $data): array
+    {
+        list($lease_address, $raw_lease_data) = array_map(fn($m) => trim($m), $data);
+
+        return [
+            "type" => "lease",
+            "data" => array_merge(
+                ["ip" => $lease_address],
+                self::parse_raw_record($raw_lease_data))];
+    }
+
+    private static function parse_dhcp_record(string $record): ?array
+    {
+        $is_lease_record = preg_match("/^lease\s+(.*)\s+\{(.+)\}$/", $record, $lease_record_match);
+        $is_failover_record = preg_match("/^failover.*\"(.*)\"\s+state\s+\{(.+)\}$/", $record, $failover_record_match);
+
+        $is_known_record_type = $is_lease_record || $is_failover_record;
+        if (!$is_known_record_type) {
+            return null;
+        }
+
+        if ($is_lease_record) {
+            return self::parse_lease_record(array_slice($lease_record_match, 1));
+        }
+
+        return self::parse_failover_record(array_slice($failover_record_match, 1));
+    }
+
+    private static function read_dhcp_records_from_file(string $leases_file): array
+    {
         $awk = "/usr/bin/awk";
-        /* this pattern sticks comments into a single array item */
-        $clean_pattern = "'{ gsub(\"#.*\", \"\");} { gsub(\";\", \"\"); print;}'";
-        /* We then split the leases file by } */
-        $split_pattern = "'BEGIN { RS=\"}\";} {for (i=1; i<=NF; i++) printf \"%s \", \$i; printf \"}\\n\";}'";
 
-        /* stuff the leases file in a proper format into an array by line */
-        @exec("/bin/cat $leases_file 2>/dev/null| $awk $clean_pattern | $awk $split_pattern", $leases_content);
-        $leases_count = count($leases_content);
-        @exec("/usr/sbin/arp -an", $rawdata);
+        // Remove all content up to the first lease record
+        $clean_pattern = "'/lease.*{\$/,0'";
+
+        // Split file into records by '}'
+        $split_pattern = "'BEGIN { RS=ORS=\"}\" } { gsub(\"\\n\", \"\"); print; printf \"\\n\"}'";
+
+        // Stuff the leases file in a proper format into an array by line
+        exec(
+            "/bin/cat $leases_file 2>/dev/null | $awk $clean_pattern | $awk $split_pattern",
+            $raw_lease_records);
+
+        $relevant_records = array_filter($raw_lease_records, fn($r) => preg_match("/^lease.*|^failover.*/", $r));
+
+        return array_map(fn($r) => self::parse_dhcp_record($r), $relevant_records);
+    }
+
+    private static function binding_to_state($binding): array
+    {
+        $is_known_binding = array_key_exists($binding, BINDING_STATES);
+        if (!$is_known_binding) {
+            return [
+                "act" => "",
+            ];
+        }
+
+        return BINDING_STATES[$binding];
+    }
+
+    private static function raw_lease_record_to_lease(array $raw_lease_record, array $arpdata_ip): array
+    {
+        $data = $raw_lease_record["data"];
+
+        $ip = $data["ip"];
+        $maybe_client_hostname =
+            array_key_exists("client-hostname", $data) ?
+                str_replace("\"", "", $data["client-hostname"]) :
+                null;
+
+        list(, $binding) = explode(" ", $data["binding"]);
+        list(, $mac) = explode(" ", $data["hardware"]);
+        list(, $start_date, $start_time) = explode(" ", $data["starts"]);
+
+        $hostname =
+            !empty($maybe_client_hostname) ?
+                preg_replace('/"/', "", $maybe_client_hostname) :
+                gethostbyaddr($data["ip"]);
+
+        $online = in_array($data["ip"], $arpdata_ip) ? TEXT_ONLINE : TEXT_OFFLINE;
+
+        $binding_state = self::binding_to_state($binding);
+
+        $start = implode(" ", [$start_date, $start_time]);
+        list(, $end_date, $end_time) = array_pad(explode(" ", $data["ends"]), 3, null);
+
+        $end = ($end_date == "never") ? TEXT_NEVER : implode(" ", [$end_date, $end_time]);
+
+        return array_merge(compact("end", "hostname", "ip", "mac", "online", "start"), $binding_state);
+    }
+
+    private static function raw_failover_record_to_pool(array $raw_failover_record): array
+    {
+        $data = $raw_failover_record["data"];
+
+        $n0 = $data["name"];
+
+        $friendly_description = $n0; // PfEnv::convert_friendly_interface_to_friendly_descr(substr($n0, 5));
+        $name = "$n0 ($friendly_description)";
+
+        list($my_state_str, $my_time_str) = explode(" at ", $data["my"]);
+        list($partner_state_str, $partner_time_str) = explode(" at ", $data["partner"]);
+
+        $my_state_parts = explode(" ", $my_state_str);
+        $partner_state_parts = explode(" ", $partner_state_str);
+        $my_time_parts = explode(" ", $my_time_str);
+        $partner_time_parts = explode(" ", $partner_time_str);
+
+        $my_state = $my_state_parts[1];
+        $partner_state = $partner_state_parts[1];
+        $my_time = implode(" ", array_slice($my_time_parts, 1));
+        $partner_time = implode(" ", array_slice($partner_time_parts, 1));
+
+        return [
+            "name" => $name,
+            "mystate" => $my_state,
+            "peerstate" => $partner_state,
+            "mydate" => $my_time,
+            "peerdate" => $partner_time,
+        ];
+    }
+
+    private static function arp_ips()
+    {
+        exec("/usr/sbin/arp -an | awk '{ gsub(/[()]/,\"\") } {print $2}'", $arp_data);
+
+        return $arp_data;
+    }
+
+    // Get DHCP Arrays (copied from status_dhcp_leases.php, waiting for pfsense 2.5, in order to use system_get_dhcpleases();)
+    private static function get_dhcp($value_key): array
+    {
+        $leases_file = implode(
+            DIRECTORY_SEPARATOR,
+            [PfEnv::g("dhcpd_chroot_path"), "var", "db", "dhcpd.leases"]);
+
+        $dhcp_records = self::read_dhcp_records_from_file($leases_file);
 
         $failover = [];
-        $leases = [];
-        $pools = [];
-        foreach ($leases_content as $lease) {
-            /* split the line by space */
-            $data = explode(" ", $lease);
-            /* walk the fields */
-            $f = 0;
-            $fcount = count($data);
-            /* with less than 20 fields there is nothing useful */
-            if ($fcount < 20) {
-                $i++;
-                continue;
-            }
-            while ($f < $fcount) {
-                switch ($data[$f]) {
-                    case "failover":
-                        $pools[$p]['name'] = trim($data[$f + 2], '"');
-                        $pools[$p]["name"] = "{$pools[$p]["name"]} (" . PfEnv::convert_friendly_interface_to_friendly_descr(substr($pools[$p]["name"], 5)) . ")";
-                        $pools[$p]["mystate"] = $data[$f + 7];
-                        $pools[$p]["peerstate"] = $data[$f + 14];
-                        $pools[$p]["mydate"] = $data[$f + 10];
-                        $pools[$p]["mydate"] .= " " . $data[$f + 11];
-                        $pools[$p]["peerdate"] = $data[$f + 17];
-                        $pools[$p]["peerdate"] .= " " . $data[$f + 18];
-                        $p++;
-                        $i++;
-                        continue 3;
-                    case "lease":
-                        $leases[$l]["ip"] = $data[$f + 1];
-                        $leases[$l]["type"] = TEXT_DYNAMIC;
-                        $f = $f + 2;
-                        break;
-                    case "starts":
-                        $leases[$l]["start"] = $data[$f + 2];
-                        $leases[$l]["start"] .= " " . $data[$f + 3];
-                        $f = $f + 3;
-                        break;
-                    case "ends":
-                        if ($data[$f + 1] == "never") {
-                            // Quote from dhcpd.leases(5) man page:
-                            // If a lease will never expire, date is never instead of an actual date.
-                            $leases[$l]["end"] = TEXT_NEVER;
-                            $f = $f + 1;
-                        } else {
-                            $leases[$l]["end"] = $data[$f + 2];
-                            $leases[$l]["end"] .= " " . $data[$f + 3];
-                            $f = $f + 3;
-                        }
-                        break;
-                    case "tsfp":
-                    case "atsfp":
-                    case "cltt":
-                    case "tstp":
-                        $f = $f + 3;
-                        break;
-                    case "binding":
-                        switch ($data[$f + 2]) {
-                            case "active":
-                                $leases[$l]["act"] = TEXT_ACTIVE;
-                                break;
-                            case "free":
-                                $leases[$l]["act"] = TEXT_EXPIRED;
-                                $leases[$l]["online"] = TEXT_OFFLINE;
-                                break;
-                            case "backup":
-                                $leases[$l]["act"] = TEXT_RESERVED;
-                                $leases[$l]["online"] = TEXT_OFFLINE;
-                                break;
-                        }
-                        $f = $f + 1;
-                        break;
-                    case "next":
-                        /* skip the next binding statement */
-                        $f = $f + 3;
-                        break;
-                    case "rewind":
-                        /* skip the rewind binding statement */
-                        $f = $f + 3;
-                        break;
-                    case "hardware":
-                        $leases[$l]["mac"] = $data[$f + 2];
-                        $arpdata_ip = [];
-                        /* check if it's online and the lease is active */
-                        $leases[$l]["online"] =
-                            (in_array($leases[$l]["ip"], $arpdata_ip)) ? TEXT_ONLINE : TEXT_OFFLINE;
-                        $f = $f + 2;
-                        break;
-                    case "client-hostname":
-                        if ($data[$f + 1] <> "") {
-                            $leases[$l]["hostname"] = preg_replace('/"/', "", $data[$f + 1]);
-                        } else {
-                            $hostname = gethostbyaddr($leases[$l]["ip"]);
-                            if ($hostname <> "") {
-                                $leases[$l]["hostname"] = $hostname;
-                            }
-                        }
-                        $f = $f + 1;
-                        break;
-                    case "uid":
-                        $f = $f + 1;
-                        break;
-                }
-                $f++;
-            }
-            $l++;
-            $i++;
-            /* slowly chisel away at the source array */
-            array_shift($leases_content);
-        }
-        /* remove duplicate items by mac address */
-        if (count($leases) > 0) {
-            $leases = self::remove_duplicates($leases, "ip");
+        if ($value_key === "failover") {
+            return $failover;
         }
 
-        if (count($pools) > 0) {
-            $pools = self::remove_duplicates($pools, "name");
-            asort($pools);
+        if ($value_key === "pools") {
+            $failover_records = array_filter($dhcp_records, fn($r) => $r["type"] == "failover");
+
+            return self::remove_duplicates(array_map(fn($r) => self::raw_failover_record_to_pool($r), $failover_records), "name");
         }
 
-        $rs = compact("pools", "failover", "leases");
-        $is_known_value_key = array_key_exists($value_key, $rs);
+        $lease_records = array_filter($dhcp_records, fn($r) => $r["type"] == "lease");
 
-        return $is_known_value_key ? $rs[$value_key] : $leases;
+        $arp_ips = self::arp_ips();
+
+        return self::remove_duplicates(array_map(fn($r) => self::raw_lease_record_to_lease($r, $arp_ips), $lease_records), "mac");
     }
 
     private static function check_dhcp_failover(): int
