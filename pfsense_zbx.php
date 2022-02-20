@@ -127,24 +127,24 @@ const CARP_RES = [
 
 class Services
 {
-    public static function enabled($service, $name, $short_name): int
+    public static function enabled(array $service, $name, $short_name): int
     {
         return Util::b2int(PfEnv::is_service_enabled($short_name));
     }
 
-    public static function name($service, string $name): string
+    public static function name(array $service, string $name): string
     {
         return $name;
     }
 
-    public static function status(string $service): int
+    public static function status(array $service): int
     {
         $status = PfEnv::get_service_status($service);
 
         return empty($status) ? 0 : $status;
     }
 
-    public static function run_on_carp_slave($service, $name, $short_name, $carpcfr, $stopped_on_carp_slave): int
+    public static function run_on_carp_slave(array $service, $name, $short_name, $carpcfr, $stopped_on_carp_slave): int
     {
         return Util::b2int(in_array($carpcfr, $stopped_on_carp_slave));
     }
