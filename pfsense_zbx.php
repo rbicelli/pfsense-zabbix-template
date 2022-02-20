@@ -1242,29 +1242,21 @@ class Commands
 
         $n0 = $data["name"];
 
-        $friendly_description = $n0; // PfEnv::convert_friendly_interface_to_friendly_descr(substr($n0, 5));
+        $friendly_description = PfEnv::convert_friendly_interface_to_friendly_descr(substr($n0, 5));
         $name = "$n0 ($friendly_description)";
 
         list($my_state_str, $my_time_str) = explode(" at ", $data["my"]);
         list($partner_state_str, $partner_time_str) = explode(" at ", $data["partner"]);
 
-        $my_state_parts = explode(" ", $my_state_str);
-        $partner_state_parts = explode(" ", $partner_state_str);
-        $my_time_parts = explode(" ", $my_time_str);
-        $partner_time_parts = explode(" ", $partner_time_str);
+        list(, $mystate) = explode(" ", $my_state_str);
+        list(, $peerstate) = explode(" ", $partner_state_str);
+        list(, $my_date, $my_time) = explode(" ", $my_time_str);
+        list(, $partner_date, $partner_time) = explode(" ", $partner_time_str);
 
-        $my_state = $my_state_parts[1];
-        $partner_state = $partner_state_parts[1];
-        $my_time = implode(" ", array_slice($my_time_parts, 1));
-        $partner_time = implode(" ", array_slice($partner_time_parts, 1));
+        $mydate = implode(" ", [$my_date, $my_time]);
+        $peerdate = implode(" ", [$partner_date, $partner_time]);
 
-        return [
-            "name" => $name,
-            "mystate" => $my_state,
-            "peerstate" => $partner_state,
-            "mydate" => $my_time,
-            "peerdate" => $partner_time,
-        ];
+        return compact("name", "mystate", "peerstate", "mydate", "peerdate");
     }
 
     private static function arp_ips()
