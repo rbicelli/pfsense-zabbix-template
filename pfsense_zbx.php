@@ -9,6 +9,11 @@
 
 namespace RBicelli\Pfz;
 
+use Closure;
+use Exception;
+use ReflectionClass;
+use ReflectionMethod;
+
 require_once("config.inc");
 require_once("functions.inc");
 require_once("globals.inc");
@@ -292,7 +297,7 @@ class PfEnv
 
 class Util
 {
-    public static function array_first(array $haystack, \Closure $match)
+    public static function array_first(array $haystack, Closure $match)
     {
         foreach ($haystack as $needle) {
             if ($match($needle)) {
@@ -481,7 +486,7 @@ class Discoveries
 
     public static function dhcpfailover()
     {
-        // System public static functions regarding DHCP Leases will be available in the upcoming release of pfSense, so let"s wait
+        // System public static functions regarding DHCP Leases will be available in the upcoming release of pfSense, so let's wait
         $leases = PfEnv::system_get_dhcpleases();
 
         self::print_json(array_map(fn($data) => [
@@ -710,7 +715,7 @@ class Commands
         $name = str_replace("__", " ", $name);
 
         // List of service which are stopped on CARP Slave.
-        // For now this is the best way i found for filtering out the triggers
+        // For now this is the best way I found for filtering out the triggers
         // Waiting for a way in Zabbix to use Global Regexp in triggers with items discovery
         $stopped_on_carp_slave = array("haproxy", "radvd", "openvpn.", "openvpn", "avahi");
 
@@ -761,7 +766,7 @@ class Commands
         }
 
         if ($carp_detected_problems != 0) {
-            // There"s some Major Problems with CARP
+            // There's some Major Problems with CARP
             return Util::result(CARP_STATUS_PROBLEM, $echo_result);
         }
 
@@ -1020,7 +1025,7 @@ class Commands
             return $raw_value == "" ? "server_user_listening" : $raw_value;
         }
 
-        // For p2p_tls, ensure we have one client, and return up if it"s the case
+        // For p2p_tls, ensure we have one client, and return up if it's the case
         if ($maybe_server["mode"] == "p2p_tls" && $raw_value == "") {
             $has_at_least_one_connection =
                 is_array($maybe_server["conns"]) && count($maybe_server["conns"]) > 0;
@@ -1129,8 +1134,8 @@ class Commands
         /* We then split the leases file by } */
         $split_pattern = "'BEGIN { RS=\"}\";} {for (i=1; i<=NF; i++) printf \"%s \", \$i; printf \"}\\n\";}'";
 
-        /* stuff the leases file in a proper format into a array by line */
-        @exec("/bin/cat {$leases_file} 2>/dev/null| {$awk} {$clean_pattern} | {$awk} {$split_pattern}", $leases_content);
+        /* stuff the leases file in a proper format into an array by line */
+        @exec("/bin/cat $leases_file 2>/dev/null| $awk $clean_pattern | $awk $split_pattern", $leases_content);
         $leases_count = count($leases_content);
         @exec("/usr/sbin/arp -an", $rawdata);
 
@@ -1184,16 +1189,10 @@ class Commands
                             $f = $f + 3;
                         }
                         break;
-                    case "tstp":
-                        $f = $f + 3;
-                        break;
                     case "tsfp":
-                        $f = $f + 3;
-                        break;
                     case "atsfp":
-                        $f = $f + 3;
-                        break;
                     case "cltt":
+                    case "tstp":
                         $f = $f + 3;
                         break;
                     case "binding":
@@ -1270,7 +1269,7 @@ class Commands
     {
         // Check DHCP Failover Status
         // Returns number of failover pools which state is not normal or
-        // different than peer state
+        // different from peer state
         $failover = self::get_dhcp("failover");
 
         return count(array_filter($failover, fn($f) => ($f["mystate"] != "normal") || ($f["mystate"] != $f["peerstate"])));
@@ -1310,14 +1309,14 @@ class Commands
 function build_method_lookup(string $clazz): array
 {
     try {
-        $reflector = new \ReflectionClass($clazz);
+        $reflector = new ReflectionClass($clazz);
 
         $all_methods = $reflector->getMethods();
 
         $commands = array_filter($all_methods, fn($method) => $method->isStatic() && $method->isPublic());
 
-        return array_map(fn(\ReflectionMethod $method) => $method->getName(), $commands);
-    } catch (\Exception $e) {
+        return array_map(fn(ReflectionMethod $method) => $method->getName(), $commands);
+    } catch (Exception $e) {
         return [];
     }
 }
