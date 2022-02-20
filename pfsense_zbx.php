@@ -725,7 +725,7 @@ class Commands
             return Util::result(OPENVPN_CLIENT_VALUE[$value_key]($maybe_value), true);
         }
 
-        return Util::result(empty($maybe_value) ? $fallback_value : $maybe_value);
+        return Util::result(empty($maybe_value) ? $fallback_value : $maybe_value, true);
     }
 
     public static function service_value(string $name, string $value)
