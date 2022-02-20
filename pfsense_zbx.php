@@ -23,9 +23,9 @@ require_once("util.inc");
 
 define("COMMAND_HANDLERS", build_method_lookup(PfzCommands::class));
 
-define('DISCOVERY_SECTION_HANDLERS', build_method_lookup(PfzDiscoveries::class));
+define("DISCOVERY_SECTION_HANDLERS", build_method_lookup(PfzDiscoveries::class));
 
-define('SERVICES_VALUES', build_method_lookup(PfzServices::class));
+define("SERVICES_VALUES", build_method_lookup(PfzServices::class));
 
 define("TEXT_ACTIVE", gettext("active"));
 define("TEXT_DYNAMIC", gettext("dynamic"));
@@ -169,7 +169,7 @@ class PfEnv
 
     private static function call_pfsense_method_with_same_name_and_arguments()
     {
-        $caller_function_name = debug_backtrace()[1]['function'];
+        $caller_function_name = debug_backtrace()[1]["function"];
 
         return call_user_func_array($caller_function_name, ...func_get_args());
     }
@@ -427,22 +427,22 @@ class PfzDiscoveries
     public static function openvpn_client()
     {
         self::print_json(array_map(fn($client) => [
-            "{#CLIENT}" => $client['vpnid'],
+            "{#CLIENT}" => $client["vpnid"],
             "{#NAME}", self::sanitize_name($client["name"]),
         ], PfEnv::openvpn_get_active_clients()));
     }
 
     public static function services()
     {
-        $named_services = array_filter(PfEnv::get_services(), fn($service) => !empty($service['name']));
+        $named_services = array_filter(PfEnv::get_services(), fn($service) => !empty($service["name"]));
 
         self::print_json(array_map(function ($service) {
             $maybe_id = Util::array_first(array_keys($service), fn($key) => in_array($key, ["id", "zone"]));
             $id = is_null($maybe_id) ? "" : $service[$maybe_id];
 
             return [
-                "{#SERVICE}" => str_replace(" ", "__", $service['name']) . $id,
-                "{#DESCRIPTION}" => $service['description'],
+                "{#SERVICE}" => str_replace(" ", "__", $service["name"]) . $id,
+                "{#DESCRIPTION}" => $service["description"],
             ];
         }, $named_services));
     }
@@ -455,37 +455,37 @@ class PfzDiscoveries
     public static function ipsec_ph1()
     {
         $config = PfEnv::cfg();
-        PfEnv::init_config_arr(array('ipsec', 'phase1'));
-        $a_phase1 = &$config['ipsec']['phase1'];
+        PfEnv::init_config_arr(array("ipsec", "phase1"));
+        $a_phase1 = &$config["ipsec"]["phase1"];
 
         self::print_json(array_map(fn($data) => [
-            "{#IKEID}" => $data['ikeid'],
-            "{#NAME}" => $data['descr'],
+            "{#IKEID}" => $data["ikeid"],
+            "{#NAME}" => $data["descr"],
         ], $a_phase1));
     }
 
     public static function ipsec_ph2()
     {
         $config = PfEnv::cfg();
-        PfEnv::init_config_arr(array('ipsec', 'phase2'));
-        $a_phase2 = &$config['ipsec']['phase2'];
+        PfEnv::init_config_arr(array("ipsec", "phase2"));
+        $a_phase2 = &$config["ipsec"]["phase2"];
 
         self::print_json(array_map(fn($data) => [
-            "{#IKEID}" => $data['ikeid'],
-            "{#NAME}" => $data['descr'],
-            "{#UNIQID}" => $data['uniqid'],
-            "{#REQID}" => $data['reqid'],
-            "{#EXTID}" => $data['ikeid'] . '.' . $data['reqid'],
+            "{#IKEID}" => $data["ikeid"],
+            "{#NAME}" => $data["descr"],
+            "{#UNIQID}" => $data["uniqid"],
+            "{#REQID}" => $data["reqid"],
+            "{#EXTID}" => $data["ikeid"] . "." . $data["reqid"],
         ], $a_phase2));
     }
 
     public static function dhcpfailover()
     {
-        // System public static functions regarding DHCP Leases will be available in the upcoming release of pfSense, so let's wait
+        // System public static functions regarding DHCP Leases will be available in the upcoming release of pfSense, so let"s wait
         $leases = PfEnv::system_get_dhcpleases();
 
         self::print_json(array_map(fn($data) => [
-            "{#FAILOVER_GROUP}" => str_replace(" ", "__", $data['name']),
+            "{#FAILOVER_GROUP}" => str_replace(" ", "__", $data["name"]),
         ], $leases["failover"]));
 
     }
@@ -499,7 +499,7 @@ class PfzDiscoveries
 
     private static function sanitize_name(string $raw_name): string
     {
-        return trim(preg_replace('/\w{3}(\d)?:\d{4,5}/i', '', $raw_name));
+        return trim(preg_replace("/\w{3}(\d)?:\d{4,5}/i", "", $raw_name));
     }
 
     private static function map_conn(string $server_name, string $vpn_id, array $conn): array
@@ -536,7 +536,7 @@ class PfzDiscoveries
 
         self::print_json(array_map(function ($hwif) {
             return [
-                "{#IFNAME}" => $hwif['hwif'],
+                "{#IFNAME}" => $hwif["hwif"],
                 "{#IFDESCR}" => $hwif["description"],
             ];
         }, PfzInterfaces::retrieve_wan_interfaces()));
@@ -643,7 +643,7 @@ class PfzCommands
     {
         echo implode(",",
             array_map(
-                fn($gw) => sprintf("%s.%s", $gw['name'], $gw['status']),
+                fn($gw) => sprintf("%s.%s", $gw["name"], $gw["status"]),
                 PfEnv::return_gateways_status(true)));
     }
 
@@ -688,7 +688,7 @@ class PfzCommands
     {
         $clients = PfEnv::openvpn_get_active_clients();
 
-        $client = Util::array_first($clients, fn($client) => $client['vpnid'] == $client_id);
+        $client = Util::array_first($clients, fn($client) => $client["vpnid"] == $client_id);
 
         if (empty($client)) {
             return $fallback_value;
@@ -761,14 +761,14 @@ class PfzCommands
         }
 
         if ($carp_detected_problems != 0) {
-            // There's some Major Problems with CARP
+            // There"s some Major Problems with CARP
             return Util::result(CARP_STATUS_PROBLEM, $echo_result);
         }
 
-        $virtual_ips = $config['virtualip']['vip'];
-        $just_carps = array_filter($virtual_ips, fn($virtual_ip) => $virtual_ip['mode'] != "carp");
+        $virtual_ips = $config["virtualip"]["vip"];
+        $just_carps = array_filter($virtual_ips, fn($virtual_ip) => $virtual_ip["mode"] != "carp");
         $status_str = array_reduce($just_carps, function ($status, $carp) {
-            $if_status = PfEnv::get_carp_interface_status("_vip{$carp['uniqid']}");
+            $if_status = PfEnv::get_carp_interface_status("_vip{$carp["uniqid"]}");
 
             $state_differs_from_previous_interface = ($status != $if_status) && (!empty($if_status));
             if (!$state_differs_from_previous_interface) {
@@ -817,8 +817,8 @@ class PfzCommands
         // Get Value from IPsec Phase 1 Configuration
         // If Getting "disabled" value only check item presence in config array
         $config = PfEnv::cfg();
-        PfEnv::init_config_arr(['ipsec', 'phase1']);
-        $a_phase1 = &$config['ipsec']['phase1'];
+        PfEnv::init_config_arr(["ipsec", "phase1"]);
+        $a_phase1 = &$config["ipsec"]["phase1"];
 
         if ($value_key == "status") {
             echo PfzCommands::get_ipsec_status($ike_id);
@@ -847,24 +847,24 @@ class PfzCommands
     public static function ipsec_ph2($uniqid, $value_key)
     {
         $config = PfEnv::cfg();
-        PfEnv::init_config_arr(array('ipsec', 'phase2'));
-        $a_phase2 = &$config['ipsec']['phase2'];
+        PfEnv::init_config_arr(array("ipsec", "phase2"));
+        $a_phase2 = &$config["ipsec"]["phase2"];
 
         $valuecfr = explode(".", $value_key);
 
         $value = "0";
-        if ($valuecfr[0] == 'status') {
+        if ($valuecfr[0] == "status") {
             $ids = explode(".", $uniqid);
             $status_key = (isset($valuecfr[1])) ? $valuecfr[1] : "state";
             $value = self::get_ipsec_status($ids[0], $ids[1], $status_key);
         }
 
-        $maybe_data = Util::array_first($a_phase2, fn($data) => $data['uniqid'] == $uniqid);
+        $maybe_data = Util::array_first($a_phase2, fn($data) => $data["uniqid"] == $uniqid);
         if (is_null($maybe_data) || !array_key_exists($value_key, $maybe_data)) {
             return Util::result($value, true);
         }
 
-        $result = ($value_key != 'disabled') ?
+        $result = ($value_key != "disabled") ?
             self::get_value_mapping("ipsec_ph2." . $value_key, $maybe_data[$value_key]) :
             "1";
 
@@ -970,14 +970,14 @@ class PfzCommands
         echo "IPsec: \n";
 
         $config = PfEnv::cfg();
-        PfEnv::init_config_arr(array('ipsec', 'phase1'));
-        PfEnv::init_config_arr(array('ipsec', 'phase2'));
+        PfEnv::init_config_arr(array("ipsec", "phase1"));
+        PfEnv::init_config_arr(array("ipsec", "phase2"));
         $status = PfEnv::ipsec_list_sa();
         echo "IPsec Status: \n";
         print_r($status);
 
-        $a_phase1 = &$config['ipsec']['phase1'];
-        $a_phase2 = &$config['ipsec']['phase2'];
+        $a_phase1 = &$config["ipsec"]["phase1"];
+        $a_phase2 = &$config["ipsec"]["phase2"];
 
         echo "IPsec Config Phase 1: \n";
         print_r($a_phase1);
@@ -989,24 +989,22 @@ class PfzCommands
 
         //Packages
         echo "Packages: \n";
-        $installed_packages = PfEnv::get_pkg_info('all', false, true);
+        $installed_packages = PfEnv::get_pkg_info("all", false, true);
         print_r($installed_packages);
     }
 
     private static function get_openvpn_server_uservalue_($unique_id, $value_key, $default = "")
     {
-        $unique_id = Util::replace_special_chars($unique_id, true);
-
         list($server_id, $user_id) = explode("+", $unique_id);
 
         $servers = PfzOpenVpn::get_all_openvpn_servers();
-        $maybe_server = Util::array_first($servers, fn($server) => $server['vpnid'] == $server_id);
+        $maybe_server = Util::array_first($servers, fn($server) => $server["vpnid"] == $server_id);
 
         if (!$maybe_server) {
             return $default;
         }
 
-        $maybe_conn = Util::array_first($maybe_server["conns"], fn($conn) => ($conn['common_name'] == $user_id));
+        $maybe_conn = Util::array_first($maybe_server["conns"], fn($conn) => ($conn["common_name"] == $user_id));
 
         return $maybe_conn[$value_key] ?: $default;
     }
@@ -1023,7 +1021,7 @@ class PfzCommands
             return $raw_value == "" ? "server_user_listening" : $raw_value;
         }
 
-        // For p2p_tls, ensure we have one client, and return up if it's the case
+        // For p2p_tls, ensure we have one client, and return up if it"s the case
         if ($maybe_server["mode"] == "p2p_tls" && $raw_value == "") {
             $has_at_least_one_connection =
                 is_array($maybe_server["conns"]) && count($maybe_server["conns"]) > 0;
@@ -1084,7 +1082,7 @@ class PfzCommands
 
             $con_name = "con$con_id";
 
-            $is_version_1 = $ike_sa['version'] == 1;
+            $is_version_1 = $ike_sa["version"] == 1;
             $is_split_connection = !$is_version_1 && !PfEnv::ipsec_ikeid_used($con_id);
 
             $ph1idx = ($is_version_1 || $is_split_connection) ? $connection_map[$con_name] : $con_id;
@@ -1166,35 +1164,35 @@ class PfzCommands
                 switch ($data[$f]) {
                     case "failover":
                         $pools[$p]['name'] = trim($data[$f + 2], '"');
-                        $pools[$p]['name'] = "{$pools[$p]['name']} (" . PfEnv::convert_friendly_interface_to_friendly_descr(substr($pools[$p]['name'], 5)) . ")";
-                        $pools[$p]['mystate'] = $data[$f + 7];
-                        $pools[$p]['peerstate'] = $data[$f + 14];
-                        $pools[$p]['mydate'] = $data[$f + 10];
-                        $pools[$p]['mydate'] .= " " . $data[$f + 11];
-                        $pools[$p]['peerdate'] = $data[$f + 17];
-                        $pools[$p]['peerdate'] .= " " . $data[$f + 18];
+                        $pools[$p]["name"] = "{$pools[$p]["name"]} (" . PfEnv::convert_friendly_interface_to_friendly_descr(substr($pools[$p]["name"], 5)) . ")";
+                        $pools[$p]["mystate"] = $data[$f + 7];
+                        $pools[$p]["peerstate"] = $data[$f + 14];
+                        $pools[$p]["mydate"] = $data[$f + 10];
+                        $pools[$p]["mydate"] .= " " . $data[$f + 11];
+                        $pools[$p]["peerdate"] = $data[$f + 17];
+                        $pools[$p]["peerdate"] .= " " . $data[$f + 18];
                         $p++;
                         $i++;
                         continue 3;
                     case "lease":
-                        $leases[$l]['ip'] = $data[$f + 1];
-                        $leases[$l]['type'] = TEXT_DYNAMIC;
+                        $leases[$l]["ip"] = $data[$f + 1];
+                        $leases[$l]["type"] = TEXT_DYNAMIC;
                         $f = $f + 2;
                         break;
                     case "starts":
-                        $leases[$l]['start'] = $data[$f + 2];
-                        $leases[$l]['start'] .= " " . $data[$f + 3];
+                        $leases[$l]["start"] = $data[$f + 2];
+                        $leases[$l]["start"] .= " " . $data[$f + 3];
                         $f = $f + 3;
                         break;
                     case "ends":
                         if ($data[$f + 1] == "never") {
                             // Quote from dhcpd.leases(5) man page:
                             // If a lease will never expire, date is never instead of an actual date.
-                            $leases[$l]['end'] = TEXT_NEVER;
+                            $leases[$l]["end"] = TEXT_NEVER;
                             $f = $f + 1;
                         } else {
-                            $leases[$l]['end'] = $data[$f + 2];
-                            $leases[$l]['end'] .= " " . $data[$f + 3];
+                            $leases[$l]["end"] = $data[$f + 2];
+                            $leases[$l]["end"] .= " " . $data[$f + 3];
                             $f = $f + 3;
                         }
                         break;
@@ -1213,15 +1211,15 @@ class PfzCommands
                     case "binding":
                         switch ($data[$f + 2]) {
                             case "active":
-                                $leases[$l]['act'] = TEXT_ACTIVE;
+                                $leases[$l]["act"] = TEXT_ACTIVE;
                                 break;
                             case "free":
-                                $leases[$l]['act'] = TEXT_EXPIRED;
-                                $leases[$l]['online'] = TEXT_OFFLINE;
+                                $leases[$l]["act"] = TEXT_EXPIRED;
+                                $leases[$l]["online"] = TEXT_OFFLINE;
                                 break;
                             case "backup":
-                                $leases[$l]['act'] = TEXT_RESERVED;
-                                $leases[$l]['online'] = TEXT_OFFLINE;
+                                $leases[$l]["act"] = TEXT_RESERVED;
+                                $leases[$l]["online"] = TEXT_OFFLINE;
                                 break;
                         }
                         $f = $f + 1;
@@ -1235,20 +1233,20 @@ class PfzCommands
                         $f = $f + 3;
                         break;
                     case "hardware":
-                        $leases[$l]['mac'] = $data[$f + 2];
+                        $leases[$l]["mac"] = $data[$f + 2];
                         $arpdata_ip = [];
                         /* check if it's online and the lease is active */
-                        $leases[$l]['online'] =
-                            (in_array($leases[$l]['ip'], $arpdata_ip)) ? TEXT_ONLINE : TEXT_OFFLINE;
+                        $leases[$l]["online"] =
+                            (in_array($leases[$l]["ip"], $arpdata_ip)) ? TEXT_ONLINE : TEXT_OFFLINE;
                         $f = $f + 2;
                         break;
                     case "client-hostname":
                         if ($data[$f + 1] <> "") {
-                            $leases[$l]['hostname'] = preg_replace('/"/', '', $data[$f + 1]);
+                            $leases[$l]["hostname"] = preg_replace('/"/', "", $data[$f + 1]);
                         } else {
-                            $hostname = gethostbyaddr($leases[$l]['ip']);
+                            $hostname = gethostbyaddr($leases[$l]["ip"]);
                             if ($hostname <> "") {
-                                $leases[$l]['hostname'] = $hostname;
+                                $leases[$l]["hostname"] = $hostname;
                             }
                         }
                         $f = $f + 1;
