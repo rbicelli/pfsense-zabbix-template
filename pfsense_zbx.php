@@ -718,14 +718,11 @@ class Commands
             return Util::result($fallback_value, true);
         }
 
-        $maybe_value = $maybe_client[$value_key];
+        $value = ($value_key == "status") ?
+            self::get_value_mapping("openvpn.client.status", $maybe_client[$value_key]) :
+            $maybe_client[$value_key];
 
-        $is_known_value_key = array_key_exists($value_key, OPENVPN_CLIENT_VALUE);
-        if ($is_known_value_key) {
-            return Util::result(OPENVPN_CLIENT_VALUE[$value_key]($maybe_value), true);
-        }
-
-        return Util::result(empty($maybe_value) ? $fallback_value : $maybe_value, true);
+        return Util::result($value == "" ? $fallback_value : $value, true);
     }
 
     public static function service_value(string $name, string $value)
