@@ -1274,73 +1274,53 @@ function pfz_discovery($section){
      }         
 }
 
-//Main Code
-switch (strtolower($argv[1])){     
-     case "discovery":
-          pfz_discovery($argv[2]);
-          break;
-     case "gw_value":
-          pfz_gw_value($argv[2],$argv[3]);
-          break;     
-     case "gw_status":
-          pfz_gw_rawstatus();
-          break;
-	 case "if_speedtest_value":
-	      pfz_speedtest_cron_install();
-	 	  pfz_interface_speedtest_value($argv[2],$argv[3]);
-	 	  break;
-     case "openvpn_servervalue":
-          pfz_openvpn_servervalue($argv[2],$argv[3]);
-          break;
-     case "openvpn_server_uservalue":
-          pfz_openvpn_server_uservalue($argv[2],$argv[3]);
-          break;
-     case "openvpn_server_uservalue_numeric":
-          pfz_openvpn_server_uservalue($argv[2],$argv[3],"0");
-          break;
-     case "openvpn_clientvalue":
-          pfz_openvpn_clientvalue($argv[2],$argv[3]);
-          break;
-     case "service_value":
-          pfz_service_value($argv[2],$argv[3]);
-          break;
-     case "carp_status":
-          pfz_carp_status();
-          break;
-     case "if_name":
-          pfz_get_if_name($argv[2]);
-          break;
-     case "system":
-          pfz_get_system_value($argv[2]);
-          break;
-     case "ipsec_ph1":
-          pfz_ipsec_ph1($argv[2],$argv[3]);
-          break;
-     case "ipsec_ph2":
-          pfz_ipsec_ph2($argv[2],$argv[3]);
-          break;
-     case "dhcp":
-     	  pfz_dhcp($argv[2],$argv[3]);
-          break;
-     case "file_exists":
-     	  pfz_file_exists($argv[2]);
-     	  break;
-     case "speedtest_cron":
-     	  pfz_speedtest_cron_install();
-     	  pfz_speedtest_cron();
-     	  break;
-     case "cron_cleanup":
-     	  pfz_speedtest_cron_install(false);
-     	  break;
-     case "smart_status":
-          pfz_get_smart_status();
-          break;     	  
-     case "cert_date":
-          pfz_get_cert_date($argv[2]);
-          break;
-     case "temperature":
-          pfz_get_temperature($argv[2]);
-          break;
-     default:
-          pfz_test();
+$exec_0 = fn(callable $f) => $f;
+$exec_1 = fn(callable $f) => fn($parameters) => $f($parameters[0]);
+$exec_2 = fn(callable $f) => fn($parameters) => $f($parameters[0], $parameters[1]);
+
+define('COMMAND_HANDLERS', [
+    "carp_status" => $exec_0(fn() => pfz_carp_status()),
+    "cert_date" => $exec_1(fn($p0) => pfz_get_cert_date($p0)),
+    "cron_cleanup" => $exec_0(fn() => pfz_speedtest_cron_install(false)),
+    "dhcp" => $exec_2(fn($p0, $p1) => pfz_dhcp($p0, $p1)),
+    "discovery" => $exec_1(fn($p0) => pfz_discovery($p0)),
+    "file_exists" => $exec_1(fn($p0) => pfz_file_exists($p0)),
+    "gw_status" => $exec_0(fn() => pfz_gw_rawstatus()),
+    "gw_value" => $exec_2(fn($p0, $p1) => pfz_gw_value($p0, $p1)),
+    "if_name" => $exec_1(fn($p0) => pfz_get_if_name($p0)),
+    "if_speedtest_value" => $exec_2(function ($p0, $p1) {
+        pfz_speedtest_cron_install();
+        pfz_interface_speedtest_value($p0, $p1);
+    }),
+    "ipsec_ph1" => $exec_2(fn($p0, $p1) => pfz_ipsec_ph1($p0, $p1)),
+    "ipsec_ph2" => $exec_2(fn($p0, $p1) => pfz_ipsec_ph2($p0, $p1)),
+    "openvpn_clientvalue" => $exec_2(fn($p0, $p1) => pfz_openvpn_clientvalue($p0, $p1)),
+    "openvpn_server_uservalue" => $exec_2(fn($p0, $p1) => pfz_openvpn_server_uservalue($p0, $p1)),
+    "openvpn_server_uservalue_numeric" => $exec_2(fn($p0, $p1) => pfz_openvpn_server_uservalue($p0, $p1, "0")),
+    "openvpn_servervalue" => $exec_2(fn($p0, $p1) => pfz_openvpn_servervalue($p0, $p1)),
+    "service_value" => $exec_2(fn($p0, $p1) => pfz_service_value($p0, $p1)),
+    "speedtest_cron" => $exec_0(function () {
+        pfz_speedtest_cron_install();
+        pfz_speedtest_cron();
+    }),
+    "smart_status" => $exec_0(fn() => pfz_get_smart_status()),
+    "system" => $exec_1(fn($p0) => pfz_get_system_value($p0)),
+    "temperature" => $exec_1(fn($p0) => pfz_get_temperature($p0)),
+]);
+
+function main($arguments)
+{
+    $command = strtolower($arguments[1]);
+    $parameters = array_slice($arguments, 2);
+
+    $is_known_command = array_key_exists($command, COMMAND_HANDLERS);
+
+    if (!$is_known_command) {
+        pfz_test();
+        return;
+    }
+
+    COMMAND_HANDLERS[$command]($parameters);
 }
+
+main($argv);
