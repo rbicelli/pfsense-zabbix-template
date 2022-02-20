@@ -405,14 +405,14 @@ class Discoveries
         self::print_json(array_map(fn($server) => [
             "{#SERVER}" => $server["vpnid"],
             "{#NAME}" => self::sanitize_name($server["name"])],
-            OpenVpn::get_all_servers()));
+            OpenVpn::get_active_servers()));
     }
 
     public static function openvpn_server_user()
     {
         $servers_with_relevant_mode =
             array_filter(
-                OpenVpn::get_all_servers(),
+                OpenVpn::get_active_servers(),
                 fn($server) => in_array($server["mode"], ["server_user", "server_tls_user", "server_tls"]));
 
         $servers_with_conns = array_filter(
@@ -594,7 +594,7 @@ class Speedtest
 
 class OpenVpn
 {
-    public static function get_all_servers(): array
+    public static function get_active_servers(): array
     {
         $servers = PfEnv::openvpn_get_active_servers();
         $sk_servers = PfEnv::openvpn_get_active_servers("p2p");
@@ -652,7 +652,7 @@ class Commands
 
     public static function openvpn_servervalue(int $server_id, $value_key)
     {
-        $maybe_server = Util::array_first(OpenVpn::get_all_servers(), fn($s) => $s["vpnid"] == $server_id);
+        $maybe_server = Util::array_first(OpenVpn::get_active_servers(), fn($s) => $s["vpnid"] == $server_id);
         if (empty($maybe_server)) {
             return Util::result(0, true);
         }
@@ -807,32 +807,28 @@ class Commands
     {
         // Get Value from IPsec Phase 1 Configuration
         // If Getting "disabled" value only check item presence in config array
-        $config = PfEnv::cfg();
         PfEnv::init_config_arr(["ipsec", "phase1"]);
-        $a_phase1 = &$config["ipsec"]["phase1"];
+
+        $config = PfEnv::cfg();
 
         if ($value_key == "status") {
-            echo Commands::get_ipsec_status($ike_id);
-            return;
+            return Util::result(Commands::get_ipsec_status($ike_id), true);
         }
 
         if ($value_key == "disabled") {
-            echo "0";
-            return;
+            return Util::result("0", true);
         }
 
-        $maybe_ike_match = Util::array_first($a_phase1, fn($d) => $d["ikeid"] == $ike_id);
+        $maybe_ike_match = Util::array_first($config["ipsec"]["phase1"], fn($d) => $d["ikeid"] == $ike_id);
         if (empty($maybe_ike_match)) {
-            echo "";
-            return;
+            return Util::result("", true);
         }
 
         if (!array_key_exists($value_key, $maybe_ike_match)) {
-            echo "";
-            return;
+            return Util::result("", true);
         }
 
-        echo self::get_value_mapping("ipsec." . $value_key, $maybe_ike_match[$value_key]);
+        return Util::result(self::get_value_mapping("ipsec.$value_key", $maybe_ike_match[$value_key]));
     }
 
     public static function ipsec_ph2($uniqid, $value_key)
@@ -933,21 +929,18 @@ class Commands
 
         $config = PfEnv::cfg();
 
-        $ovpn_servers = OpenVpn::get_all_servers();
         echo "OPENVPN Servers:\n";
-        print_r($ovpn_servers);
+        print_r(OpenVpn::get_active_servers());
         echo $line;
 
-        $ovpn_clients = PfEnv::openvpn_get_active_clients();
         echo "OPENVPN Clients:\n";
-        print_r($ovpn_clients);
+        print_r(PfEnv::openvpn_get_active_clients());
         echo $line;
 
         $ifdescrs = PfEnv::get_configured_interface_with_descr(true);
         $ifaces = [];
         foreach ($ifdescrs as $ifdescr => $ifname) {
-            $ifinfo = PfEnv::get_interface_info($ifdescr);
-            $ifaces[$ifname] = $ifinfo;
+            $ifaces[$ifname] = PfEnv::get_interface_info($ifdescr);
         }
         echo "Network Interfaces:\n";
         print_r($ifaces);
@@ -955,39 +948,33 @@ class Commands
         print_r(PfEnv::get_configured_interface_list());
         echo $line;
 
-        $services = PfEnv::get_services();
         echo "Services: \n";
-        print_r($services);
+        print_r(PfEnv::get_services());
         echo $line;
 
         echo "IPsec: \n";
         PfEnv::init_config_arr(array("ipsec", "phase1"));
         PfEnv::init_config_arr(array("ipsec", "phase2"));
-        $status = PfEnv::ipsec_list_sa();
         echo "IPsec Status: \n";
-        print_r($status);
-
-        $a_phase1 = &$config["ipsec"]["phase1"];
-        $a_phase2 = &$config["ipsec"]["phase2"];
+        print_r(PfEnv::ipsec_list_sa());
 
         echo "IPsec Config Phase 1: \n";
-        print_r($a_phase1);
+        print_r($config["ipsec"]["phase1"]);
 
         echo "IPsec Config Phase 2: \n";
-        print_r($a_phase2);
+        print_r($config["ipsec"]["phase2"]);
 
         echo $line;
 
         echo "Packages: \n";
-        $installed_packages = PfEnv::get_pkg_info("all", false, true);
-        print_r($installed_packages);
+        print_r(PfEnv::get_pkg_info("all", false, true));
     }
 
     private static function get_openvpn_server_uservalue_($unique_id, $value_key, $default = "")
     {
         list($server_id, $user_id) = explode("+", $unique_id);
 
-        $servers = OpenVpn::get_all_servers();
+        $servers = OpenVpn::get_active_servers();
 
         $maybe_server = Util::array_first($servers, fn($server) => $server["vpnid"] == $server_id);
         if (!$maybe_server) {
