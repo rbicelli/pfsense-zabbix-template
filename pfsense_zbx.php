@@ -950,7 +950,7 @@ class Commands
             $cert_info = openssl_x509_parse(base64_decode($certificate[PfEnv::CRT]));
 
             return ($value == 0 || $value < $cert_info[$field]) ? $cert_info[$field] : $value;
-        }, 0));
+        }, 0), true);
     }
 
     // Testing function, for template creating purpose
