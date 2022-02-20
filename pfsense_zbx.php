@@ -886,11 +886,11 @@ class Commands
 
     public static function dhcp($section)
     {
-        if ($section != "failover") {
-            return;
+        if ($section === "failover") {
+            return Util::result(self::check_dhcp_failover(), true);
         }
 
-        echo self::check_dhcp_failover();
+        return Util::result(self::check_dhcp_offline_leases(), true);
     }
 
     // File is present
@@ -1293,14 +1293,23 @@ class Commands
         return self::remove_duplicates(array_map(fn($r) => self::raw_lease_record_to_lease($r, $arp_ips), $lease_records), "mac");
     }
 
+    private static function check_dhcp_offline_leases(): int
+    {
+        return count(array_filter(
+            self::get_dhcp("leases"),
+            fn($f) => $f["online"] != TEXT_ONLINE));
+    }
+    
     private static function check_dhcp_failover(): int
     {
         // Check DHCP Failover Status
         // Returns number of failover pools which state is not normal or
         // different from peer state
-        $failover = self::get_dhcp("failover");
+        $failover_pools = self::get_dhcp("pools");
 
-        return count(array_filter($failover, fn($f) => ($f["mystate"] != "normal") || ($f["mystate"] != $f["peerstate"])));
+        return count(array_filter(
+            $failover_pools,
+            fn($f) => ($f["mystate"] != "normal") || ($f["mystate"] != $f["peerstate"])));
     }
 
     private static function get_outdated_packages(): int
