@@ -1195,14 +1195,14 @@ class Commands
 
     private static function binding_to_state($binding): array
     {
-        $is_known_binding = array_key_exists($binding, BINDING_STATES);
+        $is_known_binding = array_key_exists($binding, self::BINDING_STATES);
         if (!$is_known_binding) {
             return [
                 "act" => "",
             ];
         }
 
-        return BINDING_STATES[$binding];
+        return self::BINDING_STATES[$binding];
     }
 
     private static function raw_lease_record_to_lease(array $raw_lease_record, array $arpdata_ip): array
