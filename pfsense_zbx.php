@@ -28,7 +28,7 @@ require_once("util.inc");
 
 define("COMMAND_HANDLERS", build_method_lookup(Commands::class));
 define("DISCOVERY_SECTION_HANDLERS", build_method_lookup(Discoveries::class));
-define("SERVICES_VALUES", build_method_lookup(Services::class));
+define("SERVICES_VALUE_ACTIONS", build_method_lookup(Services::class));
 
 define("TEXT_ACTIVE", gettext("active"));
 define("TEXT_DYNAMIC", gettext("dynamic"));
@@ -715,17 +715,17 @@ class Commands
             PfEnv::openvpn_get_active_clients(),
             fn($client) => $client["vpnid"] == $client_id);
         if (empty($maybe_client)) {
-            return $fallback_value;
+            return Util::result($fallback_value, true);
         }
 
         $maybe_value = $maybe_client[$value_key];
 
         $is_known_value_key = array_key_exists($value_key, OPENVPN_CLIENT_VALUE);
         if ($is_known_value_key) {
-            return OPENVPN_CLIENT_VALUE[$value_key]($maybe_value);
+            return Util::result(OPENVPN_CLIENT_VALUE[$value_key]($maybe_value), true);
         }
 
-        return ($maybe_value == "") ? $fallback_value : $maybe_value;
+        return Util::result(empty($maybe_value) ? $fallback_value : $maybe_value);
     }
 
     public static function service_value(string $name, string $value)
@@ -737,28 +737,36 @@ class Commands
         // Waiting for a way in Zabbix to use Global Regexp in triggers with items discovery
         $stopped_on_carp_slave = array("haproxy", "radvd", "openvpn.", "openvpn", "avahi");
 
-        $matching_services = array_filter(PfEnv::get_services(), function ($server) use ($sanitized_name) {
+        $maybe_service = Util::array_first(PfEnv::get_services(), function ($service) use ($sanitized_name) {
             foreach (["id", "zone"] as $key) {
-                if (!empty($server[$key])) {
-                    return printf("%s.%s", $server["name"], $server[$key]) == $sanitized_name;
+                if (!empty($service[$key])) {
+                    return sprintf("%s.%s", $service["name"], $service[$key]) == $sanitized_name;
                 }
             }
 
-            return false;
+            return $service["name"] == $sanitized_name;
         });
 
-        foreach ($matching_services as $service) {
-            $short_name = $service["name"];
-            $carp_cfr = "$short_name.";
-
-            $is_known_service_value = array_key_exists($value, SERVICES_VALUES);
-            if (!$is_known_service_value) {
-                echo $service[$value];
-                continue;
-            }
-
-            echo SERVICES_VALUES[$value]($service, $sanitized_name, $short_name, $carp_cfr, $stopped_on_carp_slave);
+        if (empty($maybe_service)) {
+            return Util::result("", true);
         }
+
+        $short_name = $maybe_service["name"];
+        $carp_cfr = "$short_name.";
+
+        $is_known_service_value = array_key_exists($value, SERVICES_VALUE_ACTIONS);
+        if (!$is_known_service_value) {
+            return Util::result($maybe_service[$value], true);
+        }
+
+        return Util::result(
+            SERVICES_VALUE_ACTIONS[$value](
+                $maybe_service,
+                $sanitized_name,
+                $short_name,
+                $carp_cfr,
+                $stopped_on_carp_slave),
+            true);
     }
 
     public static function temperature($sensorid)
