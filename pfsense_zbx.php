@@ -318,23 +318,6 @@ class Util
         return (int)$b;
     }
 
-    public static function replace_special_chars(string $input, bool $decode = false): string
-    {
-        $special_chars = explode("", "'\"`*?[]{}~$!&;()<>|#@\n");
-
-        $result = $input;
-
-        foreach ($special_chars as $idx => $plain) {
-            $encoded = "%%$idx%";
-
-            list($search, $replace) = $decode ? [$encoded, $plain] : [$plain, $encoded];
-
-            $result = str_replace($search, $replace, $result);
-        }
-
-        return $result;
-    }
-
     public static function result($result, bool $echo_result = false)
     {
         if ($echo_result) {
@@ -420,7 +403,7 @@ class PfzDiscoveries
         $servers = PfzOpenVpn::get_all_openvpn_servers();
 
         self::print_json(array_map(fn($server) => [
-            "{#SERVER}" => $server['vpnid'],
+            "{#SERVER}" => $server["vpnid"],
             "{#NAME}" => self::sanitize_name($server["name"])],
             $servers));
     }
@@ -524,8 +507,8 @@ class PfzDiscoveries
         return [
             "{#SERVERID}" => $vpn_id,
             "{#SERVERNAME}" => $server_name,
-            "{#UNIQUEID}" => sprintf("%s+%s", $vpn_id, Util::replace_special_chars($conn['common_name'])),
-            "{#USERID}" => Util::replace_special_chars($conn['common_name']),
+            "{#UNIQUEID}" => sprintf("%s+%s", $vpn_id, $conn["common_name"]),
+            "{#USERID}" => $conn["common_name"],
         ];
     }
 
@@ -670,11 +653,11 @@ class PfzCommands
         PfzSpeedtest::interface_value($if_name, $value);
     }
 
-    public static function openvpn_servervalue($server_id, $value_key)
+    public static function openvpn_servervalue(int $server_id, $value_key)
     {
         $servers = PfzOpenVpn::get_all_openvpn_servers();
 
-        $maybe_server = Util::array_first($servers, fn($s) => $s['vpnid'] == $server_id);
+        $maybe_server = Util::array_first($servers, fn($s) => $s["vpnid"] == $server_id);
 
         $server_value = self::get_server_value($maybe_server, $value_key);
 
