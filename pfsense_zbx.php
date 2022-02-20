@@ -739,7 +739,7 @@ class Commands
 
         $maybe_service = Util::array_first(PfEnv::get_services(), function ($service) use ($sanitized_name) {
             foreach (["id", "zone"] as $key) {
-                if (!empty($service[$key])) {
+                if (array_key_exists($key, $service)) {
                     return sprintf("%s%s", $service["name"], $service[$key]) == $sanitized_name;
                 }
             }
