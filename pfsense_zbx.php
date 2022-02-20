@@ -21,11 +21,11 @@ require_once("services.inc");
 require_once("system.inc");
 require_once("util.inc");
 
-define("COMMAND_HANDLERS", build_method_lookup(PfzCommands::class));
+define("COMMAND_HANDLERS", build_method_lookup(Commands::class));
 
-define("DISCOVERY_SECTION_HANDLERS", build_method_lookup(PfzDiscoveries::class));
+define("DISCOVERY_SECTION_HANDLERS", build_method_lookup(Discoveries::class));
 
-define("SERVICES_VALUES", build_method_lookup(PfzServices::class));
+define("SERVICES_VALUES", build_method_lookup(Services::class));
 
 define("TEXT_ACTIVE", gettext("active"));
 define("TEXT_DYNAMIC", gettext("dynamic"));
@@ -122,7 +122,7 @@ const CARP_RES = [
     CARP_MASTER => CARP_STATUS_OK
 ];
 
-class PfzServices
+class Services
 {
     public static function enabled($service, $name, $short_name): int
     {
@@ -328,7 +328,7 @@ class Util
     }
 }
 
-class PfzInterfaces
+class Interfaces
 {
     public static function retrieve_wan_interfaces(): array
     {
@@ -358,7 +358,7 @@ class PfzInterfaces
     }
 }
 
-class PfzDiscoveries
+class Discoveries
 {
     public static function gw()
     {
@@ -400,7 +400,7 @@ class PfzDiscoveries
 
     public static function openvpn_server()
     {
-        $servers = PfzOpenVpn::get_all_openvpn_servers();
+        $servers = OpenVpn::get_all_openvpn_servers();
 
         self::print_json(array_map(fn($server) => [
             "{#SERVER}" => $server["vpnid"],
@@ -410,7 +410,7 @@ class PfzDiscoveries
 
     public static function openvpn_server_user()
     {
-        $servers = PfzOpenVpn::get_all_openvpn_servers();
+        $servers = OpenVpn::get_all_openvpn_servers();
 
         $servers_with_relevant_mode =
             array_filter(
@@ -539,11 +539,11 @@ class PfzDiscoveries
                 "{#IFNAME}" => $hwif["hwif"],
                 "{#IFDESCR}" => $hwif["description"],
             ];
-        }, PfzInterfaces::retrieve_wan_interfaces()));
+        }, Interfaces::retrieve_wan_interfaces()));
     }
 }
 
-class PfzSpeedtest
+class Speedtest
 {
     public static function interface_value($if_name, $value)
     {
@@ -595,7 +595,7 @@ class PfzSpeedtest
     }
 }
 
-class PfzOpenVpn
+class OpenVpn
 {
     public static function get_all_openvpn_servers(): array
     {
@@ -606,7 +606,7 @@ class PfzOpenVpn
     }
 }
 
-class PfzCommands
+class Commands
 {
     public static function discovery($section)
     {
@@ -615,7 +615,7 @@ class PfzCommands
             return;
         }
 
-        PfzDiscoveries::{$section}();
+        Discoveries::{$section}();
     }
 
     public static function gw_value($gw, $value_key)
@@ -649,13 +649,13 @@ class PfzCommands
 
     public static function if_speedtest_value($if_name, $value)
     {
-        PfzSpeedtest::cron_install();
-        PfzSpeedtest::interface_value($if_name, $value);
+        Speedtest::cron_install();
+        Speedtest::interface_value($if_name, $value);
     }
 
     public static function openvpn_servervalue(int $server_id, $value_key)
     {
-        $servers = PfzOpenVpn::get_all_openvpn_servers();
+        $servers = OpenVpn::get_all_openvpn_servers();
 
         $maybe_server = Util::array_first($servers, fn($s) => $s["vpnid"] == $server_id);
 
@@ -821,7 +821,7 @@ class PfzCommands
         $a_phase1 = &$config["ipsec"]["phase1"];
 
         if ($value_key == "status") {
-            echo PfzCommands::get_ipsec_status($ike_id);
+            echo Commands::get_ipsec_status($ike_id);
             return;
         }
 
@@ -888,14 +888,14 @@ class PfzCommands
 
     public static function speedtest_cron()
     {
-        foreach (PfzInterfaces::retrieve_wan_interfaces() as $if_info) {
-            PfzSpeedtest::exec($if_info["hwif"], $if_info["ipaddr"]);
+        foreach (Interfaces::retrieve_wan_interfaces() as $if_info) {
+            Speedtest::exec($if_info["hwif"], $if_info["ipaddr"]);
         }
     }
 
     public static function cron_cleanup()
     {
-        PfzSpeedtest::cron_install(false);
+        Speedtest::cron_install(false);
     }
 
     // S.M.A.R.T Status
@@ -940,7 +940,7 @@ class PfzCommands
     {
         $line = "-------------------\n";
 
-        $ovpn_servers = PfzOpenVpn::get_all_openvpn_servers();
+        $ovpn_servers = OpenVpn::get_all_openvpn_servers();
         echo "OPENVPN Servers:\n";
         print_r($ovpn_servers);
         echo $line;
@@ -997,9 +997,9 @@ class PfzCommands
     {
         list($server_id, $user_id) = explode("+", $unique_id);
 
-        $servers = PfzOpenVpn::get_all_openvpn_servers();
-        $maybe_server = Util::array_first($servers, fn($server) => $server["vpnid"] == $server_id);
+        $servers = OpenVpn::get_all_openvpn_servers();
 
+        $maybe_server = Util::array_first($servers, fn($server) => $server["vpnid"] == $server_id);
         if (!$maybe_server) {
             return $default;
         }
@@ -1016,7 +1016,6 @@ class PfzCommands
         }
 
         $raw_value = $maybe_server[$value_key];
-
         if (in_array($maybe_server["mode"], ["server_user", "server_tls_user", "server_tls"])) {
             return $raw_value == "" ? "server_user_listening" : $raw_value;
         }
@@ -1264,7 +1263,7 @@ class PfzCommands
         $rs = compact("pools", "failover", "leases");
         $is_known_value_key = array_key_exists($value_key, $rs);
 
-        return ($is_known_value_key) ? $rs[$value_key] : $leases;
+        return $is_known_value_key ? $rs[$value_key] : $leases;
     }
 
     private static function check_dhcp_failover(): int
@@ -1334,13 +1333,12 @@ function main($arguments)
     }
 
     $is_known_command = in_array($command, COMMAND_HANDLERS);
-
     if (!$is_known_command) {
-        PfzCommands::test();
+        Commands::test();
         exit;
     }
 
-    PfzCommands::{$command}(...$parameters);
+    Commands::{$command}(...$parameters);
 }
 
 main($argv);
