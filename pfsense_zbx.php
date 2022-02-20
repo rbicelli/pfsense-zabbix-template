@@ -323,7 +323,7 @@ class Util
     public static function result($result, bool $echo_result = false)
     {
         if ($echo_result) {
-            echo $echo_result;
+            echo $result;
         }
 
         return $result;
