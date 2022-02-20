@@ -737,10 +737,10 @@ class Commands
         // Waiting for a way in Zabbix to use Global Regexp in triggers with items discovery
         $stopped_on_carp_slave = array("haproxy", "radvd", "openvpn.", "openvpn", "avahi");
 
-        $matching_services = array_filter(PfEnv::get_services(), function ($server, $n) {
+        $matching_services = array_filter(PfEnv::get_services(), function ($server) use ($sanitized_name) {
             foreach (["id", "zone"] as $key) {
                 if (!empty($server[$key])) {
-                    return printf("%s.%s", $server["name"], $server[$key]) == $n;
+                    return printf("%s.%s", $server["name"], $server[$key]) == $sanitized_name;
                 }
             }
 
@@ -1299,7 +1299,7 @@ class Commands
             self::get_dhcp("leases"),
             fn($f) => $f["online"] != TEXT_ONLINE));
     }
-    
+
     private static function check_dhcp_failover(): int
     {
         // Check DHCP Failover Status
