@@ -1110,22 +1110,11 @@ class PfzCommands
         return $process_result($value_key, $result);
     }
 
-    // DHCP Checks (copy of status_dhcp_leases.php, waiting for pfsense 2.5)
-    private static function remove_duplicates($array, $field): array
+    private static function remove_duplicates(array $haystack, $field): array
     {
-        $cmp = [];
-        $new = [];
-
-        foreach ($array as $sub) {
-            $cmp[] = $sub[$field];
-        }
-
-        $unique = array_unique(array_reverse($cmp, true));
-        foreach ($unique as $k => $rien) {
-            $new[] = $array[$k];
-        }
-
-        return $new;
+        return array_values(array_reduce($haystack, fn($lookup_table, $item) => array_merge(
+            $lookup_table, [$item[$field] => $item]
+        ), []));
     }
 
     // Get DHCP Arrays (copied from status_dhcp_leases.php, waiting for pfsense 2.5, in order to use system_get_dhcpleases();)
