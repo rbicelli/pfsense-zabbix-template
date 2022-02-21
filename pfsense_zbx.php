@@ -40,6 +40,8 @@ define("TEXT_RESERVED", gettext("reserved"));
 
 const SPEED_TEST_INTERVAL_HOURS = 8;
 const SPEED_TEST_INTERVAL_SECONDS = SPEED_TEST_INTERVAL_HOURS * 3600;
+const SPEED_TEST_RANDOM_DELAY_MIN_SECONDS = 1;
+const SPEED_TEST_RANDOM_DELAY_MAX_SECONDS = 90;
 
 const FALLBACK_VALUE = 0;
 
@@ -588,7 +590,7 @@ class SpeedTest
 
         // Issue #82
         // Sleep random delay in order to avoid problem when 2 pfSense on the same Internet line
-        sleep(rand(1, 90));
+        sleep(rand(SPEED_TEST_RANDOM_DELAY_MIN_SECONDS, SPEED_TEST_RANDOM_DELAY_MAX_SECONDS));
 
         $is_output_file_older_than_interval =
             !file_exists($output_file_path) ||
