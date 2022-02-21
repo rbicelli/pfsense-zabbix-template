@@ -363,7 +363,7 @@ class Service
     {
         $status = PfEnv::get_service_status($service);
 
-        return empty($status) ? 0 : $status;
+        return empty($status) ? FALLBACK_VALUE : $status;
     }
 
     public static function run_on_carp_slave(array $service, $name, $short_name, $carpcfr, $stopped_on_carp_slave): int
@@ -684,13 +684,13 @@ class Command
     {
         $maybe_server = Util::array_first(OpenVpn::get_active_servers(), fn($s) => $s["vpnid"] == $server_id);
         if (empty($maybe_server)) {
-            return Util::result(0);
+            return Util::result(FALLBACK_VALUE);
         }
 
         $server_value = self::get_server_value($maybe_server, $value_key);
 
         if ($value_key == "conns") {
-            return Util::result(is_array($server_value) ? count($server_value) : 0);
+            return Util::result(is_array($server_value) ? count($server_value) : FALLBACK_VALUE);
         }
 
         if (in_array($value_key, ["status", "mode"])) {
@@ -707,10 +707,10 @@ class Command
 
     public static function openvpn_server_uservalue_numeric($unique_id, $value_key)
     {
-        return self::get_openvpn_server_uservalue_($unique_id, $value_key, "0");
+        return self::get_openvpn_server_uservalue_($unique_id, $value_key, FALLBACK_VALUE);
     }
 
-    public static function openvpn_clientvalue($client_id, $value_key, $fallback_value = 0)
+    public static function openvpn_clientvalue($client_id, $value_key, $fallback_value = FALLBACK_VALUE)
     {
         $maybe_client = Util::array_first(
             PfEnv::openvpn_get_active_clients(),
@@ -746,7 +746,7 @@ class Command
         });
 
         if (empty($maybe_service)) {
-            return Util::result(0);
+            return Util::result(FALLBACK_VALUE);
         }
 
         $short_name = $maybe_service["name"];
@@ -813,16 +813,16 @@ class Command
         }
 
         if ($value_key == "disabled") {
-            return Util::result(0);
+            return Util::result(FALLBACK_VALUE);
         }
 
         $maybe_ike_match = Util::array_first($config["ipsec"]["phase1"], fn($d) => $d["ikeid"] == $ike_id);
         if (empty($maybe_ike_match)) {
-            return Util::result(0);
+            return Util::result(FALLBACK_VALUE);
         }
 
         if (!array_key_exists($value_key, $maybe_ike_match)) {
-            return Util::result(0);
+            return Util::result(FALLBACK_VALUE);
         }
 
         return Util::result(self::get_value_mapping("ipsec.$value_key", $maybe_ike_match[$value_key]));
@@ -836,7 +836,7 @@ class Command
 
         $valuecfr = explode(".", $value_key);
 
-        $value = 0;
+        $value = FALLBACK_VALUE;
         if ($valuecfr[0] == "status") {
             $ids = explode(".", $uniqid);
             $status_key = (isset($valuecfr[1])) ? $valuecfr[1] : "state";
@@ -905,7 +905,7 @@ class Command
     public static function cert_date($value_key)
     {
         if (!array_key_exists($value_key, CERT_VK_TO_FIELD)) {
-            return Util::result(0);
+            return Util::result(FALLBACK_VALUE);
         }
 
         $field = CERT_VK_TO_FIELD[$value_key];
@@ -916,7 +916,7 @@ class Command
             $cert_info = openssl_x509_parse(base64_decode($certificate[PfEnv::CRT]));
 
             return ($value == 0 || $value < $cert_info[$field]) ? $cert_info[$field] : $value;
-        }, 0), true);
+        }, FALLBACK_VALUE));
     }
 
     // Testing function, for template creating purpose
