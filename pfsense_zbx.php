@@ -366,7 +366,7 @@ class Shell
         rename($tmp_file_path, $output_file_path);
     }
 
-    public static function retrieve_smart_status(string $device_name): string
+    public static function read_smart_status(string $device_name): string
     {
         return trim(exec(
             implode(" ",
@@ -376,7 +376,7 @@ class Shell
                     ^SMART Health Status/ {print $2;exit}'"])));
     }
 
-    public static function parse_dhcpd_records(string $leases_file_path): array
+    public static function read_dhcpd_records(string $leases_file_path): array
     {
         // Remove all content up to the first lease record
         $clean_pattern = "'/lease.*{\$/,0'";
@@ -392,10 +392,10 @@ class Shell
                     self::AWK, $clean_pattern, "|",
                     self::AWK, $split_pattern]), $raw_lease_records);
 
-        return $raw_lease_records;
+        return array_filter($raw_lease_records, fn($r) => preg_match("/^lease.*|^failover.*/", $r));
     }
 
-    public static function retrieve_arp_ips(): array
+    public static function read_arp_ips(): array
     {
         exec(implode(" ", [self::ARP, "-an", "|",
             self::AWK, "'{ gsub(/[()]/,\"\") } {print $2}'"]), $arp_data);
@@ -942,7 +942,7 @@ class Command
     public static function smart_status()
     {
         $dev_states = array_map(
-            fn($device_name) => Shell::retrieve_smart_status($device_name),
+            fn($device_name) => Shell::read_smart_status($device_name),
             PfEnv::get_smart_drive_list());
 
         $smart_states =
@@ -1238,11 +1238,9 @@ class Command
 
     private static function read_dhcp_records_from_file(string $leases_file_path): array
     {
-        $raw_lease_records = Shell::parse_dhcpd_records($leases_file_path);
-
-        $relevant_records = array_filter($raw_lease_records, fn($r) => preg_match("/^lease.*|^failover.*/", $r));
-
-        return array_map(fn($r) => self::parse_dhcp_record($r), $relevant_records);
+        return array_map(
+            fn($r) => self::parse_dhcp_record($r),
+            Shell::read_dhcpd_records($leases_file_path));
     }
 
     private static function binding_to_state($binding): array
@@ -1333,7 +1331,7 @@ class Command
 
         $lease_records = array_filter($dhcp_records, fn($r) => $r["type"] == "lease");
 
-        $arp_ips = Shell::retrieve_arp_ips();
+        $arp_ips = Shell::read_arp_ips();
 
         return self::remove_duplicates(array_map(fn($r) => self::raw_lease_record_to_lease($r, $arp_ips), $lease_records), "mac");
     }
