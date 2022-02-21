@@ -893,12 +893,15 @@ class Command
 /^SMART Health Status/ {print $2;exit}'")),
             PfEnv::get_smart_drive_list());
 
-        $maybe_not_ok = Util::array_first($dev_states, function ($dev_state) {
-            $is_ok =
-                array_key_exists($dev_state, SMART_DEV_STATUS) &&
-                SMART_DEV_STATUS[$dev_state] == SMART_OK;
+        $smart_states =
+            array_map(
+                fn($dev_state) => array_key_exists($dev_state, SMART_DEV_STATUS) ?
+                    SMART_DEV_STATUS[$dev_state] :
+                    SMART_ERROR,
+                $dev_states);
 
-            return !$is_ok;
+        $maybe_not_ok = Util::array_first($smart_states, function ($smart_state) {
+            return $smart_state != SMART_OK;
         });
 
         return Util::result($maybe_not_ok ?: SMART_OK);
