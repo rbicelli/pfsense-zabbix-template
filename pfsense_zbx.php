@@ -26,9 +26,9 @@ require_once("services.inc");
 require_once("system.inc");
 require_once("util.inc");
 
-define("COMMAND_HANDLERS", build_method_lookup(Commands::class));
-define("DISCOVERY_SECTION_HANDLERS", build_method_lookup(Discoveries::class));
-define("SERVICES_VALUE_ACTIONS", build_method_lookup(Services::class));
+define("COMMAND_HANDLERS", build_method_lookup(Command::class));
+define("DISCOVERY_SECTION_HANDLERS", build_method_lookup(Discovery::class));
+define("SERVICES_VALUE_HANDLERS", build_method_lookup(Service::class));
 
 define("TEXT_ACTIVE", gettext("active"));
 define("TEXT_DYNAMIC", gettext("dynamic"));
@@ -124,31 +124,6 @@ const CARP_RES = [
     CARP_INCONSISTENT => CARP_STATUS_INCONSISTENT,
     CARP_MASTER => CARP_STATUS_OK
 ];
-
-class Services
-{
-    public static function enabled(array $service, $name, $short_name): int
-    {
-        return Util::b2int(PfEnv::is_service_enabled($short_name));
-    }
-
-    public static function name(array $service, string $name): string
-    {
-        return $name;
-    }
-
-    public static function status(array $service): int
-    {
-        $status = PfEnv::get_service_status($service);
-
-        return empty($status) ? 0 : $status;
-    }
-
-    public static function run_on_carp_slave(array $service, $name, $short_name, $carpcfr, $stopped_on_carp_slave): int
-    {
-        return Util::b2int(in_array($carpcfr, $stopped_on_carp_slave));
-    }
-}
 
 // Abstract undefined symbols and globals from code
 class PfEnv
@@ -340,7 +315,7 @@ class Util
     }
 }
 
-class Interfaces
+class NetworkInterface
 {
     public static function retrieve_wan_interfaces(): array
     {
@@ -370,7 +345,32 @@ class Interfaces
     }
 }
 
-class Discoveries
+class Service
+{
+    public static function enabled(array $service, $name, $short_name): int
+    {
+        return Util::b2int(PfEnv::is_service_enabled($short_name));
+    }
+
+    public static function name(array $service, string $name): string
+    {
+        return $name;
+    }
+
+    public static function status(array $service): int
+    {
+        $status = PfEnv::get_service_status($service);
+
+        return empty($status) ? 0 : $status;
+    }
+
+    public static function run_on_carp_slave(array $service, $name, $short_name, $carpcfr, $stopped_on_carp_slave): int
+    {
+        return Util::b2int(in_array($carpcfr, $stopped_on_carp_slave));
+    }
+}
+
+class Discovery
 {
     public static function gw()
     {
@@ -546,7 +546,7 @@ class Discoveries
                 "{#IFNAME}" => $hwif["hwif"],
                 "{#IFDESCR}" => $hwif["description"],
             ];
-        }, Interfaces::retrieve_wan_interfaces()));
+        }, NetworkInterface::retrieve_wan_interfaces()));
     }
 }
 
@@ -616,7 +616,7 @@ class OpenVpn
     }
 }
 
-class Commands
+class Command
 {
     private const BINDING_STATES = [
         "active" => [
@@ -639,7 +639,7 @@ class Commands
             return;
         }
 
-        Discoveries::{$section}();
+        Discovery::{$section}();
     }
 
     public static function gw_value($gw, $value_key)
@@ -750,13 +750,13 @@ class Commands
         $short_name = $maybe_service["name"];
         $carp_cfr = "$short_name.";
 
-        $is_known_service_value = in_array($value, SERVICES_VALUE_ACTIONS);
+        $is_known_service_value = in_array($value, SERVICES_VALUE_HANDLERS);
         if (!$is_known_service_value) {
             return Util::result($maybe_service[$value], true);
         }
 
         return Util::result(
-            Services::{$value}(
+            Service::{$value}(
                 $maybe_service,
                 $sanitized_name,
                 $short_name,
@@ -842,7 +842,7 @@ class Commands
         $config = PfEnv::cfg();
 
         if ($value_key == "status") {
-            return Util::result(Commands::get_ipsec_status($ike_id), true);
+            return Util::result(Command::get_ipsec_status($ike_id), true);
         }
 
         if ($value_key == "disabled") {
@@ -905,7 +905,7 @@ class Commands
 
     public static function speedtest_cron()
     {
-        foreach (Interfaces::retrieve_wan_interfaces() as $if_info) {
+        foreach (NetworkInterface::retrieve_wan_interfaces() as $if_info) {
             SpeedTest::exec($if_info["hwif"], $if_info["ipaddr"]);
         }
     }
@@ -1371,11 +1371,11 @@ function main($arguments)
 
     $is_known_command = in_array($command, COMMAND_HANDLERS);
     if (!$is_known_command) {
-        Commands::test();
+        Command::test();
         exit;
     }
 
-    Commands::{$command}(...$parameters);
+    Command::{$command}(...$parameters);
 }
 
 main($argv);
