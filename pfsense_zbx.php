@@ -295,7 +295,7 @@ class Util
         return (int)$b;
     }
 
-    public static function result($result, bool $echo_result = false)
+    public static function result($result, bool $echo_result = true)
     {
         if ($echo_result) {
             echo $result;
@@ -558,15 +558,15 @@ class SpeedTest
 
         $filename = self::if_filename($if_name);
         if (!file_exists($filename)) {
-            return Util::result("", true);
+            return Util::result("");
         }
 
         $speed_test_data = json_decode(file_get_contents($filename), true);
         if (!array_key_exists($value, $speed_test_data)) {
-            return Util::result("", true);
+            return Util::result("");
         }
 
-        return Util::result(empty($tv1) ? $speed_test_data[$tv0] : $speed_test_data[$tv0][$tv1], true);
+        return Util::result(empty($tv1) ? $speed_test_data[$tv0] : $speed_test_data[$tv0][$tv1]);
     }
 
     public static function cron_install($enable = true)
@@ -682,20 +682,20 @@ class Command
     {
         $maybe_server = Util::array_first(OpenVpn::get_active_servers(), fn($s) => $s["vpnid"] == $server_id);
         if (empty($maybe_server)) {
-            return Util::result(0, true);
+            return Util::result(0);
         }
 
         $server_value = self::get_server_value($maybe_server, $value_key);
 
         if ($value_key == "conns") {
-            return Util::result(is_array($server_value) ? count($server_value) : 0, true);
+            return Util::result(is_array($server_value) ? count($server_value) : 0);
         }
 
         if (in_array($value_key, ["status", "mode"])) {
-            return Util::result(self::get_value_mapping("openvpn.server.status", $server_value), true);
+            return Util::result(self::get_value_mapping("openvpn.server.status", $server_value));
         }
 
-        return Util::result($server_value, true);
+        return Util::result($server_value);
     }
 
     public static function openvpn_server_uservalue($unique_id, $value_key)
@@ -714,14 +714,14 @@ class Command
             PfEnv::openvpn_get_active_clients(),
             fn($client) => $client["vpnid"] == $client_id);
         if (empty($maybe_client)) {
-            return Util::result($fallback_value, true);
+            return Util::result($fallback_value);
         }
 
         $value = ($value_key == "status") ?
             self::get_value_mapping("openvpn.client.status", $maybe_client[$value_key]) :
             $maybe_client[$value_key];
 
-        return Util::result($value == "" ? $fallback_value : $value, true);
+        return Util::result($value == "" ? $fallback_value : $value);
     }
 
     public static function service_value(string $name, string $value)
@@ -744,7 +744,7 @@ class Command
         });
 
         if (empty($maybe_service)) {
-            return Util::result("", true);
+            return Util::result("");
         }
 
         $short_name = $maybe_service["name"];
@@ -752,7 +752,7 @@ class Command
 
         $is_known_service_value = in_array($value, SERVICES_VALUE_HANDLERS);
         if (!$is_known_service_value) {
-            return Util::result($maybe_service[$value], true);
+            return Util::result($maybe_service[$value]);
         }
 
         return Util::result(
@@ -761,8 +761,7 @@ class Command
                 $sanitized_name,
                 $short_name,
                 $carp_cfr,
-                $stopped_on_carp_slave),
-            true);
+                $stopped_on_carp_slave));
     }
 
     public static function temperature($sensorid)
@@ -818,19 +817,18 @@ class Command
     public static function system($section)
     {
         if ($section === "packages_update") {
-            return Util::result(self::get_outdated_packages(), true);
+            return Util::result(self::get_outdated_packages());
         }
 
         $system_pkg_version = PfEnv::get_system_pkg_version();
         if ($section === "new_version_available") {
             return Util::result(
-                Util::b2int($system_pkg_version["version"] != $system_pkg_version["installed_version"]),
-                true);
+                Util::b2int($system_pkg_version["version"] != $system_pkg_version["installed_version"]));
         }
 
         $is_known_section = array_key_exists($section, $system_pkg_version);
 
-        return Util::result($is_known_section ? $system_pkg_version[$section] : "", true);
+        return Util::result($is_known_section ? $system_pkg_version[$section] : "");
     }
 
     public static function ipsec_ph1($ike_id, $value_key)
@@ -842,20 +840,20 @@ class Command
         $config = PfEnv::cfg();
 
         if ($value_key == "status") {
-            return Util::result(Command::get_ipsec_status($ike_id), true);
+            return Util::result(Command::get_ipsec_status($ike_id));
         }
 
         if ($value_key == "disabled") {
-            return Util::result("0", true);
+            return Util::result("0");
         }
 
         $maybe_ike_match = Util::array_first($config["ipsec"]["phase1"], fn($d) => $d["ikeid"] == $ike_id);
         if (empty($maybe_ike_match)) {
-            return Util::result("", true);
+            return Util::result("");
         }
 
         if (!array_key_exists($value_key, $maybe_ike_match)) {
-            return Util::result("", true);
+            return Util::result("");
         }
 
         return Util::result(self::get_value_mapping("ipsec.$value_key", $maybe_ike_match[$value_key]));
@@ -878,23 +876,23 @@ class Command
 
         $maybe_data = Util::array_first($a_phase2, fn($data) => $data["uniqid"] == $uniqid);
         if (is_null($maybe_data) || !array_key_exists($value_key, $maybe_data)) {
-            return Util::result($value, true);
+            return Util::result($value);
         }
 
         $result = ($value_key != "disabled") ?
             self::get_value_mapping("ipsec_ph2." . $value_key, $maybe_data[$value_key]) :
             "1";
 
-        return Util::result($result, true);
+        return Util::result($result);
     }
 
     public static function dhcp($section)
     {
         if ($section === "failover") {
-            return Util::result(self::check_dhcp_failover(), true);
+            return Util::result(self::check_dhcp_failover());
         }
 
-        return Util::result(self::check_dhcp_offline_leases(), true);
+        return Util::result(self::check_dhcp_offline_leases());
     }
 
     // File is present
@@ -932,13 +930,13 @@ class Command
             return !$is_ok;
         });
 
-        return Util::result($maybe_not_ok ?: SMART_OK, true);
+        return Util::result($maybe_not_ok ?: SMART_OK);
     }
 
     public static function cert_date($value_key)
     {
         if (!array_key_exists($value_key, CERT_VK_TO_FIELD)) {
-            return Util::result(0, true);
+            return Util::result(0);
         }
 
         $field = CERT_VK_TO_FIELD[$value_key];
