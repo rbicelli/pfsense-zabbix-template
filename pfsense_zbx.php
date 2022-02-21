@@ -273,7 +273,7 @@ class PfEnv
 
 class Util
 {
-    public static function array_first(array $haystack, Closure $match)
+    public static function array_first(Closure $match, array $haystack)
     {
         foreach ($haystack as $needle) {
             if ($match($needle)) {
@@ -449,7 +449,7 @@ class Discovery
         $named_services = array_filter(PfEnv::get_services(), fn($service) => !empty($service["name"]));
 
         self::print_json(array_map(function ($service) {
-            $maybe_id = Util::array_first(array_keys($service), fn($key) => in_array($key, ["id", "zone"]));
+            $maybe_id = Util::array_first(fn($key) => in_array($key, ["id", "zone"]), array_keys($service));
             $id = is_null($maybe_id) ? "" : $service[$maybe_id];
 
             return [
@@ -684,7 +684,7 @@ class Command
 
     public static function openvpn_servervalue(int $server_id, $value_key)
     {
-        $maybe_server = Util::array_first(OpenVpn::get_active_servers(), fn($s) => $s["vpnid"] == $server_id);
+        $maybe_server = Util::array_first(fn($s) => $s["vpnid"] == $server_id, OpenVpn::get_active_servers());
         if (empty($maybe_server)) {
             return Util::result(FALLBACK_VALUE);
         }
@@ -715,8 +715,8 @@ class Command
     public static function openvpn_clientvalue($client_id, $value_key, $fallback_value = FALLBACK_VALUE)
     {
         $maybe_client = Util::array_first(
-            PfEnv::openvpn_get_active_clients(),
-            fn($client) => $client["vpnid"] == $client_id);
+            fn($client) => $client["vpnid"] == $client_id,
+            PfEnv::openvpn_get_active_clients());
         if (empty($maybe_client)) {
             return Util::result($fallback_value);
         }
@@ -737,7 +737,7 @@ class Command
         // Waiting for a way in Zabbix to use Global Regexp in triggers with items discovery
         $stopped_on_carp_slave = array("haproxy", "radvd", "openvpn.", "openvpn", "avahi");
 
-        $maybe_service = Util::array_first(PfEnv::get_services(), function ($service) use ($sanitized_name) {
+        $maybe_service = Util::array_first(function ($service) use ($sanitized_name) {
             foreach (["id", "zone"] as $key) {
                 if (array_key_exists($key, $service)) {
                     return sprintf("%s%s", $service["name"], $service[$key]) == $sanitized_name;
@@ -745,7 +745,7 @@ class Command
             }
 
             return $service["name"] == $sanitized_name;
-        });
+        }, PfEnv::get_services());
 
         if (empty($maybe_service)) {
             return Util::result(FALLBACK_VALUE);
@@ -818,7 +818,7 @@ class Command
             return Util::result(FALLBACK_VALUE);
         }
 
-        $maybe_ike_match = Util::array_first($config["ipsec"]["phase1"], fn($d) => $d["ikeid"] == $ike_id);
+        $maybe_ike_match = Util::array_first(fn($d) => $d["ikeid"] == $ike_id, $config["ipsec"]["phase1"]);
         if (empty($maybe_ike_match)) {
             return Util::result(FALLBACK_VALUE);
         }
@@ -845,7 +845,7 @@ class Command
             $value = self::get_ipsec_status($ids[0], $ids[1], $status_key);
         }
 
-        $maybe_data = Util::array_first($a_phase2, fn($data) => $data["uniqid"] == $uniqid);
+        $maybe_data = Util::array_first(fn($data) => $data["uniqid"] == $uniqid, $a_phase2);
         if (is_null($maybe_data) || !array_key_exists($value_key, $maybe_data)) {
             return Util::result($value);
         }
@@ -900,9 +900,9 @@ class Command
                     SMART_ERROR,
                 $dev_states);
 
-        $maybe_not_ok = Util::array_first($smart_states, function ($smart_state) {
+        $maybe_not_ok = Util::array_first(function ($smart_state) {
             return $smart_state != SMART_OK;
-        });
+        }, $smart_states);
 
         return Util::result($maybe_not_ok ?: SMART_OK);
     }
@@ -1013,12 +1013,12 @@ class Command
 
         $servers = OpenVpn::get_active_servers();
 
-        $maybe_server = Util::array_first($servers, fn($server) => $server["vpnid"] == $server_id);
+        $maybe_server = Util::array_first(fn($server) => $server["vpnid"] == $server_id, $servers);
         if (!$maybe_server) {
             return $default;
         }
 
-        $maybe_conn = Util::array_first($maybe_server["conns"], fn($conn) => ($conn["common_name"] == $user_id));
+        $maybe_conn = Util::array_first(fn($conn) => ($conn["common_name"] == $user_id), $maybe_server["conns"]);
 
         return $maybe_conn[$value_key] ?: $default;
     }
@@ -1088,7 +1088,7 @@ class Command
         }, []);
 
         // Phase-Status match borrowed from status_ipsec.php	
-        $maybe_ike_sa = Util::array_first($ipsec_list_sa, function ($ike_sa) use ($ike_id, $connection_map) {
+        $maybe_ike_sa = Util::array_first(function ($ike_sa) use ($ike_id, $connection_map) {
             $con_id = isset($ike_sa["con-id"]) ?
                 substr($ike_sa["con-id"], 3) :
                 filter_var($ike_id, FILTER_SANITIZE_NUMBER_INT);
@@ -1101,7 +1101,7 @@ class Command
             $ph1idx = ($is_version_1 || $is_split_connection) ? $connection_map[$con_name] : $con_id;
 
             return $ph1idx == $ike_id;
-        });
+        }, $ipsec_list_sa);
 
         if (!$maybe_ike_sa) {
             return $process_result($value_key, $result);
