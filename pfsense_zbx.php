@@ -775,43 +775,10 @@ class Command
         echo trim($value[0]);
     }
 
-    public static function carp_status($echo_result = true): int
+    public static function carp_status(): int
     {
-        $is_carp_enabled = PfEnv::get_carp_status() != 0;
-        if (!$is_carp_enabled) {
-            return Util::result(CARP_STATUS_DISABLED, $echo_result);
-        }
-
-        $is_carp_demotion_status_ok = PfEnv::get_single_sysctl("net.inet.carp.demotion") == 0;
-        if (!$is_carp_demotion_status_ok) {
-            return Util::result(CARP_STATUS_PROBLEM, $echo_result);
-        }
-
-        $config = PfEnv::cfg();
-
-        $just_carps = array_filter($config["virtualip"]["vip"], fn($virtual_ip) => $virtual_ip["mode"] != "carp");
-        $status_str = array_reduce($just_carps, function ($status, $carp) {
-            $if_status = PfEnv::get_carp_interface_status("_vip{$carp["uniqid"]}");
-
-            $state_differs_from_previous_interface = ($status != $if_status) && (!empty($if_status));
-            if (!$state_differs_from_previous_interface) {
-                return $status;
-            }
-
-            if ($status != "") {
-                return CARP_INCONSISTENT;
-            }
-
-            return $if_status;
-        }, "");
-
-        $is_known_carp_status = array_key_exists($status_str, CARP_RES);
-
-        return Util::result(
-            $is_known_carp_status ? CARP_RES[$status_str] : CARP_STATUS_UNKNOWN,
-            $echo_result);
+        return Util::result(self::get_carp_status());
     }
-
 
     // System Information
     public static function system($section)
@@ -998,6 +965,41 @@ class Command
         print_r(PfEnv::get_pkg_info("all", false, true));
     }
 
+    private static function get_carp_status(): int
+    {
+        $is_carp_enabled = PfEnv::get_carp_status() != 0;
+        if (!$is_carp_enabled) {
+            return CARP_STATUS_DISABLED;
+        }
+
+        $is_carp_demotion_status_ok = PfEnv::get_single_sysctl("net.inet.carp.demotion") == 0;
+        if (!$is_carp_demotion_status_ok) {
+            return CARP_STATUS_PROBLEM;
+        }
+
+        $config = PfEnv::cfg();
+
+        $just_carps = array_filter($config["virtualip"]["vip"], fn($virtual_ip) => $virtual_ip["mode"] != "carp");
+        $status_str = array_reduce($just_carps, function ($status, $carp) {
+            $if_status = PfEnv::get_carp_interface_status("_vip{$carp["uniqid"]}");
+
+            $state_differs_from_previous_interface = ($status != $if_status) && (!empty($if_status));
+            if (!$state_differs_from_previous_interface) {
+                return $status;
+            }
+
+            if ($status != "") {
+                return CARP_INCONSISTENT;
+            }
+
+            return $if_status;
+        }, "");
+
+        $is_known_carp_status = array_key_exists($status_str, CARP_RES);
+
+        return $is_known_carp_status ? CARP_RES[$status_str] : CARP_STATUS_UNKNOWN;
+    }
+
     private static function get_openvpn_server_uservalue_($unique_id, $value_key, $default = "")
     {
         list($server_id, $user_id) = explode("+", $unique_id);
@@ -1049,7 +1051,7 @@ class Command
 
             $v = self::get_value_mapping("ipsec.state", strtolower($r));
 
-            $carp_status = self::carp_status(false);
+            $carp_status = self::get_carp_status();
 
             return ($carp_status != 0) ? $v + (10 * ($carp_status - 1)) : $v;
         };
