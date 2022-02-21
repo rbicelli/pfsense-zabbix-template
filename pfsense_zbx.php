@@ -1074,10 +1074,10 @@ class Commands
                 $cname = ipsec_conid($ph1ent);
             }
 
-            return [
-                ...$p,
-                $cname => $ph1ent[$ike_id],
-            ];
+            return array_merge(
+                $p,
+                [$cname => $ph1ent[$ike_id]],
+            );
         }, []);
 
         // Phase-Status match borrowed from status_ipsec.php	
