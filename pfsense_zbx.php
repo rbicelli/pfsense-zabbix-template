@@ -1160,8 +1160,8 @@ class Command
 
     private static function parse_dhcp_record(string $record): ?array
     {
-        $is_lease_record = preg_match("/^lease\s+(.*)\s+\{(.+)\}$/", $record, $lease_record_match);
-        $is_failover_record = preg_match("/^failover.*\"(.*)\"\s+state\s+\{(.+)\}$/", $record, $failover_record_match);
+        $is_lease_record = preg_match("/^lease\s+(.*)\s+{(.+)}$/", $record, $lease_record_match);
+        $is_failover_record = preg_match("/^failover.*\"(.*)\"\s+state\s+{(.+)}$/", $record, $failover_record_match);
 
         $is_known_record_type = $is_lease_record || $is_failover_record;
         if (!$is_known_record_type) {
