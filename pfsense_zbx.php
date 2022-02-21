@@ -349,6 +349,61 @@ class NetworkInterface
     }
 }
 
+class Shell
+{
+    const ARP = "/usr/sbin/arp";
+    const AWK = "/usr/bin/awk";
+    const CAT = "/bin/cat";
+    const SMART_CTL = "/usr/local/sbin/smartctl";
+    const SPEED_TEST = "/usr/local/bin/speedtest";
+
+    public static function run_speed_test(string $source_ip_address, string $output_file_path)
+    {
+        $tmp_file_path = tempnam(sys_get_temp_dir(), "speedtest.");
+
+        exec(implode(" ", [self::SPEED_TEST, "--source", $source_ip_address, "--json", ">", $tmp_file_path]));
+
+        rename($tmp_file_path, $output_file_path);
+    }
+
+    public static function retrieve_smart_status(string $device_name): string
+    {
+        return trim(exec(
+            implode(" ",
+                [
+                    self::SMART_CTL, "-H", "/dev/$device_name", "|",
+                    self::AWK, "-F:", "'/^SMART overall-health self-assessment test result/ {print $2;exit} /
+                    ^SMART Health Status/ {print $2;exit}'"])));
+    }
+
+    public static function parse_dhcpd_records(string $leases_file_path): array
+    {
+        // Remove all content up to the first lease record
+        $clean_pattern = "'/lease.*{\$/,0'";
+
+        // Split file into records by '}'
+        $split_pattern = "'BEGIN { RS=ORS=\"}\" } { gsub(\"\\n\", \"\"); print; printf \"\\n\"}'";
+
+        // Stuff the leases file in a proper format into an array by line
+        exec(
+            implode(" ",
+                [
+                    self::CAT, $leases_file_path, "2>/dev/null", "|",
+                    self::AWK, $clean_pattern, "|",
+                    self::AWK, $split_pattern]), $raw_lease_records);
+
+        return $raw_lease_records;
+    }
+
+    public static function retrieve_arp_ips(): array
+    {
+        exec(implode(" ", [self::ARP, "-an", "|",
+            self::AWK, "'{ gsub(/[()]/,\"\") } {print $2}'"]), $arp_data);
+
+        return $arp_data;
+    }
+}
+
 class Service
 {
     public static function enabled(array $service, $name, $short_name): int
@@ -583,10 +638,9 @@ class SpeedTest
             true);
     }
 
-    public static function exec($if_name, $ip_address)
+    public static function run($if_name, $ip_address)
     {
         $output_file_path = self::if_filename($if_name);
-        $tmp_file_path = tempnam(sys_get_temp_dir(), "speedtest.");
 
         // Issue #82
         // Sleep random delay in order to avoid problem when 2 pfSense on the same Internet line
@@ -599,8 +653,7 @@ class SpeedTest
             return;
         }
 
-        exec(implode(" ", ["/usr/local/bin/speedtest", "--source", $ip_address, "--json", ">", $tmp_file_path]));
-        rename($tmp_file_path, $output_file_path);
+        Shell::run_speed_test($ip_address, $output_file_path);
     }
 
     private static function if_filename($if_name): string
@@ -875,7 +928,7 @@ class Command
     public static function speedtest_cron()
     {
         foreach (NetworkInterface::retrieve_wan_interfaces() as $if_info) {
-            SpeedTest::exec($if_info["hwif"], $if_info["ipaddr"]);
+            SpeedTest::run($if_info["hwif"], $if_info["ipaddr"]);
         }
     }
 
@@ -889,8 +942,7 @@ class Command
     public static function smart_status()
     {
         $dev_states = array_map(
-            fn($dev) => trim(exec("smartctl -H /dev/$dev | awk -F: '/^SMART overall-health self-assessment test result/ {print $2;exit}
-/^SMART Health Status/ {print $2;exit}'")),
+            fn($device_name) => Shell::retrieve_smart_status($device_name),
             PfEnv::get_smart_drive_list());
 
         $smart_states =
@@ -1184,20 +1236,9 @@ class Command
         return self::parse_failover_record(array_slice($failover_record_match, 1));
     }
 
-    private static function read_dhcp_records_from_file(string $leases_file): array
+    private static function read_dhcp_records_from_file(string $leases_file_path): array
     {
-        $awk = "/usr/bin/awk";
-
-        // Remove all content up to the first lease record
-        $clean_pattern = "'/lease.*{\$/,0'";
-
-        // Split file into records by '}'
-        $split_pattern = "'BEGIN { RS=ORS=\"}\" } { gsub(\"\\n\", \"\"); print; printf \"\\n\"}'";
-
-        // Stuff the leases file in a proper format into an array by line
-        exec(
-            "/bin/cat $leases_file 2>/dev/null | $awk $clean_pattern | $awk $split_pattern",
-            $raw_lease_records);
+        $raw_lease_records = Shell::parse_dhcpd_records($leases_file_path);
 
         $relevant_records = array_filter($raw_lease_records, fn($r) => preg_match("/^lease.*|^failover.*/", $r));
 
@@ -1270,13 +1311,6 @@ class Command
         return compact("name", "mystate", "peerstate", "mydate", "peerdate");
     }
 
-    private static function arp_ips()
-    {
-        exec("/usr/sbin/arp -an | awk '{ gsub(/[()]/,\"\") } {print $2}'", $arp_data);
-
-        return $arp_data;
-    }
-
     // Get DHCP Arrays (copied from status_dhcp_leases.php, waiting for pfsense 2.5, in order to use system_get_dhcpleases();)
     private static function get_dhcp($value_key): array
     {
@@ -1299,7 +1333,7 @@ class Command
 
         $lease_records = array_filter($dhcp_records, fn($r) => $r["type"] == "lease");
 
-        $arp_ips = self::arp_ips();
+        $arp_ips = Shell::retrieve_arp_ips();
 
         return self::remove_duplicates(array_map(fn($r) => self::raw_lease_record_to_lease($r, $arp_ips), $lease_records), "mac");
     }
