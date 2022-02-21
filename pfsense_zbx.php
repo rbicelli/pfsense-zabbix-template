@@ -811,16 +811,16 @@ class Command
         }
 
         if ($value_key == "disabled") {
-            return Util::result("0");
+            return Util::result(0);
         }
 
         $maybe_ike_match = Util::array_first($config["ipsec"]["phase1"], fn($d) => $d["ikeid"] == $ike_id);
         if (empty($maybe_ike_match)) {
-            return Util::result("");
+            return Util::result(0);
         }
 
         if (!array_key_exists($value_key, $maybe_ike_match)) {
-            return Util::result("");
+            return Util::result(0);
         }
 
         return Util::result(self::get_value_mapping("ipsec.$value_key", $maybe_ike_match[$value_key]));
@@ -834,7 +834,7 @@ class Command
 
         $valuecfr = explode(".", $value_key);
 
-        $value = "0";
+        $value = 0;
         if ($valuecfr[0] == "status") {
             $ids = explode(".", $uniqid);
             $status_key = (isset($valuecfr[1])) ? $valuecfr[1] : "state";
@@ -848,7 +848,7 @@ class Command
 
         $result = ($value_key != "disabled") ?
             self::get_value_mapping("ipsec_ph2." . $value_key, $maybe_data[$value_key]) :
-            "1";
+            1;
 
         return Util::result($result);
     }
