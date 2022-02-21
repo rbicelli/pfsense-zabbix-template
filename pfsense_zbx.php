@@ -41,6 +41,8 @@ define("TEXT_RESERVED", gettext("reserved"));
 const SPEED_TEST_INTERVAL_HOURS = 8;
 const SPEED_TEST_INTERVAL_SECONDS = SPEED_TEST_INTERVAL_HOURS * 3600;
 
+const FALLBACK_VALUE = 0;
+
 const VALUE_MAPPINGS = [
     "openvpn.server.status" => [
         "down" => 0,
@@ -1325,22 +1327,22 @@ class Command
 
     // Value mappings
     // Each value map is represented by an associative array
-    private static function get_value_mapping($value_name, $value, $default_value = "0")
+    private static function get_value_mapping($value_name, $value)
     {
         $is_known_value_name = array_key_exists($value_name, VALUE_MAPPINGS);
         if (!$is_known_value_name) {
-            return $default_value;
+            return FALLBACK_VALUE;
         }
 
         $value_mapping = VALUE_MAPPINGS[$value_name];
         if (!is_array($value_mapping)) {
-            return $default_value;
+            return FALLBACK_VALUE;
         }
 
         $sanitized_value = strtolower($value);
         $is_value_with_known_mapping = array_key_exists($sanitized_value, $value_mapping);
 
-        return $is_value_with_known_mapping ? $value_mapping[$sanitized_value] : $default_value;
+        return $is_value_with_known_mapping ? $value_mapping[$sanitized_value] : FALLBACK_VALUE;
     }
 }
 
