@@ -744,7 +744,7 @@ class Command
         });
 
         if (empty($maybe_service)) {
-            return Util::result("");
+            return Util::result(0);
         }
 
         $short_name = $maybe_service["name"];
