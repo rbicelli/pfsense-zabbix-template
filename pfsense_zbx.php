@@ -199,12 +199,12 @@ class PfEnv
 
     public static function get_services()
     {
-        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args()) ?: [];
     }
 
     public static function get_smart_drive_list()
     {
-        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args()) ?: [];
     }
 
     public static function get_ipsecifnum()
@@ -244,7 +244,7 @@ class PfEnv
 
     public static function ipsec_list_sa()
     {
-        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args()) ?: [];
     }
 
     public static function is_service_enabled()
@@ -254,12 +254,12 @@ class PfEnv
 
     public static function openvpn_get_active_clients()
     {
-        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args()) ?: [];
     }
 
     public static function openvpn_get_active_servers()
     {
-        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args()) ?: [];
     }
 
     public static function return_gateways_status()
@@ -862,9 +862,9 @@ class Command
     {
         // Get Value from IPsec Phase 1 Configuration
         // If Getting "disabled" value only check item presence in config array
-        PfEnv::init_config_arr(["ipsec", "phase1"]);
-
         $config = PfEnv::cfg();
+        PfEnv::init_config_arr(["ipsec", "phase1"]);
+        $a_phase2 = $config["ipsec"]["phase1"] ?: [];
 
         if ($value_key == "status") {
             return Util::result(Command::get_ipsec_status($ike_id));
@@ -874,7 +874,7 @@ class Command
             return Util::result(FALLBACK_VALUE);
         }
 
-        $maybe_ike_match = Util::array_first(fn($d) => $d["ikeid"] == $ike_id, $config["ipsec"]["phase1"]);
+        $maybe_ike_match = Util::array_first(fn($d) => $d["ikeid"] == $ike_id, $a_phase2);
         if (empty($maybe_ike_match)) {
             return Util::result(FALLBACK_VALUE);
         }
@@ -890,7 +890,7 @@ class Command
     {
         $config = PfEnv::cfg();
         PfEnv::init_config_arr(array("ipsec", "phase2"));
-        $a_phase2 = &$config["ipsec"]["phase2"];
+        $a_phase2 = $config["ipsec"]["phase2"] ?: [];
 
         $valuecfr = explode(".", $value_key);
 
@@ -1072,7 +1072,7 @@ class Command
             return $default;
         }
 
-        $maybe_conn = Util::array_first(fn($conn) => ($conn["common_name"] == $user_id), $maybe_server["conns"]);
+        $maybe_conn = Util::array_first(fn($conn) => ($conn["common_name"] == $user_id), $maybe_server["conns"] ?: []);
 
         return $maybe_conn[$value_key] ?: $default;
     }
