@@ -397,7 +397,8 @@ class Shell
 
     public static function read_arp_ips(): array
     {
-        exec(implode(" ", [self::ARP, "-an", "|",
+        exec(implode(" ", [
+            self::ARP, "-an", "|",
             self::AWK, "'{ gsub(/[()]/,\"\") } {print $2}'"]), $arp_data);
 
         return $arp_data;
