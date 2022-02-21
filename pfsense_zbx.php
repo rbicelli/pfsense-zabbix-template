@@ -666,10 +666,10 @@ class Command
 
     public static function gw_status()
     {
-        echo implode(",",
+        return Util::result(implode(",",
             array_map(
                 fn($gw) => sprintf("%s.%s", $gw["name"], $gw["status"]),
-                PfEnv::return_gateways_status(true)));
+                PfEnv::return_gateways_status(true))));
     }
 
     public static function if_speedtest_value($if_name, $value)
@@ -898,7 +898,7 @@ class Command
     // File is present
     public static function file_exists($filename)
     {
-        echo Util::b2int(file_exists($filename));
+        return Util::result(Util::b2int(file_exists($filename)));
     }
 
     public static function speedtest_cron()
