@@ -45,6 +45,8 @@ const SPEED_TEST_RANDOM_DELAY_MAX_SECONDS = 90;
 
 const FALLBACK_VALUE = 0;
 
+const LINE = "-------------------\n";
+
 const VALUE_MAPPINGS = [
     "openvpn.server.status" => [
         "down" => 0,
@@ -980,17 +982,16 @@ class Command
     // Testing function, for template creating purpose
     public static function test()
     {
-        $line = "-------------------\n";
 
         $config = PfEnv::cfg();
 
         echo "OPENVPN Servers:\n";
         print_r(OpenVpn::get_active_servers());
-        echo $line;
+        echo LINE;
 
         echo "OPENVPN Clients:\n";
         print_r(PfEnv::openvpn_get_active_clients());
-        echo $line;
+        echo LINE;
 
         $ifdescrs = PfEnv::get_configured_interface_with_descr(true);
         $ifaces = [];
@@ -1001,11 +1002,11 @@ class Command
         print_r($ifaces);
         print_r(PfEnv::get_interface_arr());
         print_r(PfEnv::get_configured_interface_list());
-        echo $line;
+        echo LINE;
 
         echo "Services: \n";
         print_r(PfEnv::get_services());
-        echo $line;
+        echo LINE;
 
         echo "IPsec: \n";
         PfEnv::init_config_arr(array("ipsec", "phase1"));
@@ -1019,7 +1020,7 @@ class Command
         echo "IPsec Config Phase 2: \n";
         print_r($config["ipsec"]["phase2"]);
 
-        echo $line;
+        echo LINE;
 
         echo "Packages: \n";
         print_r(PfEnv::get_pkg_info("all", false, true));
