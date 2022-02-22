@@ -438,7 +438,7 @@ class Discovery
     {
         self::print_json(array_map(
             fn($gw) => ["{#GATEWAY}" => $gw["name"]],
-            PfEnv::return_gateways_status(true)));
+            array_values(PfEnv::return_gateways_status(true))));
     }
 
     public static function wan()
