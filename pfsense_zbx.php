@@ -645,10 +645,6 @@ class SpeedTest
     {
         $output_file_path = self::if_filename($if_name);
 
-        // Issue #82
-        // Sleep random delay in order to avoid problem when 2 pfSense on the same Internet line
-        sleep(rand(SPEED_TEST_RANDOM_DELAY_MIN_SECONDS, SPEED_TEST_RANDOM_DELAY_MAX_SECONDS));
-
         $is_output_file_older_than_interval =
             !file_exists($output_file_path) ||
             (time() - filemtime($output_file_path) > SPEED_TEST_INTERVAL_SECONDS);
@@ -656,7 +652,30 @@ class SpeedTest
             return;
         }
 
-        Shell::run_speed_test($ip_address, $output_file_path);
+        self::run_exclusively(function () use ($ip_address, $output_file_path) {
+            // Issue #82
+            // Sleep random delay in order to avoid problem when 2 pfSense on the same Internet line
+            sleep(rand(SPEED_TEST_RANDOM_DELAY_MIN_SECONDS, SPEED_TEST_RANDOM_DELAY_MAX_SECONDS));
+
+            Shell::run_speed_test($ip_address, $output_file_path);
+        });
+    }
+
+    private static function run_exclusively(Closure $fn)
+    {
+        $fp = fopen(implode("", [sys_get_temp_dir(), "pfz-speedtest.lock"]), "w");
+
+        $is_other_test_currently_running = !flock($fp, LOCK_EX | LOCK_NB);
+        if ($is_other_test_currently_running) {
+            fclose($fp);
+            return;
+        }
+
+        $fn();
+
+        flock($fp, LOCK_UN);
+
+        fclose($fp);
     }
 
     private static function if_filename($if_name): string
@@ -915,11 +934,9 @@ class Command
 
     public static function dhcp($section)
     {
-        if ($section === "failover") {
-            return Util::result(self::check_dhcp_failover());
-        }
-
-        return Util::result(self::check_dhcp_offline_leases());
+        return Util::result(($section === "failover") ?
+            self::check_dhcp_failover() :
+            self::check_dhcp_offline_leases());
     }
 
     // File is present
@@ -982,7 +999,6 @@ class Command
     // Testing function, for template creating purpose
     public static function test()
     {
-
         $config = PfEnv::cfg();
 
         echo "OPENVPN Servers:\n";
