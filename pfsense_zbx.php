@@ -288,7 +288,7 @@ class Util
 
     public static function array_flatten(array $multi_dimensional_array): array
     {
-        return array_merge(...$multi_dimensional_array);
+        return array_merge(...$multi_dimensional_array) ?: [];
     }
 
     public static function array_zip(array $keys, array $values): array
@@ -987,7 +987,7 @@ class Command
 
         $field = CERT_VK_TO_FIELD[$value_key];
         $config = PfEnv::cfg();
-        $all_certs = Util::array_flatten(array_map(fn($cert_type) => $config[$cert_type], ["cert", "ca"]));
+        $all_certs = Util::array_flatten(array_map(fn($cert_type) => $config[$cert_type] ?: [], ["cert", "ca"]));
 
         return Util::result(array_reduce($all_certs, function ($value, $certificate) use ($field) {
             $cert_info = openssl_x509_parse(base64_decode($certificate[PfEnv::CRT]));
