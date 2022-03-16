@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>5.0</version>
-    <date>2022-01-21T12:04:27Z</date>
+    <date>2022-03-16T09:47:24Z</date>
     <groups>
         <group>
             <name>Templates/Futur-Tech/Applications</name>
@@ -450,7 +450,9 @@ https://github.com/Futur-Tech/futur-tech-zabbix-pfsense</description>
                             <dependencies>
                                 <dependency>
                                     <name>New Version of pfSense {ITEM.LASTVALUE} Available</name>
-                                    <expression>({Template pfSense Active:pfsense.value[system,version].last()}&lt;&gt;{Template pfSense Active:pfsense.value[system,installed_version].last()})=1</expression>
+                                    <expression>({Template pfSense Active:pfsense.value[system,version].last()}&lt;&gt;{Template pfSense Active:pfsense.value[system,installed_version].last()})=1&#13;
+and {Template pfSense Active:pfsense.value[system,version].strlen()}&gt;0&#13;
+and {Template pfSense Active:pfsense.value[system,installed_version].strlen()}&gt;0</expression>
                                 </dependency>
                             </dependencies>
                         </trigger>
@@ -1724,9 +1726,11 @@ Alternatively you can also set the macro to 1 or 0.&#13;
             <description>pfSense CARP is not in the state Expected. This means that a failover could be in process.</description>
         </trigger>
         <trigger>
-            <expression>({Template pfSense Active:pfsense.value[system,version].last()}&lt;&gt;{Template pfSense Active:pfsense.value[system,installed_version].last()})=1</expression>
+            <expression>({Template pfSense Active:pfsense.value[system,version].last()}&lt;&gt;{Template pfSense Active:pfsense.value[system,installed_version].last()})=1&#13;
+and {Template pfSense Active:pfsense.value[system,version].strlen()}&gt;0&#13;
+and {Template pfSense Active:pfsense.value[system,installed_version].strlen()}&gt;0</expression>
             <name>New Version of pfSense {ITEM.LASTVALUE} Available</name>
-            <opdata>Current: {ITEM.LASTVALUE2}</opdata>
+            <opdata>Current: {ITEM.LASTVALUE2} Available: {ITEM.LASTVALUE1}</opdata>
             <priority>INFO</priority>
             <description>Notify of new version of pfsense available</description>
         </trigger>
