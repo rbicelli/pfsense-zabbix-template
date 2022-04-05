@@ -1,26 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>5.0</version>
-    <date>2021-07-12T10:37:45Z</date>
+    <date>2021-07-16T08:36:57Z</date>
     <groups>
         <group>
-            <name>Templates/Network Devices</name>
+            <name>Templates/Futur-Tech/Modules pfSense</name>
         </group>
     </groups>
     <templates>
         <template>
             <template>pfSense Active Speedtest</template>
-            <name>pfSense Active: Speedtest</name>
+            <name>Template Futur-Tech App pfSense Active Speedtest</name>
             <description>Extension for pfSense Active Template.&#13;
 Executes Speedtests on WAN Interfaces.&#13;
 &#13;
 Requires pfsense_zbx.php installed to pfSense Box.&#13;
 Version 1.0.5&#13;
 &#13;
-https://github.com/rbicelli/pfsense-zabbix-template</description>
+https://github.com/Futur-Tech/futur-tech-zabbix-pfsense</description>
             <groups>
                 <group>
-                    <name>Templates/Network Devices</name>
+                    <name>Templates/Futur-Tech/Modules pfSense</name>
                 </group>
             </groups>
             <applications>

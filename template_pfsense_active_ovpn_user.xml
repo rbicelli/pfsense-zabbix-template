@@ -4,23 +4,23 @@
     <date>2021-07-12T10:37:03Z</date>
     <groups>
         <group>
-            <name>Templates/Network Devices</name>
+            <name>Templates/Futur-Tech/Applications</name>
         </group>
     </groups>
     <templates>
         <template>
             <template>Template pfSense Active OpenVPN Server User Auth</template>
-            <name>pfSense Active: OpenVPN Server User Auth</name>
+            <name>Template Futur-Tech App pfSense Active OpenVPN Server User Auth</name>
             <description>Extension for pfSense Active Template.&#13;
 Monitor client Connections of OpenVPN Server.&#13;
 &#13;
 Requires pfsense_zbx.php installed to pfSense Box.&#13;
 Version 1.0.2&#13;
 &#13;
-https://github.com/rbicelli/pfsense-zabbix-template</description>
+https://github.com/Futur-Tech/futur-tech-zabbix-pfsense</description>
             <groups>
                 <group>
-                    <name>Templates/Network Devices</name>
+                    <name>Templates/Futur-Tech/Applications</name>
                 </group>
             </groups>
             <applications>
