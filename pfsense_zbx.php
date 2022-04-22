@@ -564,7 +564,6 @@ function pfz_ipsec_discovery_ph1(){
 	
 }
 
-
 function pfz_ipsec_ph1($ikeid,$valuekey){	
 	// Get Value from IPsec Phase 1 Configuration
 	// If Getting "disabled" value only check item presence in config array
@@ -740,6 +739,42 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 	return $value;
 }
 
+// Temperature sensors Discovery
+function pfz_temperature_sensors_discovery(){
+
+
+	$json_string = '{"data":[';
+	$sensors = [];
+	exec("sysctl -a | grep temperature | cut -d ':' -f 1", $sensors, $code);
+	if ($code != 0) {
+	    echo "";
+	    return;
+	} else {
+        foreach ($sensors as $sensor) {
+            $json_string .= '{"{#SENSORID}":"' . $sensor . '"';
+            $json_string .= '},';
+        }
+    }
+
+	$json_string = rtrim($json_string,",");
+    $json_string .= "]}";
+
+    echo $json_string;
+
+}
+
+// Temperature sensor get value
+function pfz_get_temperature($sensorid){
+
+	exec("sysctl '$sensorid' | cut -d ':' -f 2", $value, $code);
+	if ($code != 0 or count($value)!=1) {
+	    echo "";
+	    return;
+	} else {
+	    echo trim($value[0]);
+    }
+
+}
 
 
 function pfz_carp_status($echo = true){
@@ -1232,6 +1267,9 @@ function pfz_discovery($section){
           case "dhcpfailover":
           	   pfz_dhcpfailover_discovery();
                break;
+          case "temperature_sensors":
+               pfz_temperature_sensors_discovery();
+               break;
      }         
 }
 
@@ -1298,6 +1336,9 @@ switch (strtolower($argv[1])){
           break;     	  
      case "cert_date":
           pfz_get_cert_date($argv[2]);
+          break;
+     case "temperature":
+          pfz_get_temperature($argv[2]);
           break;
      default:
           pfz_test();

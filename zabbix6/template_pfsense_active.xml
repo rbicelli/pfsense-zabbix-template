@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>6.0</version>
-    <date>2022-04-21T09:38:15Z</date>
+    <date>2022-04-22T10:13:54Z</date>
     <groups>
         <group>
             <uuid>4918b88734c54bd094cff7585b5d71fc</uuid>
@@ -1586,6 +1586,33 @@ Alternatively you can also set the macro to 1 or 0.
 2 = Service monitoring check if not running</description>
                         </trigger_prototype>
                     </trigger_prototypes>
+                </discovery_rule>
+                <discovery_rule>
+                    <uuid>a941879bad06412eba60e9a979664453</uuid>
+                    <name>Temperature sensors Discovery</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.discovery[temperature_sensors]</key>
+                    <delay>1d</delay>
+                    <item_prototypes>
+                        <item_prototype>
+                            <uuid>3465a9c666e24da6a66f860d7653b4d2</uuid>
+                            <name>Temperature of sensor {#SENSORID}</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>pfsense.value[temperature,{#SENSORID}]</key>
+                            <delay>10m</delay>
+                            <value_type>FLOAT</value_type>
+                            <units>C</units>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>e1fe601011654b298092ecca32f70137</uuid>
+                                    <expression>last(/Template pfSense Active/pfsense.value[temperature,{#SENSORID}])&gt;70</expression>
+                                    <name>Temperature of device is over 70C</name>
+                                    <priority>AVERAGE</priority>
+                                    <description>There is some problem with cooling.</description>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                    </item_prototypes>
                 </discovery_rule>
                 <discovery_rule>
                     <uuid>06f42546705d4a7b89178d8f024f4a03</uuid>
