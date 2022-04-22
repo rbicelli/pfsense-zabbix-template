@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>6.0</version>
-    <date>2022-04-22T10:13:54Z</date>
+    <date>2022-04-22T10:24:33Z</date>
     <groups>
         <group>
             <uuid>4918b88734c54bd094cff7585b5d71fc</uuid>
@@ -72,6 +72,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Used memory (calc)</name>
                     <type>CALCULATED</type>
                     <key>kt.mem.used</key>
+                    <delay>10m</delay>
                     <units>B</units>
                     <params>last(//vm.memory.size[total]) - last(//vm.memory.size[available])</params>
                     <tags>
@@ -86,7 +87,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Expected CARP Status</name>
                     <type>CALCULATED</type>
                     <key>pfsense.expected_carp_status</key>
-                    <delay>30s</delay>
+                    <delay>10m</delay>
                     <params>{$EXPECTED_CARP_STATUS}</params>
                     <description>Expected CARP Status</description>
                     <valuemap>
@@ -104,6 +105,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>MBUF Cache</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.mbuf.cache</key>
+                    <delay>10m</delay>
                     <tags>
                         <tag>
                             <tag>Application</tag>
@@ -116,6 +118,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>MBUF Current</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.mbuf.current</key>
+                    <delay>10m</delay>
                     <tags>
                         <tag>
                             <tag>Application</tag>
@@ -141,6 +144,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>MBUF Total Used (percent)</name>
                     <type>CALCULATED</type>
                     <key>pfsense.mbuf.ptotal</key>
+                    <delay>10m</delay>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <params>((last(//pfsense.mbuf.current) + last(//pfsense.mbuf.cache)) * 100) / last(//pfsense.mbuf.max)</params>
@@ -170,6 +174,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>States Table Current</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.states.current</key>
+                    <delay>10m</delay>
                     <tags>
                         <tag>
                             <tag>Application</tag>
@@ -195,6 +200,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>States Table Current (percent)</name>
                     <type>CALCULATED</type>
                     <key>pfsense.states.pused</key>
+                    <delay>10m</delay>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <params>(last(//pfsense.states.current) * 100) / last(//pfsense.states.max)</params>
@@ -258,6 +264,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Certificates Manager: latest &quot;validFrom&quot;</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.value[cert_date,validFrom.max]</key>
+                    <delay>10m</delay>
                     <units>unixtime</units>
                     <description>This item will return will return the latest date &quot;validFrom&quot; from all the certificates (including CA). This is used to find new/renewed certificates.</description>
                     <preprocessing>
@@ -290,6 +297,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Certificates Manager: earliest &quot;validTo&quot;</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.value[cert_date,validTo.min]</key>
+                    <delay>10m</delay>
                     <units>unixtime</units>
                     <description>This item will return will return the earliest date &quot;validTo&quot; from all the certificates (including CA). This is used to find expiring certificates.</description>
                     <preprocessing>
@@ -351,7 +359,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>DHCP Failover Pool Problems</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.value[dhcp,failover]</key>
-                    <delay>2m</delay>
+                    <delay>10m</delay>
                     <description>This value indicates, in a HA scenario, if DHCP failover pool partners are out of sync.</description>
                     <tags>
                         <tag>
@@ -365,6 +373,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Gateway Status Raw</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.value[gw_status]</key>
+                    <delay>10m</delay>
                     <trends>0</trends>
                     <value_type>TEXT</value_type>
                     <description>Gateway Status Raw</description>
@@ -498,6 +507,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Number of running processes</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>proc.num[,,run]</key>
+                    <delay>10m</delay>
                     <description>Number of processes in running state.</description>
                     <tags>
                         <tag>
@@ -519,6 +529,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Number of processes</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>proc.num[]</key>
+                    <delay>10m</delay>
                     <description>Total number of processes in any state.</description>
                     <tags>
                         <tag>
@@ -554,6 +565,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Interrupts per second</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.intr</key>
+                    <delay>10m</delay>
                     <units>ips</units>
                     <preprocessing>
                         <step>
@@ -575,6 +587,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Processor load (1min/core)</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.load[percpu,avg1]</key>
+                    <delay>10m</delay>
                     <value_type>FLOAT</value_type>
                     <description>The processor load is calculated as system CPU load divided by number of CPU cores.</description>
                     <tags>
@@ -597,6 +610,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Processor load (5min/core)</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.load[percpu,avg5]</key>
+                    <delay>10m</delay>
                     <value_type>FLOAT</value_type>
                     <description>The processor load is calculated as system CPU load divided by number of CPU cores.</description>
                     <tags>
@@ -611,6 +625,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Processor load (15min/core)</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.load[percpu,avg15]</key>
+                    <delay>10m</delay>
                     <value_type>FLOAT</value_type>
                     <description>The processor load is calculated as system CPU load divided by number of CPU cores.</description>
                     <tags>
@@ -625,6 +640,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Context switches per second</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.switches</key>
+                    <delay>10m</delay>
                     <units>sps</units>
                     <preprocessing>
                         <step>
@@ -646,6 +662,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>CPU $2 time</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.util[,idle]</key>
+                    <delay>10m</delay>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <description>The time the CPU has spent doing nothing.</description>
@@ -661,6 +678,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>CPU $2 time</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.util[,interrupt]</key>
+                    <delay>10m</delay>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <description>The amount of time the CPU has been servicing hardware interrupts.</description>
@@ -676,6 +694,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>CPU $2 time</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.util[,nice]</key>
+                    <delay>10m</delay>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <description>The time the CPU has spent running users' processes that have been niced.</description>
@@ -691,6 +710,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>CPU $2 time</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.util[,system]</key>
+                    <delay>10m</delay>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <description>The time the CPU has spent running the kernel and its processes.</description>
@@ -706,6 +726,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>CPU $2 time</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.cpu.util[,user]</key>
+                    <delay>10m</delay>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <description>The time the CPU has spent running users' processes that are not niced.</description>
@@ -746,6 +767,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Host local time</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.localtime</key>
+                    <delay>10m</delay>
                     <units>unixtime</units>
                     <tags>
                         <tag>
@@ -759,6 +781,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Free swap space</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.swap.size[,free]</key>
+                    <delay>10m</delay>
                     <units>B</units>
                     <tags>
                         <tag>
@@ -772,6 +795,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Free swap space in %</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.swap.size[,pfree]</key>
+                    <delay>10m</delay>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <tags>
@@ -809,6 +833,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Used swap space</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.swap.size[,used]</key>
+                    <delay>10m</delay>
                     <units>B</units>
                     <tags>
                         <tag>
@@ -883,6 +908,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Number of logged in users</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>system.users.num</key>
+                    <delay>10m</delay>
                     <description>Number of users who are currently logged in.</description>
                     <tags>
                         <tag>
@@ -917,6 +943,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Active memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[active]</key>
+                    <delay>10m</delay>
                     <units>B</units>
                     <description>Memory used by processes</description>
                     <tags>
@@ -931,6 +958,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Available memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[available]</key>
+                    <delay>10m</delay>
                     <units>B</units>
                     <description>Available memory is defined as free+cached+buffers memory.</description>
                     <tags>
@@ -953,6 +981,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Buffered memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[buffers]</key>
+                    <delay>10m</delay>
                     <status>DISABLED</status>
                     <units>B</units>
                     <description>Cache d'entrées des IO disque.
@@ -970,6 +999,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Cached memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[cached]</key>
+                    <delay>10m</delay>
                     <units>B</units>
                     <description>amount of memory used to cache data</description>
                     <tags>
@@ -984,6 +1014,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Free memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[free]</key>
+                    <delay>10m</delay>
                     <units>B</units>
                     <description>amount of memory completely free and ready to be used directly.</description>
                     <tags>
@@ -998,6 +1029,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Inactive memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[inactive]</key>
+                    <delay>10m</delay>
                     <units>B</units>
                     <description>amount of memory that contains data that is no longer used (can be directly freed if needed)</description>
                     <tags>
@@ -1012,6 +1044,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Available memory (percent)</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[pavailable]</key>
+                    <delay>10m</delay>
                     <value_type>FLOAT</value_type>
                     <units>%</units>
                     <description>Available memory is defined as free+cached+buffers memory.</description>
@@ -1035,6 +1068,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Shared memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[shared]</key>
+                    <delay>10m</delay>
                     <status>DISABLED</status>
                     <units>B</units>
                     <description>quantité de mémoire partagée entre plusieurs processus
@@ -1067,6 +1101,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Used memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[used]</key>
+                    <delay>10m</delay>
                     <status>DISABLED</status>
                     <units>B</units>
                     <description>Item désactivé car non utilisé</description>
@@ -1082,6 +1117,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>Wired memory</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>vm.memory.size[wired]</key>
+                    <delay>10m</delay>
                     <units>B</units>
                     <description>amount of memory used by the kernel, can neither be unloaded in swap, nor compressed.</description>
                     <tags>
