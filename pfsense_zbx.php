@@ -56,6 +56,7 @@ const VALUE_MAPPINGS = [
         "waiting" => 4,
         "server_user_listening" => 5],
     "openvpn.client.status" => [
+        "connected" => 1,
         "up" => 1,
         "down" => 0,
         "none" => 0,
@@ -797,7 +798,7 @@ class Command
         }
 
         $value = ($value_key == "status") ?
-            self::get_value_mapping("openvpn.client.status", $maybe_client[$value_key]) :
+            self::sanitize_openvpn_clientvalue_status($maybe_client) :
             $maybe_client[$value_key];
 
         return Util::result($value == "" ? $fallback_value : $value);
@@ -1040,6 +1041,16 @@ class Command
 
         echo "Packages: \n";
         print_r(PfEnv::get_pkg_info("all", false, true));
+    }
+
+    private static function sanitize_openvpn_clientvalue_status($client_data)
+    {
+        $is_pre_version_22_05 = in_array($client_data["status"], array_keys(VALUE_MAPPINGS["openvpn.client.status"]));
+
+        $raw_value = $is_pre_version_22_05 ?
+            $client_data["status"] : $client_data["state"];
+
+        return self::get_value_mapping("openvpn.client.status", $raw_value);
     }
 
     private static function get_carp_status(): int
