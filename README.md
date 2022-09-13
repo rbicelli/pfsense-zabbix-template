@@ -1,3 +1,5 @@
+[![Buy Me A Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/rbicelli)
+
 # pfSense Zabbix Template
 
 This is a pfSense active template for Zabbix, based on Standard Agent and a php script using pfSense functions library for monitoring specific data.
@@ -186,9 +188,5 @@ Speedtest template creates a cron job and check for entry everytime Zabbix reque
 ```
 
 ## Credits
-
-Original GIT: https://github.com/rbicelli/pfsense-zabbix-template
-
-[![Buy Me A Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/rbicelli)
 
 [Keenton Zabbix Template](https://github.com/keentonsas/zabbix-template-pfsense) for Zabbix Agent freeBSD part.
