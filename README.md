@@ -36,78 +36,25 @@ Tested with pfSense 2.5.x, Zabbix 4.0, Zabbix 5.0
  - Discovery of WAN Interfaces
  - Perform speed tests and collect metrics
 
-**Template pfSense Active: Speedtest**
-
- - Discovery of WAN Interfaces
- - Perform speed tests and collect metrics
-
 
 ## Configuration
 
-### Install PHP script for Agent
+First copy the file pfsense_zbx.php to your pfsense box (e.g. to /root/scripts).
 
-- Option 1: via Web GUI **Diagnostics/Command Prompt**
-
-```bash
-[ -d "/root/scripts" ] || mkdir /root/scripts ; curl -o /root/scripts/pfsense_zbx.php https://raw.githubusercontent.com/Futur-Tech/futur-tech-zabbix-pfsense/main/pfsense_zbx.php
-```
-> You can add this command to **Services** > **Shellcmd** in order to download the latest version of the script, each time you reboot or restore a config backup.
-
-- Option 2 : via pfSense shell
+From **Diagnostics/Command Prompt** input this one-liner:
 
 ```bash
-mkdir /root/scripts
-curl -o /root/scripts/pfsense_zbx.php https://raw.githubusercontent.com/Futur-Tech/futur-tech-zabbix-pfsense/main/pfsense_zbx.php 
+curl --create-dirs -o /root/scripts/pfsense_zbx.php https://raw.githubusercontent.com/rbicelli/pfsense-zabbix-template/master/pfsense_zbx.php
 ```
 
+> You can add this command to **Services** > **Shellcmd** (which is available in pfSense Package Manager) in order to download the latest version of the script, each time you reboot or restore a config backup.
 
-### Zabbix Package Install
-
-From the package manager install package "Zabbix Agent 5" and "Zabbix Proxy 5"
-
-### Setup Zabbix Proxy
-
-Make sure to fill the following fields:
-
-```
-TLS Connect: psk
-TLS Accept: psk
-TLS PSK Identity: <hostname-of-the-pfsense>
-TLS PSK: <random-key>
-```
-To generate a PSK key you can use the command in Linux: 
-    
-```bash
-openssl rand -hex 32
-```
-
-Click on **Show Advanced Options**
-
-In Advanced Features-> User Parameters
-
-```
-EnableRemoteCommands=1
-```
-
-### Setup Zabbix Agent
-
-Make sure to fill the following fields:
-
-```
-Timeout: 10
-TLS Connect: psk
-TLS Accept: psk
-TLS PSK Identity: <auto-registration-identity>
-TLS PSK: <auto-registration-key>
-```
-Click on **Show Advanced Options**
+Then install package "Zabbix Agent 5" (or "Zabbix Agent 4") on your pfSense Box
 
 In Advanced Features-> User Parameters
 
 ```bash
-# https://github.com/Futur-Tech/futur-tech-zabbix-pfsense
 AllowRoot=1
-HostMetadataItem=system.uname
 UserParameter=pfsense.states.max,grep "limit states" /tmp/rules.limits | cut -f4 -d ' '
 UserParameter=pfsense.states.current,grep "current entries" /tmp/pfctl_si_out | tr -s ' ' | cut -f4 -d ' '
 UserParameter=pfsense.mbuf.current,netstat -m | grep "mbuf clusters" | cut -f1 -d ' ' | cut -d '/' -f1
@@ -117,25 +64,7 @@ UserParameter=pfsense.discovery[*],/usr/local/bin/php /root/scripts/pfsense_zbx.
 UserParameter=pfsense.value[*],/usr/local/bin/php /root/scripts/pfsense_zbx.php $1 $2 $3
 ```
 
-### Zabbix Server Install Note
-
-- Add the proxy in: **Administration** -> **Proxies** (don't forget to put the correct PSK).
-- Create a new host-group for the proxy **Configuration** -> **Host groups**
-- Create a new "Autoregistration actions" **Configuration** -> **Action** -- in the top left select **Autoregistration actions**
-- Create a new "Discovery rules" **Configuration** -> **Discovery**
-
-The new host should automatically register in Zabbix with all templates correctly assigned.
-
-The Host Name will be the hostname of the Pfsense.
-
-* Modify the visible name
-* Correct the Agent interface if it is incorrect
-* Under the tab **Encryption** put the same PSK ID and Key as the proxy *(it doesn't need to be the same as the proxy BUT make sure to not use 2 keys on separate host/proxy with the same identity).*
-* **Update the PSK ID and Key in the Pfsense Zabbix Agent!**
-
-## Note on the script and template
-
-_Please note that **AllowRoot=1** option is required in order to execute correctly OpenVPN checks and others._
+_Please note that **AllowRoot=1** option is required in order to correctly execute OpenVPN checks and others._
 
 Also increase the **Timeout** value at least to **5**, otherwise some checks will fail.
 
@@ -152,7 +81,7 @@ Possible values are:
 This is useful when monitoring services which could stay stopped on CARP Backup Member.
 
 
-### Setup Speedtest
+## Setup Speedtest
 
 For running speedtests on WAN interfaces you have to install the speedtest package.
 
@@ -168,16 +97,14 @@ pkg update && pkg install -y  -g 'py*-speedtest-cli'
 Speedtest python package could be broken at the moment, so you could need an extra step, *only if manually executing speedtest results in an error*: download the latest version from package author's github repo.
 
 ```bash
-/usr/local/bin/speedtest
+curl -Lo /usr/local/lib/python3.8/site-packages/speedtest.py https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py
 ```
 
-If you get an error while testing you can overide the Python script from the original version.
+For testing if speedtest is installed properly you can try it:
 
 ```bash
-curl -Lo /usr/local/lib/python3.7/site-packages/speedtest.py https://raw.githubusercontent.com/Futur-Tech/speedtest-cli/master/speedtest.py
+/usr/local/bin/speedtest
 ```
-
-> Note that for pfSense 2.4, Python 3.7 is installed. In 2.5, it's Python 3.8... so adjust the path if needed.
 
 Remember that you will need to install the package on *every* pfSense upgrade, to avoid this inconvenience you can add the install command in **Schellcmd**.
 
