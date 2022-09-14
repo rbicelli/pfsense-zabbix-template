@@ -4,20 +4,20 @@
     <date>2021-07-12T10:36:28Z</date>
     <groups>
         <group>
-            <name>Templates/Futur-Tech/Applications</name>
+            <name>Templates/Network Devices</name>
         </group>
     </groups>
     <templates>
         <template>
             <template>Template pfSense Active IPsec</template>
-            <name>Template Futur-Tech App pfSense Active: IPsec</name>
+            <name>pfSense Active: IPsec</name>
             <description>Extension for pfSense Active Template.&#13;
 Monitor IPsec VPN.&#13;
 &#13;
 Requires pfsense_zbx.php installed to pfSense Box.&#13;
 Version 1.0.2&#13;
 &#13;
-https://github.com/Futur-Tech/futur-tech-zabbix-pfsense</description>
+https://github.com/rbicelli/pfsense-zabbix-template</description>
             <groups>
                 <group>
                     <name>Templates/Network Devices</name>

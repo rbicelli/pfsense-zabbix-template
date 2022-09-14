@@ -1,37 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>5.0</version>
-    <date>2022-03-16T09:47:24Z</date>
+    <date>2021-11-09T21:44:28Z</date>
     <groups>
         <group>
-            <name>Templates/Futur-Tech/Applications</name>
+            <name>Templates/Network Devices</name>
         </group>
     </groups>
     <templates>
         <template>
             <template>Template pfSense Active</template>
-            <name>Template Futur-Tech App pfSense Active</name>
+            <name>pfsense Active</name>
             <description>Active template for pfsense, requires pfsense_zbx.php installed to pfSense Box.&#13;
-Version 1.0.5&#13;
+Version 1.0.2&#13;
 &#13;
-https://github.com/Futur-Tech/futur-tech-zabbix-pfsense</description>
-            <templates>
-                <template>
-                    <name>pfSense Active Speedtest</name>
-                </template>
-                <template>
-                    <name>Template Module Zabbix agent active</name>
-                </template>
-                <template>
-                    <name>Template pfSense Active IPsec</name>
-                </template>
-                <template>
-                    <name>Template pfSense Active OpenVPN Server User Auth</name>
-                </template>
-            </templates>
+https://github.com/rbicelli/pfsense-zabbix-template</description>
             <groups>
                 <group>
-                    <name>Templates/Futur-Tech/Applications</name>
+                    <name>Templates/Network Devices</name>
                 </group>
             </groups>
             <applications>
@@ -93,7 +79,7 @@ https://github.com/Futur-Tech/futur-tech-zabbix-pfsense</description>
                     <triggers>
                         <trigger>
                             <expression>{last(0)}&lt;1024</expression>
-                            <name>Configured max number of opened files is too low</name>
+                            <name>Configured max number of opened files is too low on {HOST.NAME}</name>
                             <priority>INFO</priority>
                         </trigger>
                     </triggers>
@@ -112,7 +98,7 @@ https://github.com/Futur-Tech/futur-tech-zabbix-pfsense</description>
                     <triggers>
                         <trigger>
                             <expression>{last(0)}&lt;256</expression>
-                            <name>Configured max number of processes is too low</name>
+                            <name>Configured max number of processes is too low on {HOST.NAME}</name>
                             <priority>INFO</priority>
                         </trigger>
                     </triggers>
@@ -264,7 +250,7 @@ https://github.com/Futur-Tech/futur-tech-zabbix-pfsense</description>
                     <triggers>
                         <trigger>
                             <expression>{last()}&gt;2</expression>
-                            <name>CARP Problems</name>
+                            <name>CARP Problems on {HOST.NAME}</name>
                             <priority>HIGH</priority>
                             <description>CARP Problems</description>
                         </trigger>
@@ -387,7 +373,7 @@ https://github.com/Futur-Tech/futur-tech-zabbix-pfsense</description>
                             <expression>{diff()}&gt;0</expression>
                             <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
                             <recovery_expression>{diff()}=0</recovery_expression>
-                            <name>pfSense Gateway Status Changed</name>
+                            <name>pfSense Gateway Status Changed on {HOST.NAME}</name>
                             <priority>AVERAGE</priority>
                             <description>Gateway Status Change, for use with an acion Script (e.g. update DNS record)</description>
                             <manual_close>YES</manual_close>
@@ -411,7 +397,7 @@ https://github.com/Futur-Tech/futur-tech-zabbix-pfsense</description>
                     <triggers>
                         <trigger>
                             <expression>{last()}=1</expression>
-                            <name>SMART Errors</name>
+                            <name>SMART Errors on {HOST.NAME}</name>
                             <priority>HIGH</priority>
                             <description>pfSense has detected SMART Problems on one or more drives.</description>
                         </trigger>
@@ -446,18 +432,10 @@ https://github.com/Futur-Tech/futur-tech-zabbix-pfsense</description>
                     <triggers>
                         <trigger>
                             <expression>{last()}=1</expression>
-                            <name>New Version of pfSense Available</name>
+                            <name>New Version of pfSense Available on {HOST.NAME}</name>
                             <priority>INFO</priority>
                             <description>A new version of pfSense is available for update.</description>
                             <manual_close>YES</manual_close>
-                            <dependencies>
-                                <dependency>
-                                    <name>New Version of pfSense {ITEM.LASTVALUE} Available</name>
-                                    <expression>({Template pfSense Active:pfsense.value[system,version].last()}&lt;&gt;{Template pfSense Active:pfsense.value[system,installed_version].last()})=1&#13;
-and {Template pfSense Active:pfsense.value[system,version].strlen()}&gt;0&#13;
-and {Template pfSense Active:pfsense.value[system,installed_version].strlen()}&gt;0</expression>
-                                </dependency>
-                            </dependencies>
                         </trigger>
                     </triggers>
                 </item>
@@ -475,7 +453,7 @@ and {Template pfSense Active:pfsense.value[system,installed_version].strlen()}&g
                     <triggers>
                         <trigger>
                             <expression>{last()}&gt;0</expression>
-                            <name>Packages Update Available</name>
+                            <name>Packages Update Available on {HOST.NAME}</name>
                             <opdata>{ITEM.LASTVALUE}</opdata>
                             <priority>INFO</priority>
                             <description>New version of packages are available</description>
@@ -508,7 +486,7 @@ and {Template pfSense Active:pfsense.value[system,installed_version].strlen()}&g
                     <triggers>
                         <trigger>
                             <expression>{avg(5m)}&gt;30</expression>
-                            <name>Too many processes running</name>
+                            <name>Too many processes running on {HOST.NAME}</name>
                             <priority>WARNING</priority>
                         </trigger>
                     </triggers>
@@ -526,7 +504,7 @@ and {Template pfSense Active:pfsense.value[system,installed_version].strlen()}&g
                     <triggers>
                         <trigger>
                             <expression>{avg(5m)}&gt;300</expression>
-                            <name>Too many processes</name>
+                            <name>Too many processes on {HOST.NAME}</name>
                             <priority>WARNING</priority>
                         </trigger>
                     </triggers>
@@ -574,7 +552,7 @@ and {Template pfSense Active:pfsense.value[system,installed_version].strlen()}&g
                     <triggers>
                         <trigger>
                             <expression>{avg(5m)}&gt;5</expression>
-                            <name>Processor load is too high</name>
+                            <name>Processor load is too high on {HOST.NAME}</name>
                             <priority>WARNING</priority>
                         </trigger>
                     </triggers>
@@ -702,7 +680,7 @@ and {Template pfSense Active:pfsense.value[system,installed_version].strlen()}&g
                     <triggers>
                         <trigger>
                             <expression>{diff(0)}&gt;0</expression>
-                            <name>Hostname was changed</name>
+                            <name>Hostname was changed on {HOST.NAME}</name>
                             <priority>INFO</priority>
                         </trigger>
                     </triggers>
@@ -743,7 +721,7 @@ and {Template pfSense Active:pfsense.value[system,installed_version].strlen()}&g
                     <triggers>
                         <trigger>
                             <expression>{last(0)}&lt;50</expression>
-                            <name>Lack of free swap space</name>
+                            <name>Lack of free swap space on {HOST.NAME}</name>
                             <priority>WARNING</priority>
                             <description>It probably means that the systems requires more physical memory.</description>
                         </trigger>
@@ -789,7 +767,7 @@ and {Template pfSense Active:pfsense.value[system,installed_version].strlen()}&g
                     <triggers>
                         <trigger>
                             <expression>{diff(0)}&gt;0</expression>
-                            <name>Host information was changed</name>
+                            <name>Host information was changed on {HOST.NAME}</name>
                             <priority>INFO</priority>
                         </trigger>
                     </triggers>
@@ -808,7 +786,7 @@ and {Template pfSense Active:pfsense.value[system,installed_version].strlen()}&g
                     <triggers>
                         <trigger>
                             <expression>{change(0)}&lt;0</expression>
-                            <name>Host has just been restarted</name>
+                            <name>{HOST.NAME} has just been restarted</name>
                             <priority>INFO</priority>
                         </trigger>
                     </triggers>
@@ -837,7 +815,7 @@ and {Template pfSense Active:pfsense.value[system,installed_version].strlen()}&g
                     <triggers>
                         <trigger>
                             <expression>{diff(0)}&gt;0</expression>
-                            <name>/etc/passwd has been changed</name>
+                            <name>/etc/passwd has been changed on {HOST.NAME}</name>
                             <priority>WARNING</priority>
                         </trigger>
                     </triggers>
@@ -868,7 +846,7 @@ and {Template pfSense Active:pfsense.value[system,installed_version].strlen()}&g
                     <triggers>
                         <trigger>
                             <expression>{last(0)}&lt;20M</expression>
-                            <name>Lack of available memory</name>
+                            <name>Lack of available memory on server {HOST.NAME}</name>
                             <priority>AVERAGE</priority>
                         </trigger>
                     </triggers>
@@ -1171,23 +1149,18 @@ and {Template pfSense Active:pfsense.value[system,installed_version].strlen()}&g
                             <name>Incoming Errors on {#IFDESCR}</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>net.if.in[{#IFNAME},errors]</key>
+                            <history>7d</history>
                             <applications>
                                 <application>
                                     <name>Network Interfaces</name>
                                 </application>
                             </applications>
-                            <preprocessing>
-                                <step>
-                                    <type>CHANGE_PER_SECOND</type>
-                                    <params/>
-                                </step>
-                            </preprocessing>
                         </item_prototype>
                         <item_prototype>
                             <name>Incoming network traffic on {#IFDESCR}</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>net.if.in[{#IFNAME}]</key>
-                            <delay>2m</delay>
+                            <history>7d</history>
                             <units>bps</units>
                             <applications>
                                 <application>
@@ -1209,23 +1182,18 @@ and {Template pfSense Active:pfsense.value[system,installed_version].strlen()}&g
                             <name>Outgoing errors on {#IFDESCR}</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>net.if.out[{#IFNAME},errors]</key>
+                            <history>7d</history>
                             <applications>
                                 <application>
                                     <name>Network Interfaces</name>
                                 </application>
                             </applications>
-                            <preprocessing>
-                                <step>
-                                    <type>CHANGE_PER_SECOND</type>
-                                    <params/>
-                                </step>
-                            </preprocessing>
                         </item_prototype>
                         <item_prototype>
                             <name>Outgoing network traffic on {#IFDESCR}</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>net.if.out[{#IFNAME}]</key>
-                            <delay>2m</delay>
+                            <history>7d</history>
                             <units>bps</units>
                             <applications>
                                 <application>
@@ -1607,11 +1575,6 @@ Alternatively you can also set the macro to 1 or 0.&#13;
                     <description>Enable monitoring of Services</description>
                 </macro>
                 <macro>
-                    <macro>{$PFSENSE_SRVC_MONITORING:&quot;dnsbl&quot;}</macro>
-                    <value>2</value>
-                    <description>Enable monitoring of Service pfBlockerNG DNSBL Web Server (check if NOT running)</description>
-                </macro>
-                <macro>
                     <macro>{$PFSENSE_SRVC_MONITORING:&quot;iperf&quot;}</macro>
                     <value>0</value>
                     <description>Disable monitoring of Service iperf Network Performance Testing Daemon/Client</description>
@@ -1724,16 +1687,13 @@ Alternatively you can also set the macro to 1 or 0.&#13;
     <triggers>
         <trigger>
             <expression>{Template pfSense Active:pfsense.expected_carp_status.last()}&lt;&gt;0 and {Template pfSense Active:pfsense.value[carp_status].last()}&lt;&gt;{$EXPECTED_CARP_STATUS}</expression>
-            <name>CARP Status not Expected</name>
+            <name>CARP Status not Expected on {HOST.NAME}</name>
             <priority>HIGH</priority>
             <description>pfSense CARP is not in the state Expected. This means that a failover could be in process.</description>
         </trigger>
         <trigger>
-            <expression>({Template pfSense Active:pfsense.value[system,version].last()}&lt;&gt;{Template pfSense Active:pfsense.value[system,installed_version].last()})=1&#13;
-and {Template pfSense Active:pfsense.value[system,version].strlen()}&gt;0&#13;
-and {Template pfSense Active:pfsense.value[system,installed_version].strlen()}&gt;0</expression>
-            <name>New Version of pfSense {ITEM.LASTVALUE} Available</name>
-            <opdata>Current: {ITEM.LASTVALUE2} Available: {ITEM.LASTVALUE1}</opdata>
+            <expression>({Template pfSense Active:pfsense.value[system,version].last()}&lt;&gt;{Template pfSense Active:pfsense.value[system,installed_version].last()})=1</expression>
+            <name>New Version Available on {HOST.NAME}</name>
             <priority>INFO</priority>
             <description>Notify of new version of pfsense available</description>
         </trigger>
