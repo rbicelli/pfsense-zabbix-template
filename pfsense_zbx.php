@@ -417,7 +417,11 @@ class Service
     {
         $status = PfEnv::get_service_status($service);
 
-        return empty($status) ? FALLBACK_VALUE : $status;
+        if (!empty($status)) {
+            return $status;
+        }
+
+        return FALLBACK_VALUE;
     }
 
     public static function run_on_carp_slave(array $service, $name, $short_name, $carpcfr, $stopped_on_carp_slave): int
@@ -521,7 +525,11 @@ class Discovery
         $service_discoveries = [];
         foreach ($named_services as $service) {
             $maybe_id = Util::array_first(fn($key) => in_array($key, ["id", "zone"]), array_keys($service));
-            $id = is_null($maybe_id) ? "" : $service[$maybe_id];
+
+            $id = "";
+            if (!is_null($maybe_id)) {
+                $id = $service[$maybe_id];
+            }
 
             $service_discoveries[] = [
                 "{#SERVICE}" => sprintf("%s%s", Util::space_to_underscore($service["name"]), $id),
@@ -665,7 +673,11 @@ class SpeedTest
             return Util::result("");
         }
 
-        return Util::result(empty($tv1) ? $speed_test_data[$tv0] : $speed_test_data[$tv0][$tv1]);
+        if (empty($tv1)) {
+            return Util::result($speed_test_data[$tv0]);
+        }
+
+        return Util::result($speed_test_data[$tv0][$tv1]);
     }
 
     public static function cron_install($enable = true)
@@ -761,18 +773,18 @@ class Command
     public static function gw_value($gw, $value_key)
     {
         $gws = PfEnv::return_gateways_status(true);
-
-        $maybe_gw = array_key_exists($gw, $gws) ? $gws[$gw] : null;
-        if (!$maybe_gw) {
+        if (!array_key_exists($gw, $gws)) {
             return Util::result("");
         }
 
-        $value = $maybe_gw[$value_key];
+        $gw_data = $gws[$gw];
+
+        $value = $gw_data[$value_key];
         if ($value_key != "status") {
             return Util::result($value);
         }
 
-        $substatus = $maybe_gw["substatus"];
+        $substatus = $gw_data["substatus"];
         $has_relevant_substatus = $substatus != "none"; // Issue #70: Gateway Forced Down
 
         return Util::result(self::get_value_mapping(
@@ -839,7 +851,11 @@ class Command
             self::sanitize_openvpn_clientvalue_status($maybe_client) :
             $maybe_client[$value_key];
 
-        return Util::result($value == "" ? $fallback_value : $value);
+        if ($value == "") {
+            return Util::result($fallback_value);
+        }
+
+        return Util::result($value);
     }
 
     public static function service_value(string $name, string $value)
@@ -913,7 +929,11 @@ class Command
 
         $is_known_section = array_key_exists($section, $system_pkg_version);
 
-        return Util::result($is_known_section ? $system_pkg_version[$section] : "");
+        if ($is_known_section) {
+            return Util::result($$system_pkg_version[$section]);
+        }
+
+        return Util::result("");
     }
 
     public static function ipsec_ph1($ike_id, $value_key)
@@ -964,18 +984,21 @@ class Command
             return Util::result($value);
         }
 
-        $result = ($value_key != "disabled") ?
-            self::get_value_mapping("ipsec_ph2." . $value_key, $maybe_data[$value_key]) :
-            1;
+        if ($value_key != "disabled") {
+            return Util::result(self::get_value_mapping("ipsec_ph2." . $value_key, $maybe_data[$value_key]));
+        }
 
-        return Util::result($result);
+        return Util::result(1);
     }
 
     public static function dhcp($section)
     {
-        return Util::result(($section === "failover") ?
-            self::check_dhcp_failover() :
-            self::check_dhcp_offline_leases());
+        if ($section === "failover") {
+            return Util::result(self::check_dhcp_failover());
+
+        }
+
+        return Util::result(self::check_dhcp_offline_leases());
     }
 
     // File is present
@@ -1037,7 +1060,11 @@ class Command
         return Util::result(array_reduce($all_certs, function ($value, $certificate) use ($field) {
             $cert_info = openssl_x509_parse(base64_decode($certificate[PfEnv::CRT]));
 
-            return ($value == 0 || $value < $cert_info[$field]) ? $cert_info[$field] : $value;
+            if ($value == 0 || $value < $cert_info[$field]) {
+                return $cert_info[$field];
+            }
+
+            return $value;
         }, FALLBACK_VALUE));
     }
 
@@ -1185,7 +1212,11 @@ class Command
 
             $carp_status = self::get_carp_status();
 
-            return ($carp_status != 0) ? $v + (10 * ($carp_status - 1)) : $v;
+            if ($carp_status != 0) {
+                return $v + (10 * ($carp_status - 1));
+            }
+
+            return $v;
         };
 
         $ipsec_list_sa = PfEnv::ipsec_list_sa();
@@ -1478,7 +1509,11 @@ class Command
         $sanitized_value = strtolower($value);
         $is_value_with_known_mapping = array_key_exists($sanitized_value, $value_mapping);
 
-        return $is_value_with_known_mapping ? $value_mapping[$sanitized_value] : FALLBACK_VALUE;
+        if ($is_value_with_known_mapping) {
+            return $value_mapping[$sanitized_value];
+        }
+
+        return FALLBACK_VALUE;
     }
 }
 
