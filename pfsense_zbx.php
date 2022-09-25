@@ -292,11 +292,6 @@ class Util
         return array_merge(...$multi_dimensional_array) ?: [];
     }
 
-    public static function array_zip(array $keys, array $values): array
-    {
-        return array_map(null, $keys, $values);
-    }
-
     public static function b2int(bool $b): int
     {
         return (int)$b;
@@ -326,16 +321,14 @@ class NetworkInterface
 {
     public static function retrieve_wan_interfaces(): array
     {
-        $if_descriptions = PfEnv::get_configured_interface_with_descr(true);
+        $interfaces = [];
 
-        $interfaces = array_map(function ($interface) {
-            list ($if_name, $description) = $interface;
-
-            return array_merge(
+        foreach (PfEnv::get_configured_interface_with_descr(true) as $if_name => $description) {
+            $interfaces[] = array_merge(
                 PfEnv::get_interface_info($if_name),
                 ["description" => $description],
             );
-        }, Util::array_zip(array_keys($if_descriptions), array_values($if_descriptions)));
+        }
 
         return array_filter($interfaces, function ($iface_info_ext) {
             $has_gw = array_key_exists("gateway", $iface_info_ext);
@@ -437,9 +430,12 @@ class Discovery
 {
     public static function gw()
     {
-        self::print_json(array_map(
-            fn($gw) => ["{#GATEWAY}" => $gw["name"]],
-            array_values(PfEnv::return_gateways_status(true))));
+        $gateway_discoveries = [];
+        foreach (PfEnv::return_gateways_status(true) as $gateway) {
+            $gateway_discoveries[] = ["{#GATEWAY}" => $gateway["name"]];
+        }
+
+        self::print_json($gateway_discoveries);
     }
 
     public static function wan()
@@ -475,10 +471,15 @@ class Discovery
 
     public static function openvpn_server()
     {
-        self::print_json(array_map(fn($server) => [
-            "{#SERVER}" => $server["vpnid"],
-            "{#NAME}" => self::sanitize_name($server["name"])],
-            OpenVpn::get_active_servers()));
+        $active_openvpn_server_discoveries = [];
+        foreach (OpenVpn::get_active_servers() as $server) {
+            $active_openvpn_server_discoveries[] = [
+                "{#SERVER}" => $server["vpnid"],
+                "{#NAME}" => self::sanitize_name($server["name"]),
+            ];
+        }
+
+        self::print_json($active_openvpn_server_discoveries);
     }
 
     public static function openvpn_server_user()
@@ -492,30 +493,43 @@ class Discovery
             $servers_with_relevant_mode,
             fn($server) => is_array($server["conns"]));
 
-        self::print_json(Util::array_flatten(array_map(fn($s) => self::map_server($s), $servers_with_conns)));
+        $server_discoveries = [];
+        foreach ($servers_with_conns as $server) {
+            $server_discoveries[] = self::map_server($server);
+        }
+
+        self::print_json(Util::array_flatten($server_discoveries));
     }
 
     public static function openvpn_client()
     {
-        self::print_json(array_map(fn($client) => [
-            "{#CLIENT}" => $client["vpnid"],
-            "{#NAME}" => self::sanitize_name($client["name"]),
-        ], PfEnv::openvpn_get_active_clients()));
+        $client_discoveries = [];
+        foreach (PfEnv::openvpn_get_active_clients() as $client) {
+            $client_discoveries[] = [
+                "{#CLIENT}" => $client["vpnid"],
+                "{#NAME}" => self::sanitize_name($client["name"]),
+            ];
+        }
+
+        self::print_json($client_discoveries);
     }
 
     public static function services()
     {
         $named_services = array_filter(PfEnv::get_services(), fn($service) => !empty($service["name"]));
 
-        self::print_json(array_map(function ($service) {
+        $service_discoveries = [];
+        foreach ($named_services as $service) {
             $maybe_id = Util::array_first(fn($key) => in_array($key, ["id", "zone"]), array_keys($service));
             $id = is_null($maybe_id) ? "" : $service[$maybe_id];
 
-            return [
+            $service_discoveries[] = [
                 "{#SERVICE}" => sprintf("%s%s", Util::space_to_underscore($service["name"]), $id),
                 "{#DESCRIPTION}" => $service["description"],
             ];
-        }, $named_services));
+        }
+
+        self::print_json($service_discoveries);
     }
 
     public static function interfaces()
@@ -529,10 +543,15 @@ class Discovery
 
         $config = PfEnv::cfg();
 
-        self::print_json(array_map(fn($data) => [
-            "{#IKEID}" => $data["ikeid"],
-            "{#NAME}" => $data["descr"],
-        ], $config["ipsec"]["phase1"]));
+        $ipsec_ph1_discoveries = [];
+        foreach ($config["ipsec"]["phase1"] as $data) {
+            $ipsec_ph1_discoveries[] = [
+                "{#IKEID}" => $data["ikeid"],
+                "{#NAME}" => $data["descr"],
+            ];
+        }
+
+        self::print_json($ipsec_ph1_discoveries);
     }
 
     public static function ipsec_ph2()
@@ -541,13 +560,18 @@ class Discovery
 
         $config = PfEnv::cfg();
 
-        self::print_json(array_map(fn($data) => [
-            "{#IKEID}" => $data["ikeid"],
-            "{#NAME}" => $data["descr"],
-            "{#UNIQID}" => $data["uniqid"],
-            "{#REQID}" => $data["reqid"],
-            "{#EXTID}" => sprintf("%s.%s", $data["ikeid"], $data["reqid"]),
-        ], $config["ipsec"]["phase2"]));
+        $ipsec_ph2_discoveries = [];
+        foreach ($config["ipsec"]["phase2"] as $data) {
+            $ipsec_ph2_discoveries[] = [
+                "{#IKEID}" => $data["ikeid"],
+                "{#NAME}" => $data["descr"],
+                "{#UNIQID}" => $data["uniqid"],
+                "{#REQID}" => $data["reqid"],
+                "{#EXTID}" => sprintf("%s.%s", $data["ikeid"], $data["reqid"]),
+            ];
+        }
+
+        self::print_json($ipsec_ph2_discoveries);
     }
 
     public static function dhcpfailover()
@@ -555,9 +579,14 @@ class Discovery
         // System public static functions regarding DHCP Leases will be available in the upcoming release of pfSense, so let's wait
         $leases = PfEnv::system_get_dhcpleases();
 
-        self::print_json(array_map(fn($data) => [
-            "{#FAILOVER_GROUP}" => Util::space_to_underscore($data["name"]),
-        ], $leases["failover"]));
+        $dhcp_failover_discoveries = [];
+        foreach ($leases["failover"] as $data) {
+            $dhcp_failover_discoveries[] = [
+                "{#FAILOVER_GROUP}" => Util::space_to_underscore($data["name"]),
+            ];
+        }
+
+        self::print_json($dhcp_failover_discoveries);
     }
 
     private static function print_json(array $json)
@@ -584,9 +613,13 @@ class Discovery
 
     private static function map_conns(string $server_name, string $vpn_id, array $conns): array
     {
-        return array_map(
-            fn($conn) => self::map_conn($server_name, $vpn_id, $conn),
-            $conns);
+        $conn_discoveries = [];
+        foreach ($conns as $conn) {
+            $conn_discoveries[] = self::map_conn($server_name, $vpn_id, $conn);
+
+        }
+
+        return $conn_discoveries;
     }
 
     private static function map_server(array $server): array
@@ -604,12 +637,15 @@ class Discovery
             return;
         }
 
-        self::print_json(array_map(function ($hwif) {
-            return [
+        $wan_interface_discoveries = [];
+        foreach (NetworkInterface::retrieve_wan_interfaces() as $hwif) {
+            $wan_interface_discoveries[] = [
                 "{#IFNAME}" => $hwif["hwif"],
                 "{#IFDESCR}" => $hwif["description"],
             ];
-        }, NetworkInterface::retrieve_wan_interfaces()));
+        }
+
+        self::print_json($wan_interface_discoveries);
     }
 }
 
@@ -746,10 +782,12 @@ class Command
 
     public static function gw_status()
     {
-        return Util::result(implode(",",
-            array_map(
-                fn($gw) => sprintf("%s.%s", $gw["name"], $gw["status"]),
-                PfEnv::return_gateways_status(true))));
+        $gw_statuses = [];
+        foreach (PfEnv::return_gateways_status(true) as $gw) {
+            $gw_statuses[] = sprintf("%s.%s", $gw["name"], $gw["status"]);
+        }
+
+        return Util::result(implode(",", $gw_statuses));
     }
 
     public static function if_speedtest_value($if_name, $value)
@@ -962,16 +1000,17 @@ class Command
     // Taken from /usr/local/www/widgets/widgets/smart_status.widget.php
     public static function smart_status()
     {
-        $dev_states = array_map(
-            fn($device_name) => Shell::read_smart_status($device_name),
-            PfEnv::get_smart_drive_list());
+        $dev_states = [];
+        foreach (PfEnv::get_smart_drive_list() as $device_name) {
+            $dev_states[] = Shell::read_smart_status($device_name);
+        }
 
-        $smart_states =
-            array_map(
-                fn($dev_state) => array_key_exists($dev_state, SMART_DEV_STATUS) ?
-                    SMART_DEV_STATUS[$dev_state] :
-                    SMART_ERROR,
-                $dev_states);
+        $smart_states = [];
+        foreach ($dev_states as $dev_state) {
+            $smart_states[] = array_key_exists($dev_state, SMART_DEV_STATUS) ?
+                SMART_DEV_STATUS[$dev_state] :
+                SMART_ERROR;
+        }
 
         $maybe_not_ok = Util::array_first(function ($smart_state) {
             return $smart_state != SMART_OK;
@@ -988,7 +1027,12 @@ class Command
 
         $field = CERT_VK_TO_FIELD[$value_key];
         $config = PfEnv::cfg();
-        $all_certs = Util::array_flatten(array_map(fn($cert_type) => $config[$cert_type] ?: [], ["cert", "ca"]));
+
+        $certs_and_cas = [];
+        foreach (["cert", "ca"] as $cert_type) {
+            $certs_and_cas[] = $config[$cert_type] ?: [];
+        }
+        $all_certs = Util::array_flatten($certs_and_cas);
 
         return Util::result(array_reduce($all_certs, function ($value, $certificate) use ($field) {
             $cert_info = openssl_x509_parse(base64_decode($certificate[PfEnv::CRT]));
@@ -1213,8 +1257,12 @@ class Command
 
     private static function parse_raw_record(string $raw_lease_data): array
     {
-        $lease_data_lines =
-            array_filter(array_map(fn($m) => trim($m), explode(";", $raw_lease_data)));
+        $raw_lease_data_lines = [];
+        foreach (explode(";", $raw_lease_data) as $raw_line) {
+            $raw_lease_data_lines[] = trim($raw_line);
+        }
+
+        $lease_data_lines = array_filter($raw_lease_data_lines);
 
         return array_reduce(
             $lease_data_lines,
@@ -1228,7 +1276,12 @@ class Command
 
     private static function parse_failover_record(array $data): array
     {
-        list($name, $raw_lease_data) = array_map(fn($m) => trim($m), $data);
+        $sanitized_data = [];
+        foreach ($data as $line) {
+            $sanitized_data[] = trim($line);
+        }
+
+        list($name, $raw_lease_data) = $sanitized_data;
 
         return [
             "type" => "failover",
@@ -1239,7 +1292,12 @@ class Command
 
     private static function parse_lease_record(array $data): array
     {
-        list($lease_address, $raw_lease_data) = array_map(fn($m) => trim($m), $data);
+        $sanitized_data = [];
+        foreach ($data as $line) {
+            $sanitized_data[] = trim($line);
+        }
+
+        list($lease_address, $raw_lease_data) = $sanitized_data;
 
         return [
             "type" => "lease",
@@ -1267,9 +1325,13 @@ class Command
 
     private static function read_dhcp_records_from_file(string $leases_file_path): array
     {
-        return array_map(
-            fn($r) => self::parse_dhcp_record($r),
-            Shell::read_dhcpd_records($leases_file_path));
+        $dhcp_records = [];
+        foreach (Shell::read_dhcpd_records($leases_file_path) as $raw_dhcp_record) {
+            $dhcp_records[] = self::parse_dhcp_record($raw_dhcp_record);
+
+        }
+
+        return $dhcp_records;
     }
 
     private static function binding_to_state($binding): array
@@ -1355,14 +1417,22 @@ class Command
         if ($value_key === "pools") {
             $failover_records = array_filter($dhcp_records, fn($r) => $r["type"] == "failover");
 
-            return self::remove_duplicates(array_map(fn($r) => self::raw_failover_record_to_pool($r), $failover_records), "name");
-        }
+            $pools = [];
+            foreach ($failover_records as $failover_record) {
+                $pools[] = self::raw_failover_record_to_pool($failover_record);
+            }
 
-        $lease_records = array_filter($dhcp_records, fn($r) => $r["type"] == "lease");
+            return self::remove_duplicates($pools, "name");
+        }
 
         $arp_ips = Shell::read_arp_ips();
 
-        return self::remove_duplicates(array_map(fn($r) => self::raw_lease_record_to_lease($r, $arp_ips), $lease_records), "mac");
+        $leases = [];
+        foreach (array_filter($dhcp_records, fn($r) => $r["type"] == "lease") as $lease_record) {
+            $leases[] = self::raw_lease_record_to_lease($lease_record, $arp_ips);
+        }
+
+        return self::remove_duplicates($leases, "mac");
     }
 
     private static function check_dhcp_offline_leases(): int
@@ -1421,7 +1491,12 @@ function build_method_lookup(string $clazz): array
 
         $commands = array_filter($all_methods, fn($method) => $method->isStatic() && $method->isPublic());
 
-        return array_map(fn(ReflectionMethod $method) => $method->getName(), $commands);
+        $available_methods = [];
+        foreach ($commands as $method) {
+            $available_methods[] = $method->getName();
+        }
+
+        return $available_methods;
     } catch (Exception $e) {
         return [];
     }
