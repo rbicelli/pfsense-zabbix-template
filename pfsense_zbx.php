@@ -1039,6 +1039,7 @@ function pfz_valuemap($valuename, $value, $default="0"){
                     $valuemap = array(
                          "down" => "0",
                          "up" => "1",
+                         "connected (success)" => "1",
                          "none" => "2",
                          "reconnecting; ping-restart" => "3",
                          "waiting" => "4",
