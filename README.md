@@ -104,7 +104,7 @@ For testing if speedtest is installed properly you can try it:
 
 Remember that you will need to install the package on *every* pfSense upgrade.
 
-Speedtest template creates a cron job and check for entry everytime Zabbix requests its items. If you  want to uninstall the cron jobs simply run, from **Diagnostics/Command Prompt**:
+Speedtest template creates a cron job and checks for entry everytime Zabbix requests its items. If you  want to uninstall the cron jobs simply run, from **Diagnostics/Command Prompt**:
 
 ```bash
 /url/local/bin/php /root/scripts/pfsense_zbx.php cron_cleanup
