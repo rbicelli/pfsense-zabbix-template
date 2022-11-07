@@ -106,12 +106,12 @@ For testing if speedtest is installed properly you can try it:
 /usr/local/bin/speedtest
 ```
 
-Remember that you will need to install the package on *every* pfSense upgrade.
+Remember that you will need to install the package on *every* pfSense upgrade, to avoid this inconvenience you can add the install command in **Schellcmd**.
 
-Speedtest template creates a cron job and check for entry everytime Zabbix requests its items. If you  want to uninstall the cron jobs simply run, from **Diagnostics/Command Prompt**:
+Speedtest template creates a cron job and check for entry everytime Zabbix requests its items. If you want to uninstall the cron jobs simply run, from **Diagnostics/Command Prompt**:
 
 ```bash
-/url/local/bin/php /root/scripts/pfsense_zbx.php cron_cleanup
+/usr/local/bin/php /root/scripts/pfsense_zbx.php cron_cleanup
 ```
 
 ## Credits
