@@ -1,0 +1,2518 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>6.0</version>
+    <date>2022-11-09T11:00:00Z</date>
+    <groups>
+        <group>
+            <uuid>4918b88734c54bd094cff7585b5d71fc</uuid>
+            <name>Templates/Network Devices</name>
+        </group>
+    </groups>
+    <templates>f
+        <template>
+            <uuid>7a0b3294155c4454bd5df455f7a827b6</uuid>
+            <template>Template pfSense Active</template>
+            <name>pfsense Active</name>
+            <description>Active template for pfsense, requires pfsense_zbx.php installed to pfSense Box.
+Version 1.0.2
+
+https://github.com/rbicelli/pfsense-zabbix-template</description>
+            <groups>
+                <group>
+                    <name>Templates/Network Devices</name>
+                </group>
+            </groups>
+            <items>
+                <item>
+                    <uuid>fe0bfdabfd494c859bae516980bb412c</uuid>
+                    <name>Maximum number of opened files</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>kernel.maxfiles</key>
+                    <delay>1h</delay>
+                    <description>It could be increased by using sysctrl utility or modifying file /etc/sysctl.conf.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>OS</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>d081e34519d4449ca9379b74ef276141</uuid>
+                            <expression>last(/Template pfSense Active/kernel.maxfiles)&lt;1024</expression>
+                            <name>Configured max number of opened files is too low on {HOST.NAME}</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>d9b8395c028b43fd8a2c2b667165747e</uuid>
+                    <name>Maximum number of processes</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>kernel.maxproc</key>
+                    <delay>1h</delay>
+                    <description>It could be increased by using sysctrl utility or modifying file /etc/sysctl.conf.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>OS</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>9854402b6a474f05af721835dc464338</uuid>
+                            <expression>last(/Template pfSense Active/kernel.maxproc)&lt;256</expression>
+                            <name>Configured max number of processes is too low on {HOST.NAME}</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>906d29a9443d4e3d8ae58d6db61ffebd</uuid>
+                    <name>Used memory (calc)</name>
+                    <type>CALCULATED</type>
+                    <key>kt.mem.used</key>
+                    <delay>10m</delay>
+                    <units>B</units>
+                    <params>last(//vm.memory.size[total]) - last(//vm.memory.size[available])</params>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Memory</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>a233016d2e664687a480052812297879</uuid>
+                    <name>Expected CARP Status</name>
+                    <type>CALCULATED</type>
+                    <key>pfsense.expected_carp_status</key>
+                    <delay>10m</delay>
+                    <params>{$EXPECTED_CARP_STATUS}</params>
+                    <description>Expected CARP Status</description>
+                    <valuemap>
+                        <name>pfSense CARP Status</name>
+                    </valuemap>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>HA</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>dd3d8f993d3e468197500b09da067b20</uuid>
+                    <name>MBUF Cache</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.mbuf.cache</key>
+                    <delay>10m</delay>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Network Limits</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>f184df5af3104ac9b1e28ae7dbc6f6af</uuid>
+                    <name>MBUF Current</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.mbuf.current</key>
+                    <delay>10m</delay>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Network Limits</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>cf70cf5e8b294e359a7bce7b64cc2f88</uuid>
+                    <name>MBUF Max</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.mbuf.max</key>
+                    <delay>10m</delay>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Network Limits</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>154c27479d50479b9824e8253ac687fa</uuid>
+                    <name>MBUF Total Used (percent)</name>
+                    <type>CALCULATED</type>
+                    <key>pfsense.mbuf.ptotal</key>
+                    <delay>10m</delay>
+                    <value_type>FLOAT</value_type>
+                    <units>%</units>
+                    <params>((last(//pfsense.mbuf.current) + last(//pfsense.mbuf.cache)) * 100) / last(//pfsense.mbuf.max)</params>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Network Limits</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>4453b627d68b4c44b5a909426fd06784</uuid>
+                            <expression>last(/Template pfSense Active/pfsense.mbuf.ptotal)&gt;80</expression>
+                            <name>MBUF used at 80%</name>
+                            <priority>WARNING</priority>
+                        </trigger>
+                        <trigger>
+                            <uuid>5bfdf44122ee4a16b97909f1071256a5</uuid>
+                            <expression>last(/Template pfSense Active/pfsense.mbuf.ptotal)&gt;90</expression>
+                            <name>MBUF used at 90%</name>
+                            <priority>HIGH</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>a61781a790734d71a512e592fec87b84</uuid>
+                    <name>States Table Current</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.states.current</key>
+                    <delay>10m</delay>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Network Limits</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>022009a762ee4ec8bc4988a57b0d1412</uuid>
+                    <name>States Table Max</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.states.max</key>
+                    <delay>10m</delay>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Network Limits</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>6d0f8d81fd3d46b39e9bbccacb2aaf4c</uuid>
+                    <name>States Table Current (percent)</name>
+                    <type>CALCULATED</type>
+                    <key>pfsense.states.pused</key>
+                    <delay>10m</delay>
+                    <value_type>FLOAT</value_type>
+                    <units>%</units>
+                    <params>(last(//pfsense.states.current) * 100) / last(//pfsense.states.max)</params>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Network Limits</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>1a7faf6d80ca4a408987de1f039e4dba</uuid>
+                            <expression>last(/Template pfSense Active/pfsense.states.pused)&gt;80</expression>
+                            <name>State Table used at 80%</name>
+                            <priority>WARNING</priority>
+                        </trigger>
+                        <trigger>
+                            <uuid>dbd147c6b43144dc9541939fbb9c8eef</uuid>
+                            <expression>last(/Template pfSense Active/pfsense.states.pused)&gt;90</expression>
+                            <name>State Table used at 90%</name>
+                            <priority>HIGH</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>cc7fd0d7da504c71b0da3fcc36133510</uuid>
+                    <name>CARP Status</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.value[carp_status]</key>
+                    <delay>30s</delay>
+                    <description>pfSense CARP Status</description>
+                    <valuemap>
+                        <name>pfSense CARP Status</name>
+                    </valuemap>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>HA</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>64879ff4adb54b78a2f31e6cd9b14d17</uuid>
+                            <expression>last(/Template pfSense Active/pfsense.value[carp_status])&gt;2</expression>
+                            <name>CARP Problems on {HOST.NAME}</name>
+                            <priority>HIGH</priority>
+                            <description>CARP Problems</description>
+                        </trigger>
+                        <trigger>
+                            <uuid>d763eb3d9b574e99a9852d7c595d4d08</uuid>
+                            <expression>last(/Template pfSense Active/pfsense.value[carp_status])&gt;2</expression>
+                            <name>DHCP Failover Problems on {HOST.NAME}</name>
+                            <url>https://docs.netgate.com/pfsense/en/latest/troubleshooting/ha-dhcp-failover.html</url>
+                            <priority>HIGH</priority>
+                            <description>One or more DHCP Pools are experiencing failover problems. This could potentially cause other problems in yourr network.</description>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>c43b2838a9564c258f059ffa6eb9ec73</uuid>
+                    <name>Certificates Manager: latest &quot;validFrom&quot;</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.value[cert_date,validFrom.max]</key>
+                    <delay>10m</delay>
+                    <units>unixtime</units>
+                    <description>This item will return will return the latest date &quot;validFrom&quot; from all the certificates (including CA). This is used to find new/renewed certificates.</description>
+                    <preprocessing>
+                        <step>
+                            <type>DISCARD_UNCHANGED_HEARTBEAT</type>
+                            <parameters>
+                                <parameter>1d</parameter>
+                            </parameters>
+                        </step>
+                    </preprocessing>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Certificate Manager</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>a6152b29822f495796678a86ecf74f98</uuid>
+                            <expression>(now()-last(/Template pfSense Active/pfsense.value[cert_date,validFrom.max]))&lt;1d</expression>
+                            <name>One or more certificates have been renewed in the past 24h</name>
+                            <opdata>Latest &quot;Valid From&quot;: {ITEM.LASTVALUE1}</opdata>
+                            <priority>INFO</priority>
+                            <manual_close>YES</manual_close>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>71d24ce6a7174526a31ee9b42003d4bd</uuid>
+                    <name>Certificates Manager: earliest &quot;validTo&quot;</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.value[cert_date,validTo.min]</key>
+                    <delay>10m</delay>
+                    <units>unixtime</units>
+                    <description>This item will return will return the earliest date &quot;validTo&quot; from all the certificates (including CA). This is used to find expiring certificates.</description>
+                    <preprocessing>
+                        <step>
+                            <type>DISCARD_UNCHANGED_HEARTBEAT</type>
+                            <parameters>
+                                <parameter>1d</parameter>
+                            </parameters>
+                        </step>
+                    </preprocessing>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Certificate Manager</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>61dde93da49142ca88a8d9489e32df5c</uuid>
+                            <expression>last(/Template pfSense Active/pfsense.value[cert_date,validTo.min])&lt;now()</expression>
+                            <name>One or more certificates are expired</name>
+                            <opdata>Earliest &quot;Valid To&quot;: {ITEM.LASTVALUE1}</opdata>
+                            <priority>HIGH</priority>
+                        </trigger>
+                        <trigger>
+                            <uuid>6f04e85d7fc64a759ade5ad9f9d53f65</uuid>
+                            <expression>(last(/Template pfSense Active/pfsense.value[cert_date,validTo.min])-now())&lt;{$PFSENSE_CERT_EXPIRATION.AVERAGE}</expression>
+                            <name>One or more certificates are expiring less than {$PFSENSE_CERT_EXPIRATION.AVERAGE}</name>
+                            <opdata>Earliest &quot;Valid To&quot;: {ITEM.LASTVALUE1}</opdata>
+                            <priority>AVERAGE</priority>
+                            <dependencies>
+                                <dependency>
+                                    <name>One or more certificates are expired</name>
+                                    <expression>last(/Template pfSense Active/pfsense.value[cert_date,validTo.min])&lt;now()</expression>
+                                </dependency>
+                            </dependencies>
+                        </trigger>
+                        <trigger>
+                            <uuid>38b74739f89749909a9ff7f8fd42b519</uuid>
+                            <expression>(last(/Template pfSense Active/pfsense.value[cert_date,validTo.min])-now())&lt;{$PFSENSE_CERT_EXPIRATION.WARN}</expression>
+                            <name>One or more certificates are expiring less than {$PFSENSE_CERT_EXPIRATION.WARN}</name>
+                            <opdata>Earliest &quot;Valid To&quot;: {ITEM.LASTVALUE1}</opdata>
+                            <priority>WARNING</priority>
+                            <dependencies>
+                                <dependency>
+                                    <name>One or more certificates are expired</name>
+                                    <expression>last(/Template pfSense Active/pfsense.value[cert_date,validTo.min])&lt;now()</expression>
+                                </dependency>
+                                <dependency>
+                                    <name>One or more certificates are expiring less than {$PFSENSE_CERT_EXPIRATION.AVERAGE}</name>
+                                    <expression>(last(/Template pfSense Active/pfsense.value[cert_date,validTo.min])-now())&lt;{$PFSENSE_CERT_EXPIRATION.AVERAGE}</expression>
+                                </dependency>
+                            </dependencies>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>0e2337e935cd4ef596d48ba52ebe6f46</uuid>
+                    <name>DHCP Failover Pool Problems</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.value[dhcp,failover]</key>
+                    <delay>10m</delay>
+                    <description>This value indicates, in a HA scenario, if DHCP failover pool partners are out of sync.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>HA</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>12399afd70014ce7bf96f6283c946bc2</uuid>
+                    <name>Gateway Status Raw</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.value[gw_status]</key>
+                    <delay>10m</delay>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <description>Gateway Status Raw</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Gateways</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>44df9b029fe64ef1b70aa6142d38d105</uuid>
+                            <expression>(last(/Template pfSense Active/pfsense.value[gw_status],#1)&lt;&gt;last(/Template pfSense Active/pfsense.value[gw_status],#2))&gt;0</expression>
+                            <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                            <recovery_expression>(last(/Template pfSense Active/pfsense.value[gw_status],#1)&lt;&gt;last(/Template pfSense Active/pfsense.value[gw_status],#2))=0</recovery_expression>
+                            <name>pfSense Gateway Status Changed on {HOST.NAME}</name>
+                            <priority>AVERAGE</priority>
+                            <description>Gateway Status Change, for use with an acion Script (e.g. update DNS record)</description>
+                            <manual_close>YES</manual_close>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>3d5667be927e473eacd1cafc29a73cfc</uuid>
+                    <name>SMART Status</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.value[smart_status]</key>
+                    <delay>30m</delay>
+                    <description>pfSense SMART Status</description>
+                    <valuemap>
+                        <name>pfSense SMART Status</name>
+                    </valuemap>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>System</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>c76fc1f71fdf44c9a549e3714ee8ae7b</uuid>
+                            <expression>last(/Template pfSense Active/pfsense.value[smart_status])=1</expression>
+                            <name>SMART Errors on {HOST.NAME}</name>
+                            <priority>HIGH</priority>
+                            <description>pfSense has detected SMART Problems on one or more drives.</description>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>5820137593604e63869cd3bf009a3dbf</uuid>
+                    <name>pfSense Installed Version</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.value[system,installed_version]</key>
+                    <delay>1d</delay>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>System</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>36a0a399f1ad4ca3aea3e52c1dfe0de1</uuid>
+                    <name>New Version of pfSense Available</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.value[system,new_version_available]</key>
+                    <delay>1d</delay>
+                    <valuemap>
+                        <name>Generic YesNo</name>
+                    </valuemap>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>System</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>ac1745d4a3d24445a9c53e294a3aba0a</uuid>
+                            <expression>last(/Template pfSense Active/pfsense.value[system,new_version_available])=1</expression>
+                            <name>New Version of pfSense Available on {HOST.NAME}</name>
+                            <priority>INFO</priority>
+                            <description>A new version of pfSense is available for update.</description>
+                            <manual_close>YES</manual_close>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>47855133ddb6495280fdcf8b52fc38f9</uuid>
+                    <name>Packages Needing Update</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.value[system,packages_update]</key>
+                    <delay>1d</delay>
+                    <description>Number of packages needing update.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>System</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>aa627e1f209741c0a7490665fd15c4bc</uuid>
+                            <expression>last(/Template pfSense Active/pfsense.value[system,packages_update])&gt;0</expression>
+                            <name>Packages Update Available on {HOST.NAME}</name>
+                            <opdata>{ITEM.LASTVALUE}</opdata>
+                            <priority>INFO</priority>
+                            <description>New version of packages are available</description>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>d801429fd147415396b61f5f6c47af27</uuid>
+                    <name>pfSense Available Version</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.value[system,version]</key>
+                    <delay>1d</delay>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>System</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>65a633fa48e64fa7b3e56e2e1294a396</uuid>
+                    <name>Number of running processes</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>proc.num[,,run]</key>
+                    <delay>10m</delay>
+                    <description>Number of processes in running state.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Processes</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>8e87c7171e4e43d5b4ee51922fb634ff</uuid>
+                            <expression>avg(/Template pfSense Active/proc.num[,,run],5m)&gt;30</expression>
+                            <name>Too many processes running on {HOST.NAME}</name>
+                            <priority>WARNING</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>5ac8f03d4fa74700ad96d139acfe6baf</uuid>
+                    <name>Number of processes</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>proc.num[]</key>
+                    <delay>10m</delay>
+                    <description>Total number of processes in any state.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Processes</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>8237ec2c23b6449298ff7d9327f93b2d</uuid>
+                            <expression>avg(/Template pfSense Active/proc.num[],5m)&gt;300</expression>
+                            <name>Too many processes on {HOST.NAME}</name>
+                            <priority>WARNING</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>b8c1f4bac1834aee87f0bda3a546f98a</uuid>
+                    <name>Host boot time</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.boottime</key>
+                    <delay>10m</delay>
+                    <units>unixtime</units>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>OS</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>d4823bbc8d9849e0bb36e5418168fe06</uuid>
+                    <name>Interrupts per second</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.cpu.intr</key>
+                    <delay>10m</delay>
+                    <units>ips</units>
+                    <preprocessing>
+                        <step>
+                            <type>CHANGE_PER_SECOND</type>
+                            <parameters>
+                                <parameter/>
+                            </parameters>
+                        </step>
+                    </preprocessing>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>CPU</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>ff36a3e91fd44e7981874e8e363069df</uuid>
+                    <name>Processor load (1min/core)</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.cpu.load[percpu,avg1]</key>
+                    <delay>10m</delay>
+                    <value_type>FLOAT</value_type>
+                    <description>The processor load is calculated as system CPU load divided by number of CPU cores.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>CPU</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>b9bdc3be79eb40f0be33931a5c6f5378</uuid>
+                            <expression>avg(/Template pfSense Active/system.cpu.load[percpu,avg1],5m)&gt;5</expression>
+                            <name>Processor load is too high on {HOST.NAME}</name>
+                            <priority>WARNING</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>6ac7d111b73d4150aaead8f470ff41ba</uuid>
+                    <name>Processor load (5min/core)</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.cpu.load[percpu,avg5]</key>
+                    <delay>10m</delay>
+                    <value_type>FLOAT</value_type>
+                    <description>The processor load is calculated as system CPU load divided by number of CPU cores.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>CPU</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>d244b629aaf74fa1af608332df014df4</uuid>
+                    <name>Processor load (15min/core)</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.cpu.load[percpu,avg15]</key>
+                    <delay>10m</delay>
+                    <value_type>FLOAT</value_type>
+                    <description>The processor load is calculated as system CPU load divided by number of CPU cores.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>CPU</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>d450e0b3d0b441f191d7f7e5faab4f38</uuid>
+                    <name>Context switches per second</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.cpu.switches</key>
+                    <delay>10m</delay>
+                    <units>sps</units>
+                    <preprocessing>
+                        <step>
+                            <type>CHANGE_PER_SECOND</type>
+                            <parameters>
+                                <parameter/>
+                            </parameters>
+                        </step>
+                    </preprocessing>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>CPU</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>8bc963352bef46e5a92763b9c866d0a7</uuid>
+                    <name>CPU $2 time</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.cpu.util[,idle]</key>
+                    <delay>10m</delay>
+                    <value_type>FLOAT</value_type>
+                    <units>%</units>
+                    <description>The time the CPU has spent doing nothing.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>CPU</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>f2f60c68e4604f55b0a437542507fd86</uuid>
+                    <name>CPU $2 time</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.cpu.util[,interrupt]</key>
+                    <delay>10m</delay>
+                    <value_type>FLOAT</value_type>
+                    <units>%</units>
+                    <description>The amount of time the CPU has been servicing hardware interrupts.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>CPU</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>b81c545ae21b417b85b62ce115e1dd8e</uuid>
+                    <name>CPU $2 time</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.cpu.util[,nice]</key>
+                    <delay>10m</delay>
+                    <value_type>FLOAT</value_type>
+                    <units>%</units>
+                    <description>The time the CPU has spent running users' processes that have been niced.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>CPU</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>e0ddfcc0ffe34a60a575cdae1f1d8a98</uuid>
+                    <name>CPU $2 time</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.cpu.util[,system]</key>
+                    <delay>10m</delay>
+                    <value_type>FLOAT</value_type>
+                    <units>%</units>
+                    <description>The time the CPU has spent running the kernel and its processes.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>CPU</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>b99746ff4914473f9c2d3e39dfb9d6fc</uuid>
+                    <name>CPU $2 time</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.cpu.util[,user]</key>
+                    <delay>10m</delay>
+                    <value_type>FLOAT</value_type>
+                    <units>%</units>
+                    <description>The time the CPU has spent running users' processes that are not niced.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>CPU</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>b2797942c3404742a068e2c5f90a796f</uuid>
+                    <name>Host name</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.hostname</key>
+                    <delay>1h</delay>
+                    <trends>0</trends>
+                    <value_type>CHAR</value_type>
+                    <description>System host name.</description>
+                    <inventory_link>NAME</inventory_link>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>OS</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>ef84b7baa0564b50a8ad6537ec8c81b9</uuid>
+                            <expression>(last(/Template pfSense Active/system.hostname,#1)&lt;&gt;last(/Template pfSense Active/system.hostname,#2))&gt;0</expression>
+                            <name>Hostname was changed on {HOST.NAME}</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>def69b566341465f971635459ecf3a93</uuid>
+                    <name>Host local time</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.localtime</key>
+                    <delay>10m</delay>
+                    <units>unixtime</units>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>OS</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>9370c5052d564338b74bbd3d38847d35</uuid>
+                    <name>Free swap space</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.swap.size[,free]</key>
+                    <delay>10m</delay>
+                    <units>B</units>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Memory</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>709cac33a5384f85b62fd3ff1b35d173</uuid>
+                    <name>Free swap space in %</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.swap.size[,pfree]</key>
+                    <delay>10m</delay>
+                    <value_type>FLOAT</value_type>
+                    <units>%</units>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Memory</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>7ad93b922ed8416495109bf6eb14bdf4</uuid>
+                            <expression>last(/Template pfSense Active/system.swap.size[,pfree])&lt;50</expression>
+                            <name>Lack of free swap space on {HOST.NAME}</name>
+                            <priority>WARNING</priority>
+                            <description>It probably means that the systems requires more physical memory.</description>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>b902dc19ad4e48e0bfc8bf90773f7f64</uuid>
+                    <name>Total swap space</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.swap.size[,total]</key>
+                    <delay>1h</delay>
+                    <units>B</units>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Memory</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>b4516badf0ab41cba862482a3c9ebf37</uuid>
+                    <name>Used swap space</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.swap.size[,used]</key>
+                    <delay>10m</delay>
+                    <units>B</units>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Memory</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>4266ddd2f44546e4b4856c7edfe5c37e</uuid>
+                    <name>System information</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.uname</key>
+                    <delay>1h</delay>
+                    <trends>0</trends>
+                    <value_type>CHAR</value_type>
+                    <description>The information as normally returned by 'uname -a'.</description>
+                    <inventory_link>OS</inventory_link>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>OS</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>299fcdc70a8c4b3aa1b187f05eebf983</uuid>
+                            <expression>(last(/Template pfSense Active/system.uname,#1)&lt;&gt;last(/Template pfSense Active/system.uname,#2))&gt;0</expression>
+                            <name>Host information was changed on {HOST.NAME}</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>adde548d1da74e72ba7d25d30515cf31</uuid>
+                    <name>System uptime</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.uptime</key>
+                    <delay>10m</delay>
+                    <units>uptime</units>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>OS</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>982e988c84bb43d197b157b9d85f5d46</uuid>
+                            <expression>change(/Template pfSense Active/system.uptime)&lt;0</expression>
+                            <name>{HOST.NAME} has just been restarted</name>
+                            <priority>INFO</priority>
+                        </trigger>
+                        <trigger>
+                            <uuid>1f7ee46dc4384fb3b1dec9792c2ed2d0</uuid>
+                            <expression>nodata(/Template pfSense Active/system.uptime,1d)=1</expression>
+                            <name>{HOST.NAME} Zabbix agent is unreachable by 1 day</name>
+                            <priority>HIGH</priority>
+                            <description>There is some connection problem between Zabbix agent and Zabbix server.</description>
+                        </trigger>
+                        <trigger>
+                            <uuid>ec97841d8c4e4642876a99cb8aea74f7</uuid>
+                            <expression>nodata(/Template pfSense Active/system.uptime,30m)=1</expression>
+                            <name>{HOST.NAME} Zabbix agent is unreachable by 30 minutes</name>
+                            <priority>WARNING</priority>
+                            <description>There is some connection problem between Zabbix agent and Zabbix server.</description>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>c0543949d4004092a1c0446b5615b5e8</uuid>
+                    <name>Number of logged in users</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>system.users.num</key>
+                    <delay>10m</delay>
+                    <description>Number of users who are currently logged in.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>OS</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>bbaf67d0ca854704b1d13ba08f4108fe</uuid>
+                    <name>Checksum of $1</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>vfs.file.cksum[/etc/passwd]</key>
+                    <delay>1h</delay>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>OS</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>703ce0e80d0b45009d714413a3c336b4</uuid>
+                            <expression>(last(/Template pfSense Active/vfs.file.cksum[/etc/passwd],#1)&lt;&gt;last(/Template pfSense Active/vfs.file.cksum[/etc/passwd],#2))&gt;0</expression>
+                            <name>/etc/passwd has been changed on {HOST.NAME}</name>
+                            <priority>WARNING</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>a6d63cd84a314056bd638e25c5f0308b</uuid>
+                    <name>Active memory</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>vm.memory.size[active]</key>
+                    <delay>10m</delay>
+                    <units>B</units>
+                    <description>Memory used by processes</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Memory</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>092eb762e52a45db9aa27a167b517dfa</uuid>
+                    <name>Available memory</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>vm.memory.size[available]</key>
+                    <delay>10m</delay>
+                    <units>B</units>
+                    <description>Available memory is defined as free+cached+buffers memory.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Memory</value>
+                        </tag>
+                    </tags>
+                    <triggers>
+                        <trigger>
+                            <uuid>8146acaf455344c39add5460c7d48186</uuid>
+                            <expression>last(/Template pfSense Active/vm.memory.size[available])&lt;20M</expression>
+                            <name>Lack of available memory on server {HOST.NAME}</name>
+                            <priority>AVERAGE</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <uuid>75329478c6da472894fc3afd9bc4ff78</uuid>
+                    <name>Buffered memory</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>vm.memory.size[buffers]</key>
+                    <delay>10m</delay>
+                    <status>DISABLED</status>
+                    <units>B</units>
+                    <description>Cache d'entrées des IO disque.
+
+(Item désactivé car buggé)</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Memory</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>112b875916c74b418e33964e4134d88a</uuid>
+                    <name>Cached memory</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>vm.memory.size[cached]</key>
+                    <delay>10m</delay>
+                    <units>B</units>
+                    <description>amount of memory used to cache data</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Memory</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>d403943f72ef41c6ac893d55f56991cc</uuid>
+                    <name>Free memory</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>vm.memory.size[free]</key>
+                    <delay>10m</delay>
+                    <units>B</units>
+                    <description>amount of memory completely free and ready to be used directly.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Memory</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>6299a6e55f394ed8bb888443c6cf9c12</uuid>
+                    <name>Inactive memory</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>vm.memory.size[inactive]</key>
+                    <delay>10m</delay>
+                    <units>B</units>
+                    <description>amount of memory that contains data that is no longer used (can be directly freed if needed)</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Memory</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>2600308db79349a2884b3e44099fe486</uuid>
+                    <name>Available memory (percent)</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>vm.memory.size[pavailable]</key>
+                    <delay>10m</delay>
+                    <value_type>FLOAT</value_type>
+                    <units>%</units>
+                    <description>Available memory is defined as free+cached+buffers memory.</description>
+                    <preprocessing>
+                        <step>
+                            <type>MULTIPLIER</type>
+                            <parameters>
+                                <parameter>1</parameter>
+                            </parameters>
+                        </step>
+                    </preprocessing>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Memory</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>1f4b1470af3f408aa08001620ff0ec5d</uuid>
+                    <name>Shared memory</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>vm.memory.size[shared]</key>
+                    <delay>10m</delay>
+                    <status>DISABLED</status>
+                    <units>B</units>
+                    <description>quantité de mémoire partagée entre plusieurs processus
+
+(Item désactivé car non utilisé)</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Memory</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>69bec6035e964582832732239f8c07a4</uuid>
+                    <name>Total memory</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>vm.memory.size[total]</key>
+                    <delay>1h</delay>
+                    <units>B</units>
+                    <description>quantité de mémoire totale</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Memory</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>3214f881ee01414cb1d824671ae0074b</uuid>
+                    <name>Used memory</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>vm.memory.size[used]</key>
+                    <delay>10m</delay>
+                    <status>DISABLED</status>
+                    <units>B</units>
+                    <description>Item désactivé car non utilisé</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Memory</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>79a6075f223d442199accef75762f8b4</uuid>
+                    <name>Wired memory</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>vm.memory.size[wired]</key>
+                    <delay>10m</delay>
+                    <units>B</units>
+                    <description>amount of memory used by the kernel, can neither be unloaded in swap, nor compressed.</description>
+                    <tags>
+                        <tag>
+                            <tag>Application</tag>
+                            <value>Memory</value>
+                        </tag>
+                    </tags>
+                </item>
+            </items>
+            <discovery_rules>
+                <discovery_rule>
+                    <uuid>4db6be9bdf7b4876a13f9b936cdd3321</uuid>
+                    <name>Gateways Discovery</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.discovery[gw]</key>
+                    <delay>5m</delay>
+                    <description>Gateway Discovery</description>
+                    <item_prototypes>
+                        <item_prototype>
+                            <uuid>db89e0dd738148e19c52f08bbc7723f7</uuid>
+                            <name>Gateway $2 RTT</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>pfsense.value[gw_value,{#GATEWAY},delay]</key>
+                            <delay>60s</delay>
+                            <value_type>FLOAT</value_type>
+                            <units>ms</units>
+                            <preprocessing>
+                                <step>
+                                    <type>RTRIM</type>
+                                    <parameters>
+                                        <parameter>ms</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>Gateways</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>ba759ceb73f949108fddbc4029cfc9f2</uuid>
+                            <name>Gateway $2 Packet  Loss</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>pfsense.value[gw_value,{#GATEWAY},loss]</key>
+                            <delay>60s</delay>
+                            <units>%</units>
+                            <preprocessing>
+                                <step>
+                                    <type>RTRIM</type>
+                                    <parameters>
+                                        <parameter>%</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>Gateways</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+
+                        <item_prototype>
+                            <uuid>b5b0e5018a6f4c8e939d708e4796c277</uuid>
+                            <name>Gateway {#GATEWAY} MonitorIP</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>pfsense.value[gw_value,{#GATEWAY},monitorip]</key>
+                            <delay>60s</delay>
+                            <trends>0</trends>
+                            <value_type>CHAR</value_type>
+                            <preprocessing>
+                                <step>
+                                    <type>RTRIM</type>
+                                    <parameters>
+                                        <parameter>ms</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>Gateways</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                  
+                        <item_prototype>
+                            <uuid>7522dfc8c6724534a8fd4efc4bbf87f8</uuid>
+                            <name>Gateway $2 Status</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>pfsense.value[gw_value,{#GATEWAY},status]</key>
+                            <delay>60s</delay>
+                            <description>Status of Gateway</description>
+                            <valuemap>
+                                <name>pfSense Gateway Status</name>
+                            </valuemap>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>Gateways</value>
+                                </tag>
+                            </tags>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>1f6139c8b7fc4e878a329a9db1e0097d</uuid>
+                                    <expression>last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status])=5</expression>
+                                    <name>Gateway {#GATEWAY} is down</name>
+                                    <priority>DISASTER</priority>
+                                    <description>Gateway is Down</description>
+                                </trigger_prototype>
+                                <trigger_prototype>
+                                    <uuid>3a10654398fb4323ab7804e09db754aa</uuid>
+                                    <expression>last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status])=4</expression>
+                                    <name>Gateway {#GATEWAY} is forced down</name>
+                                    <priority>INFO</priority>
+                                    <description>Gateway is forced down by system administrator</description>
+                                </trigger_prototype>
+                                <trigger_prototype>
+                                    <uuid>fca46e537f144ea49eca155570f8da4d</uuid>
+                                    <expression>last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status])=2</expression>
+                                    <name>High Delay on gateway {#GATEWAY}</name>
+                                    <priority>WARNING</priority>
+                                    <description>Gateway is lagging</description>
+                                </trigger_prototype>
+                                <trigger_prototype>
+                                    <uuid>0c308b53dee341e388f0c3a5ac1580ba</uuid>
+                                    <expression>last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status])=3</expression>
+                                    <name>High packet Loss on {#GATEWAY}</name>
+                                    <priority>HIGH</priority>
+                                    <description>High Packet Loss on Gateway</description>
+                                </trigger_prototype>
+                                <trigger_prototype>
+                                    <uuid>392ba753c67b4c4ea79cb2b0e1767a09</uuid>
+                                    <expression>last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status])=1</expression>
+                                    <name>Packet Loss on {#GATEWAY}</name>
+                                    <priority>WARNING</priority>
+                                    <description>Packet loss on Gateway</description>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>c6c8376ac666461a91df53eacdaf5f8b</uuid>
+                            <name>Gateway $2 RTT Std Deviation</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>pfsense.value[gw_value,{#GATEWAY},stddev]</key>
+                            <delay>60s</delay>
+                            <value_type>FLOAT</value_type>
+                            <units>ms</units>
+                            <preprocessing>
+                                <step>
+                                    <type>RTRIM</type>
+                                    <parameters>
+                                        <parameter>ms</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>Gateways</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                    </item_prototypes>
+                    <graph_prototypes>
+                        <graph_prototype>
+                            <uuid>25f10d4fe86549e893bf8ebb8de8f39c</uuid>
+                            <name>Gateway {#GATEWAY} Availability</name>
+                            <graph_items>
+                                <graph_item>
+                                    <color>199C0D</color>
+                                    <calc_fnc>ALL</calc_fnc>
+                                    <item>
+                                        <host>Template pfSense Active</host>
+                                        <key>pfsense.value[gw_value,{#GATEWAY},delay]</key>
+                                    </item>
+                                </graph_item>
+                                <graph_item>
+                                    <sortorder>1</sortorder>
+                                    <color>FF5722</color>
+                                    <calc_fnc>ALL</calc_fnc>
+                                    <item>
+                                        <host>Template pfSense Active</host>
+                                        <key>pfsense.value[gw_value,{#GATEWAY},loss]</key>
+                                    </item>
+                                </graph_item>
+                            </graph_items>
+                        </graph_prototype>
+                        <graph_prototype>
+                            <uuid>05c556c8a8c24703a06be8d2b6a7a082</uuid>
+                            <name>Gateway {#GATEWAY} Status</name>
+                            <yaxismax>5</yaxismax>
+                            <ymin_type_1>FIXED</ymin_type_1>
+                            <ymax_type_1>FIXED</ymax_type_1>
+                            <graph_items>
+                                <graph_item>
+                                    <color>199C0D</color>
+                                    <calc_fnc>ALL</calc_fnc>
+                                    <item>
+                                        <host>Template pfSense Active</host>
+                                        <key>pfsense.value[gw_value,{#GATEWAY},status]</key>
+                                    </item>
+                                </graph_item>
+                            </graph_items>
+                        </graph_prototype>
+                    </graph_prototypes>
+                </discovery_rule>
+                <discovery_rule>
+                    <uuid>baa842b8e5bf40b3bfbeb4d3b6507d08</uuid>
+                    <name>Network interface discovery</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.discovery[interfaces]</key>
+                    <delay>1h</delay>
+                    <filter>
+                        <conditions>
+                            <condition>
+                                <macro>{#IFNAME}</macro>
+                                <value>@Network interfaces for discovery</value>
+                                <formulaid>A</formulaid>
+                            </condition>
+                        </conditions>
+                    </filter>
+                    <lifetime>7d</lifetime>
+                    <description>Discovery of network interfaces as defined in global regular expression &quot;Network interfaces for discovery&quot;.</description>
+                    <item_prototypes>
+                        <item_prototype>
+                            <uuid>71301cd82a0749b4abed0feb58061a37</uuid>
+                            <name>Incoming Errors on {#IFDESCR}</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>net.if.in[{#IFNAME},errors]</key>
+                            <history>7d</history>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>Network Interfaces</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>cbadb376e2924e438a81f068fd8553ef</uuid>
+                            <name>Incoming network traffic on {#IFDESCR}</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>net.if.in[{#IFNAME}]</key>
+                            <history>7d</history>
+                            <units>bps</units>
+                            <preprocessing>
+                                <step>
+                                    <type>CHANGE_PER_SECOND</type>
+                                    <parameters>
+                                        <parameter/>
+                                    </parameters>
+                                </step>
+                                <step>
+                                    <type>MULTIPLIER</type>
+                                    <parameters>
+                                        <parameter>8</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>Network Interfaces</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>a885e855bdda4eeda877a91ac30bbcb1</uuid>
+                            <name>Outgoing errors on {#IFDESCR}</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>net.if.out[{#IFNAME},errors]</key>
+                            <history>7d</history>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>Network Interfaces</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>74c6ae5e88bb4be49a23f82c50a957ac</uuid>
+                            <name>Outgoing network traffic on {#IFDESCR}</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>net.if.out[{#IFNAME}]</key>
+                            <history>7d</history>
+                            <units>bps</units>
+                            <preprocessing>
+                                <step>
+                                    <type>CHANGE_PER_SECOND</type>
+                                    <parameters>
+                                        <parameter/>
+                                    </parameters>
+                                </step>
+                                <step>
+                                    <type>MULTIPLIER</type>
+                                    <parameters>
+                                        <parameter>8</parameter>
+                                    </parameters>
+                                </step>
+                            </preprocessing>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>Network Interfaces</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                    </item_prototypes>
+                    <graph_prototypes>
+                        <graph_prototype>
+                            <uuid>adcaff7d4cdf4dbb8df4a5c1069a9fff</uuid>
+                            <name>Network traffic on {#IFDESCR}</name>
+                            <show_triggers>NO</show_triggers>
+                            <show_legend>NO</show_legend>
+                            <ymin_type_1>FIXED</ymin_type_1>
+                            <graph_items>
+                                <graph_item>
+                                    <drawtype>GRADIENT_LINE</drawtype>
+                                    <color>29E900</color>
+                                    <item>
+                                        <host>Template pfSense Active</host>
+                                        <key>net.if.in[{#IFNAME}]</key>
+                                    </item>
+                                </graph_item>
+                                <graph_item>
+                                    <sortorder>1</sortorder>
+                                    <drawtype>GRADIENT_LINE</drawtype>
+                                    <color>FD0000</color>
+                                    <item>
+                                        <host>Template pfSense Active</host>
+                                        <key>net.if.out[{#IFNAME}]</key>
+                                    </item>
+                                </graph_item>
+                            </graph_items>
+                        </graph_prototype>
+                    </graph_prototypes>
+                </discovery_rule>
+                <discovery_rule>
+                    <uuid>111d1d4374084b4d94bd930dfa16e216</uuid>
+                    <name>OpenVPN Client Discovery</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.discovery[openvpn_client]</key>
+                    <delay>5m</delay>
+                    <description>OpenVPN Client Discovery</description>
+                    <item_prototypes>
+                        <item_prototype>
+                            <uuid>15e5067016824fc7963ae22df7a675ea</uuid>
+                            <name>OpenVPN Client  {#NAME} Tunnel Status</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>pfsense.value[openvpn_clientvalue,{#CLIENT},status]</key>
+                            <valuemap>
+                                <name>pfSense OpenVPN Interface Status</name>
+                            </valuemap>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>OpenVPN Client</value>
+                                </tag>
+                            </tags>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>50f5ee98fee046068003354f379ada75</uuid>
+                                    <expression>last(/Template pfSense Active/pfsense.value[openvpn_clientvalue,{#CLIENT},status])=0</expression>
+                                    <name>OpenVPN Client {#NAME} Tunnel is Down</name>
+                                    <priority>HIGH</priority>
+                                    <description>OpenVPN Tunnel Down</description>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                    </item_prototypes>
+                </discovery_rule>
+                <discovery_rule>
+                    <uuid>9afe1fad6b6a4ec88ae81969a57c6107</uuid>
+                    <name>OpenVPN Server Discovery</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.discovery[openvpn_server]</key>
+                    <delay>5m</delay>
+                    <item_prototypes>
+                        <item_prototype>
+                            <uuid>0a6ee94cefe8457eb56ef832d8734790</uuid>
+                            <name>OpenVPN Server {#NAME} Clients Connected</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>pfsense.value[openvpn_servervalue,{#SERVER},conns]</key>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>OpenVPN Server</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>d3cadc40e5d74acf8e0549e9d28771ea</uuid>
+                            <name>OpenVPN Server {#NAME} Mode</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>pfsense.value[openvpn_servervalue,{#SERVER},mode]</key>
+                            <delay>5m</delay>
+                            <valuemap>
+                                <name>pfSense OpenVPN Mode</name>
+                            </valuemap>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>OpenVPN Server</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>c2187f680f92432d9dc3b1609b1f7fa7</uuid>
+                            <name>OpenVPN Server {#NAME} Port</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>pfsense.value[openvpn_servervalue,{#SERVER},port]</key>
+                            <delay>5m</delay>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>OpenVPN Server</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>be75ce1d23fa48cf80d8ba7ab181ad12</uuid>
+                            <name>OpenVPN Server {#NAME} Tunnel Status</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>pfsense.value[openvpn_servervalue,{#SERVER},status]</key>
+                            <valuemap>
+                                <name>pfSense OpenVPN Interface Status</name>
+                            </valuemap>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>OpenVPN Server</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                    </item_prototypes>
+                    <trigger_prototypes>
+                        <trigger_prototype>
+                            <uuid>e879868caa0c474da7d5dfc003ceadc9</uuid>
+                            <expression>last(/Template pfSense Active/pfsense.expected_carp_status)&lt;&gt;2 and last(/Template pfSense Active/pfsense.value[openvpn_servervalue,{#SERVER},status])=0</expression>
+                            <name>OpenVPN Server {#NAME} is Down</name>
+                            <priority>HIGH</priority>
+                            <description>OpenVPN Tunnel is Down</description>
+                        </trigger_prototype>
+                    </trigger_prototypes>
+                </discovery_rule>
+                <discovery_rule>
+                    <uuid>f99425c237ad457b8c17ac6e87fb26fc</uuid>
+                    <name>Services Discovery</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.discovery[services]</key>
+                    <delay>5m</delay>
+                    <item_prototypes>
+                        <item_prototype>
+                            <uuid>072e3f3d659c4414adb7054e268383e9</uuid>
+                            <name>Service {#DESCRIPTION} enabled on CARP Slave</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>pfsense.value[service_value,{#SERVICE},run_on_carp_slave]</key>
+                            <delay>10m</delay>
+                            <valuemap>
+                                <name>Generic YesNo</name>
+                            </valuemap>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>Services</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>a082002e7599481b8b58ad2d5e1d4e43</uuid>
+                            <name>Service {#DESCRIPTION} Status</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>pfsense.value[service_value,{#SERVICE},status]</key>
+                            <valuemap>
+                                <name>Service state</name>
+                            </valuemap>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>Services</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                    </item_prototypes>
+                    <trigger_prototypes>
+                        <trigger_prototype>
+                            <uuid>ac0868137ab348dcaae5a7f50bd86f5e</uuid>
+                            <expression>last(/Template pfSense Active/pfsense.value[service_value,{#SERVICE},status])=0
+and {$PFSENSE_SRVC_MONITORING:&quot;{#SERVICE}&quot;}=1 and (
+
+(last(/Template pfSense Active/pfsense.value[service_value,{#SERVICE},run_on_carp_slave])=1 and
+last(/Template pfSense Active/pfsense.value[carp_status])=2)
+
+or
+
+( last(/Template pfSense Active/pfsense.value[carp_status])=1)
+
+or
+
+(last(/Template pfSense Active/pfsense.value[carp_status])=0)
+)</expression>
+                            <name>Service {#DESCRIPTION} is not running</name>
+                            <priority>HIGH</priority>
+                            <description>Service is not running
+
+If you want to skip the trigger for this service, add the macro $PFSENSE_SRVC_MONITORING:&quot;{#SERVICE}&quot;=0
+
+0 = Service monitoring disabled
+1 = Service monitoring check if running
+2 = Service monitoring check if not running</description>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <uuid>e43071de7388443e9bed4e30b9a49c4d</uuid>
+                            <expression>last(/Template pfSense Active/pfsense.value[service_value,{#SERVICE},status])=1 and {$PFSENSE_SRVC_MONITORING:&quot;{#SERVICE}&quot;}=2 and ((last(/Template pfSense Active/pfsense.value[service_value,{#SERVICE},run_on_carp_slave])=1 and last(/Template pfSense Active/pfsense.value[carp_status])=2) or last(/Template pfSense Active/pfsense.value[carp_status])=1 or last(/Template pfSense Active/pfsense.value[carp_status])=0)</expression>
+                            <name>Service {#DESCRIPTION} is running</name>
+                            <priority>HIGH</priority>
+                            <description>Service is running
+
+If you want to skip the trigger for this service, remove the macro $PFSENSE_SRVC_MONITORING:&quot;{#SERVICE}&quot;=2
+Alternatively you can also set the macro to 1 or 0.
+
+0 = Service monitoring disabled
+1 = Service monitoring check if running
+2 = Service monitoring check if not running</description>
+                        </trigger_prototype>
+                    </trigger_prototypes>
+                </discovery_rule>
+                <discovery_rule>
+                    <uuid>a941879bad06412eba60e9a979664453</uuid>
+                    <name>Temperature sensors Discovery</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>pfsense.discovery[temperature_sensors]</key>
+                    <delay>1d</delay>
+                    <item_prototypes>
+                        <item_prototype>
+                            <uuid>3465a9c666e24da6a66f860d7653b4d2</uuid>
+                            <name>Temperature of sensor {#SENSORID}</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>pfsense.value[temperature,{#SENSORID}]</key>
+                            <delay>10m</delay>
+                            <value_type>FLOAT</value_type>
+                            <units>C</units>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>e1fe601011654b298092ecca32f70137</uuid>
+                                    <expression>last(/Template pfSense Active/pfsense.value[temperature,{#SENSORID}])&gt;70</expression>
+                                    <name>Temperature of device is over 70C</name>
+                                    <priority>AVERAGE</priority>
+                                    <description>There is some problem with cooling.</description>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                    </item_prototypes>
+                </discovery_rule>
+                <discovery_rule>
+                    <uuid>06f42546705d4a7b89178d8f024f4a03</uuid>
+                    <name>Mounted filesystem discovery</name>
+                    <type>ZABBIX_ACTIVE</type>
+                    <key>vfs.fs.discovery</key>
+                    <delay>1h</delay>
+                    <filter>
+                        <conditions>
+                            <condition>
+                                <macro>{#FSTYPE}</macro>
+                                <value>@File systems for discovery</value>
+                                <formulaid>A</formulaid>
+                            </condition>
+                        </conditions>
+                    </filter>
+                    <lifetime>7d</lifetime>
+                    <description>Discovery of file systems of different types as defined in global regular expression &quot;File systems for discovery&quot;.</description>
+                    <item_prototypes>
+                        <item_prototype>
+                            <uuid>96acea60f88b42cb8fbc9c7d47881d26</uuid>
+                            <name>Free inodes on $1 (percentage)</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>vfs.fs.inode[{#FSNAME},pfree]</key>
+                            <history>7d</history>
+                            <value_type>FLOAT</value_type>
+                            <units>%</units>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>Filesystems</value>
+                                </tag>
+                            </tags>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>1ea81cdc56fd483d82f187d209cff516</uuid>
+                                    <expression>last(/Template pfSense Active/vfs.fs.inode[{#FSNAME},pfree])&lt;20</expression>
+                                    <name>Free inodes is less than 20% on volume {#FSNAME}</name>
+                                    <priority>WARNING</priority>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>ff42876417ee4d6b9a69341f69c3cb5c</uuid>
+                            <name>Free disk space on $1</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>vfs.fs.size[{#FSNAME},free]</key>
+                            <history>7d</history>
+                            <units>B</units>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>Filesystems</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>04c24f47f7ea4ed68416b0b465fc7de5</uuid>
+                            <name>Free disk space on $1 (percentage)</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>vfs.fs.size[{#FSNAME},pfree]</key>
+                            <history>7d</history>
+                            <value_type>FLOAT</value_type>
+                            <units>%</units>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>Filesystems</value>
+                                </tag>
+                            </tags>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <uuid>41119ea7e7924b95ba5e148277745f3c</uuid>
+                                    <expression>last(/Template pfSense Active/vfs.fs.size[{#FSNAME},pfree])&lt;20</expression>
+                                    <name>Free disk space is less than 20% on volume {#FSNAME}</name>
+                                    <priority>WARNING</priority>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>6466404aa20a40bb95ccadc0662f7eeb</uuid>
+                            <name>Total disk space on $1</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>vfs.fs.size[{#FSNAME},total]</key>
+                            <delay>1h</delay>
+                            <history>7d</history>
+                            <units>B</units>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>Filesystems</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>bcd151df26344c1580b68a88b80a919e</uuid>
+                            <name>Used disk space on $1</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>vfs.fs.size[{#FSNAME},used]</key>
+                            <history>7d</history>
+                            <units>B</units>
+                            <tags>
+                                <tag>
+                                    <tag>Application</tag>
+                                    <value>Filesystems</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                    </item_prototypes>
+                    <graph_prototypes>
+                        <graph_prototype>
+                            <uuid>e0fcad45031446ee81562fa2c5a19740</uuid>
+                            <name>Disk space usage {#FSNAME}</name>
+                            <width>600</width>
+                            <height>340</height>
+                            <yaxismax>0</yaxismax>
+                            <show_work_period>NO</show_work_period>
+                            <show_triggers>NO</show_triggers>
+                            <type>PIE</type>
+                            <show_3d>YES</show_3d>
+                            <graph_items>
+                                <graph_item>
+                                    <color>CC0000</color>
+                                    <type>GRAPH_SUM</type>
+                                    <item>
+                                        <host>Template pfSense Active</host>
+                                        <key>vfs.fs.size[{#FSNAME},total]</key>
+                                    </item>
+                                </graph_item>
+                                <graph_item>
+                                    <sortorder>1</sortorder>
+                                    <color>5B5B5B</color>
+                                    <item>
+                                        <host>Template pfSense Active</host>
+                                        <key>vfs.fs.size[{#FSNAME},free]</key>
+                                    </item>
+                                </graph_item>
+                                <graph_item>
+                                    <sortorder>2</sortorder>
+                                    <color>AEEE00</color>
+                                    <item>
+                                        <host>Template pfSense Active</host>
+                                        <key>vfs.fs.size[{#FSNAME},used]</key>
+                                    </item>
+                                </graph_item>
+                            </graph_items>
+                        </graph_prototype>
+                    </graph_prototypes>
+                </discovery_rule>
+            </discovery_rules>
+            <macros>
+                <macro>
+                    <macro>{$CARP_SERVICES_STOPPED}</macro>
+                    <value>^(haproxy|openvpn)$</value>
+                </macro>
+                <macro>
+                    <macro>{$CARP_SLAVE_SERVICES:&quot;haproxy&quot;}</macro>
+                    <value>0</value>
+                </macro>
+                <macro>
+                    <macro>{$CARP_SLAVE_SERVICES:&quot;openvpn&quot;}</macro>
+                    <value>0</value>
+                </macro>
+                <macro>
+                    <macro>{$EXPECTED_CARP_STATUS}</macro>
+                    <value>0</value>
+                </macro>
+                <macro>
+                    <macro>{$PFSENSE_CERT_EXPIRATION.AVERAGE}</macro>
+                    <value>48h</value>
+                </macro>
+                <macro>
+                    <macro>{$PFSENSE_CERT_EXPIRATION.WARN}</macro>
+                    <value>10d</value>
+                </macro>
+                <macro>
+                    <macro>{$PFSENSE_SRVC_MONITORING}</macro>
+                    <value>1</value>
+                    <description>Enable monitoring of Services</description>
+                </macro>
+                <macro>
+                    <macro>{$PFSENSE_SRVC_MONITORING:&quot;iperf&quot;}</macro>
+                    <value>0</value>
+                    <description>Disable monitoring of Service iperf Network Performance Testing Daemon/Client</description>
+                </macro>
+                <macro>
+                    <macro>{$PFSENSE_SRVC_MONITORING:&quot;pcscd&quot;}</macro>
+                    <value>0</value>
+                    <description>Enable monitoring of PC/SC Smart Card Daemon (check if NOT running) https://redmine.pfsense.org/issues/12095</description>
+                </macro>
+            </macros>
+            <dashboards>
+                <dashboard>
+                    <uuid>a88c02addc374f83ade5063845b7a828</uuid>
+                    <name>System performance</name>
+                    <pages>
+                        <page>
+                            <widgets>
+                                <widget>
+                                    <type>GRAPH_CLASSIC</type>
+                                    <width>12</width>
+                                    <height>7</height>
+                                    <fields>
+                                        <field>
+                                            <type>INTEGER</type>
+                                            <name>source_type</name>
+                                            <value>0</value>
+                                        </field>
+                                        <field>
+                                            <type>GRAPH</type>
+                                            <name>graphid</name>
+                                            <value>
+                                                <name>Active Connections (pie)</name>
+                                                <host>Template pfSense Active</host>
+                                            </value>
+                                        </field>
+                                    </fields>
+                                </widget>
+                                <widget>
+                                    <type>GRAPH_CLASSIC</type>
+                                    <x>12</x>
+                                    <width>12</width>
+                                    <height>7</height>
+                                    <fields>
+                                        <field>
+                                            <type>INTEGER</type>
+                                            <name>source_type</name>
+                                            <value>0</value>
+                                        </field>
+                                        <field>
+                                            <type>GRAPH</type>
+                                            <name>graphid</name>
+                                            <value>
+                                                <name>Network Memory Buffer (pie)</name>
+                                                <host>Template pfSense Active</host>
+                                            </value>
+                                        </field>
+                                    </fields>
+                                </widget>
+                                <widget>
+                                    <type>GRAPH_CLASSIC</type>
+                                    <y>7</y>
+                                    <width>12</width>
+                                    <height>7</height>
+                                    <fields>
+                                        <field>
+                                            <type>INTEGER</type>
+                                            <name>source_type</name>
+                                            <value>0</value>
+                                        </field>
+                                        <field>
+                                            <type>GRAPH</type>
+                                            <name>graphid</name>
+                                            <value>
+                                                <name>CPU load</name>
+                                                <host>Template pfSense Active</host>
+                                            </value>
+                                        </field>
+                                    </fields>
+                                </widget>
+                                <widget>
+                                    <type>GRAPH_CLASSIC</type>
+                                    <x>12</x>
+                                    <y>7</y>
+                                    <width>12</width>
+                                    <height>7</height>
+                                    <fields>
+                                        <field>
+                                            <type>INTEGER</type>
+                                            <name>source_type</name>
+                                            <value>0</value>
+                                        </field>
+                                        <field>
+                                            <type>GRAPH</type>
+                                            <name>graphid</name>
+                                            <value>
+                                                <name>Memory Usage simple (pie)</name>
+                                                <host>Template pfSense Active</host>
+                                            </value>
+                                        </field>
+                                    </fields>
+                                </widget>
+                            </widgets>
+                        </page>
+                    </pages>
+                </dashboard>
+            </dashboards>
+            <valuemaps>
+                <valuemap>
+                    <uuid>c1dcf6e418b94f07bf15ca15844d3eb3</uuid>
+                    <name>Generic YesNo</name>
+                    <mappings>
+                        <mapping>
+                            <value>0</value>
+                            <newvalue>No</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>1</value>
+                            <newvalue>Yes</newvalue>
+                        </mapping>
+                    </mappings>
+                </valuemap>
+                <valuemap>
+                    <uuid>cc85f86bc6974aaca6cf474d69d404fa</uuid>
+                    <name>pfSense CARP Status</name>
+                    <mappings>
+                        <mapping>
+                            <value>0</value>
+                            <newvalue>Disabled</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>1</value>
+                            <newvalue>Master</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>2</value>
+                            <newvalue>Backup</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>3</value>
+                            <newvalue>Inconsistent</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>4</value>
+                            <newvalue>Problem</newvalue>
+                        </mapping>
+                    </mappings>
+                </valuemap>
+                <valuemap>
+                    <uuid>e5ef9028f13144a994c65b1b0fd866ee</uuid>
+                    <name>pfSense Gateway Status</name>
+                    <mappings>
+                        <mapping>
+                            <value>0</value>
+                            <newvalue>Up</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>1</value>
+                            <newvalue>Packet Loss</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>2</value>
+                            <newvalue>High Delay</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>3</value>
+                            <newvalue>High Packet Loss</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>4</value>
+                            <newvalue>Forced Down</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>5</value>
+                            <newvalue>Down</newvalue>
+                        </mapping>
+                    </mappings>
+                </valuemap>
+                <valuemap>
+                    <uuid>0230121a072c459582593d9d70686f6e</uuid>
+                    <name>pfSense OpenVPN Interface Status</name>
+                    <mappings>
+                        <mapping>
+                            <value>0</value>
+                            <newvalue>Down</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>1</value>
+                            <newvalue>Up</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>2</value>
+                            <newvalue>None</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>3</value>
+                            <newvalue>Reconnecting</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>4</value>
+                            <newvalue>Waiting</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>5</value>
+                            <newvalue>Up/Listening</newvalue>
+                        </mapping>
+                    </mappings>
+                </valuemap>
+                <valuemap>
+                    <uuid>e394e9e9642e4999aaeb4bae2f67e612</uuid>
+                    <name>pfSense OpenVPN Mode</name>
+                    <mappings>
+                        <mapping>
+                            <value>1</value>
+                            <newvalue>Peer to Peer (SSL/TLS)</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>2</value>
+                            <newvalue>P2P Shared Key</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>3</value>
+                            <newvalue>Remote Access (SSL/TLS)</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>4</value>
+                            <newvalue>Remote Access (User Auth)</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>5</value>
+                            <newvalue>Remote Access 8SSL/TLS + User Auth)</newvalue>
+                        </mapping>
+                    </mappings>
+                </valuemap>
+                <valuemap>
+                    <uuid>ab8a58f07efb42168b30d77fcebf06bd</uuid>
+                    <name>pfSense SMART Status</name>
+                    <mappings>
+                        <mapping>
+                            <value>0</value>
+                            <newvalue>OK</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>1</value>
+                            <newvalue>Error</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>2</value>
+                            <newvalue>Unknown</newvalue>
+                        </mapping>
+                    </mappings>
+                </valuemap>
+                <valuemap>
+                    <uuid>8e060d1f44054f2499c649a299dd6f42</uuid>
+                    <name>Service state</name>
+                    <mappings>
+                        <mapping>
+                            <value>0</value>
+                            <newvalue>Down</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>1</value>
+                            <newvalue>Up</newvalue>
+                        </mapping>
+                    </mappings>
+                </valuemap>
+            </valuemaps>
+        </template>
+    </templates>
+    <triggers>
+        <trigger>
+            <uuid>ba26b37d090c439faf2ed71f0e8b2be3</uuid>
+            <expression>last(/Template pfSense Active/pfsense.expected_carp_status)&lt;&gt;0 and last(/Template pfSense Active/pfsense.value[carp_status])&lt;&gt;{$EXPECTED_CARP_STATUS}</expression>
+            <name>CARP Status not Expected on {HOST.NAME}</name>
+            <priority>HIGH</priority>
+            <description>pfSense CARP is not in the state Expected. This means that a failover could be in process.</description>
+        </trigger>
+        <trigger>
+            <uuid>23b24281dd5d47c58be38ecb2333b8de</uuid>
+            <expression>(last(/Template pfSense Active/pfsense.value[system,version])&lt;&gt;last(/Template pfSense Active/pfsense.value[system,installed_version]))=1</expression>
+            <name>New Version Available on {HOST.NAME}</name>
+            <priority>INFO</priority>
+            <description>Notify of new version of pfsense available</description>
+        </trigger>
+    </triggers>
+    <graphs>
+        <graph>
+            <uuid>499d867c58974a8e914b0423bdbf3d01</uuid>
+            <name>Active Connections</name>
+            <show_triggers>NO</show_triggers>
+            <ymin_type_1>FIXED</ymin_type_1>
+            <ymax_type_1>ITEM</ymax_type_1>
+            <ymax_item_1>
+                <host>Template pfSense Active</host>
+                <key>pfsense.states.max</key>
+            </ymax_item_1>
+            <graph_items>
+                <graph_item>
+                    <drawtype>GRADIENT_LINE</drawtype>
+                    <color>FF2C27</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>pfsense.states.current</key>
+                    </item>
+                </graph_item>
+            </graph_items>
+        </graph>
+        <graph>
+            <uuid>6cd23b5084844a2481beb5c34f1e603a</uuid>
+            <name>Active Connections (pie)</name>
+            <width>600</width>
+            <height>340</height>
+            <yaxismax>0</yaxismax>
+            <show_work_period>NO</show_work_period>
+            <show_triggers>NO</show_triggers>
+            <type>PIE</type>
+            <graph_items>
+                <graph_item>
+                    <color>5B5B5B</color>
+                    <type>GRAPH_SUM</type>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>pfsense.states.max</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>1</sortorder>
+                    <drawtype>GRADIENT_LINE</drawtype>
+                    <color>FF2C27</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>pfsense.states.current</key>
+                    </item>
+                </graph_item>
+            </graph_items>
+        </graph>
+        <graph>
+            <uuid>15db8adacf6e4b35ba5a6b36b2ddef1f</uuid>
+            <name>CPU jumps</name>
+            <graph_items>
+                <graph_item>
+                    <drawtype>GRADIENT_LINE</drawtype>
+                    <color>009900</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>system.cpu.switches</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>1</sortorder>
+                    <drawtype>GRADIENT_LINE</drawtype>
+                    <color>000099</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>system.cpu.intr</key>
+                    </item>
+                </graph_item>
+            </graph_items>
+        </graph>
+        <graph>
+            <uuid>c515614caf3445e6b28858907b1d1713</uuid>
+            <name>CPU load</name>
+            <type>STACKED</type>
+            <ymin_type_1>FIXED</ymin_type_1>
+            <graph_items>
+                <graph_item>
+                    <color>FFA619</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>system.cpu.load[percpu,avg1]</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>1</sortorder>
+                    <color>E86E30</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>system.cpu.load[percpu,avg5]</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>2</sortorder>
+                    <color>FF2F26</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>system.cpu.load[percpu,avg15]</key>
+                    </item>
+                </graph_item>
+            </graph_items>
+        </graph>
+        <graph>
+            <uuid>aa694daef9004553952ec7cf3fa153b1</uuid>
+            <name>CPU utilization (Line)</name>
+            <show_triggers>NO</show_triggers>
+            <ymin_type_1>FIXED</ymin_type_1>
+            <ymax_type_1>FIXED</ymax_type_1>
+            <graph_items>
+                <graph_item>
+                    <drawtype>GRADIENT_LINE</drawtype>
+                    <color>FFE819</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>system.cpu.util[,interrupt]</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>1</sortorder>
+                    <drawtype>GRADIENT_LINE</drawtype>
+                    <color>E85D17</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>system.cpu.util[,nice]</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>2</sortorder>
+                    <drawtype>GRADIENT_LINE</drawtype>
+                    <color>DF26FF</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>system.cpu.util[,system]</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>3</sortorder>
+                    <drawtype>GRADIENT_LINE</drawtype>
+                    <color>1775E8</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>system.cpu.util[,user]</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>4</sortorder>
+                    <color>03D933</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>system.cpu.util[,idle]</key>
+                    </item>
+                </graph_item>
+            </graph_items>
+        </graph>
+        <graph>
+            <uuid>61378e27951a4882b1f88d041922ad16</uuid>
+            <name>Memory Available details (pie)</name>
+            <width>600</width>
+            <height>340</height>
+            <yaxismax>0</yaxismax>
+            <show_work_period>NO</show_work_period>
+            <show_triggers>NO</show_triggers>
+            <type>PIE</type>
+            <graph_items>
+                <graph_item>
+                    <color>003300</color>
+                    <type>GRAPH_SUM</type>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>vm.memory.size[available]</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>1</sortorder>
+                    <color>005500</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>vm.memory.size[free]</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>2</sortorder>
+                    <color>007700</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>vm.memory.size[cached]</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>3</sortorder>
+                    <color>009900</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>vm.memory.size[inactive]</key>
+                    </item>
+                </graph_item>
+            </graph_items>
+        </graph>
+        <graph>
+            <uuid>625d8fc33a5d410ab2229dd2e8e99762</uuid>
+            <name>Memory usage</name>
+            <show_triggers>NO</show_triggers>
+            <type>STACKED</type>
+            <ymin_type_1>FIXED</ymin_type_1>
+            <ymax_type_1>ITEM</ymax_type_1>
+            <ymax_item_1>
+                <host>Template pfSense Active</host>
+                <key>vm.memory.size[total]</key>
+            </ymax_item_1>
+            <graph_items>
+                <graph_item>
+                    <color>00EE00</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>vm.memory.size[wired]</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>1</sortorder>
+                    <color>00CC00</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>vm.memory.size[active]</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>2</sortorder>
+                    <color>007700</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>vm.memory.size[inactive]</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>3</sortorder>
+                    <color>005500</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>vm.memory.size[cached]</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>4</sortorder>
+                    <color>003300</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>vm.memory.size[free]</key>
+                    </item>
+                </graph_item>
+            </graph_items>
+        </graph>
+        <graph>
+            <uuid>eeb86545b71145949b241b7d89b3a79b</uuid>
+            <name>Memory Usage simple (pie)</name>
+            <width>600</width>
+            <height>340</height>
+            <yaxismax>0</yaxismax>
+            <show_work_period>NO</show_work_period>
+            <show_triggers>NO</show_triggers>
+            <type>PIE</type>
+            <graph_items>
+                <graph_item>
+                    <color>003300</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>vm.memory.size[available]</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>1</sortorder>
+                    <color>00DD00</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>kt.mem.used</key>
+                    </item>
+                </graph_item>
+            </graph_items>
+        </graph>
+        <graph>
+            <uuid>ab954e447cb14b10bb902e7c43a6d31a</uuid>
+            <name>Network Memory Buffer</name>
+            <show_triggers>NO</show_triggers>
+            <type>STACKED</type>
+            <ymin_type_1>FIXED</ymin_type_1>
+            <ymax_type_1>ITEM</ymax_type_1>
+            <ymax_item_1>
+                <host>Template pfSense Active</host>
+                <key>pfsense.mbuf.max</key>
+            </ymax_item_1>
+            <graph_items>
+                <graph_item>
+                    <color>B26E16</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>pfsense.mbuf.current</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>1</sortorder>
+                    <color>FFCE8E</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>pfsense.mbuf.cache</key>
+                    </item>
+                </graph_item>
+            </graph_items>
+        </graph>
+        <graph>
+            <uuid>eab355b1ef2f450a938441c913b7631a</uuid>
+            <name>Network Memory Buffer (pie)</name>
+            <width>600</width>
+            <height>340</height>
+            <yaxismax>0</yaxismax>
+            <show_work_period>NO</show_work_period>
+            <show_triggers>NO</show_triggers>
+            <type>PIE</type>
+            <graph_items>
+                <graph_item>
+                    <color>5B5B5B</color>
+                    <type>GRAPH_SUM</type>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>pfsense.mbuf.max</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>1</sortorder>
+                    <color>FFCE8E</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>pfsense.mbuf.cache</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>2</sortorder>
+                    <color>B26E16</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>pfsense.mbuf.current</key>
+                    </item>
+                </graph_item>
+            </graph_items>
+        </graph>
+        <graph>
+            <uuid>9522838e31244b6e88a9a020bdd07602</uuid>
+            <name>Swap usage</name>
+            <width>600</width>
+            <height>340</height>
+            <yaxismax>0</yaxismax>
+            <show_work_period>NO</show_work_period>
+            <show_triggers>NO</show_triggers>
+            <type>PIE</type>
+            <show_3d>YES</show_3d>
+            <graph_items>
+                <graph_item>
+                    <color>5B5B5B</color>
+                    <type>GRAPH_SUM</type>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>system.swap.size[,total]</key>
+                    </item>
+                </graph_item>
+                <graph_item>
+                    <sortorder>1</sortorder>
+                    <color>FFFF33</color>
+                    <item>
+                        <host>Template pfSense Active</host>
+                        <key>system.swap.size[,used]</key>
+                    </item>
+                </graph_item>
+            </graph_items>
+        </graph>
+    </graphs>
+</zabbix_export>
