@@ -670,11 +670,12 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
             } else {
                 $cname = "con{$ph1ent['ikeid']}00000";
             }
-            $conmap[$cname] = $ph1ent['ikeid'];
         } else{
             $cname = ipsec_conid($ph1ent);
         }
-	}
+        
+        $conmap[$cname] = $ph1ent['ikeid'];
+    }
 
 	$status = ipsec_list_sa();
 	$ipsecconnected = array();
