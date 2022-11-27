@@ -1201,14 +1201,12 @@ class Command
     {
         PfEnv::init_config_arr(array("ipsec", "phase1"));
 
-        $result = "";
-
         $process_result = function ($vk, $r) {
             if ($vk != "state") {
                 return $r;
             }
 
-            $v = self::get_value_mapping("ipsec.state", strtolower($r));
+            $v = self::get_value_mapping("ipsec.state", strtolower($r[$vk]));
 
             $carp_status = self::get_carp_status();
 
@@ -1221,7 +1219,7 @@ class Command
 
         $ipsec_list_sa = PfEnv::ipsec_list_sa();
         if (!is_array($ipsec_list_sa)) {
-            return $process_result($value_key, $result);
+            return 0;
         }
 
         $config = PfEnv::cfg();
@@ -1239,9 +1237,10 @@ class Command
 
             return array_merge(
                 $p,
-                [$cname => $ph1ent[$ike_id]],
+                [$cname => $ike_id],
             );
         }, []);
+
 
         // Phase-Status match borrowed from status_ipsec.php	
         $maybe_ike_sa = Util::array_first(function ($ike_sa) use ($ike_id, $connection_map) {
@@ -1260,15 +1259,25 @@ class Command
         }, $ipsec_list_sa);
 
         if (!$maybe_ike_sa) {
-            return $process_result($value_key, $result);
+            return 0;
+        }
+
+        if ($req_id == -1) {
+            return $process_result($value_key, $maybe_ike_sa);
         }
 
         $just_matching_child_sas =
             array_filter($maybe_ike_sa["child-sas"], fn($child_sa) => ($child_sa["reqid"] == $req_id));
 
+        if (count($just_matching_child_sas) === 0) {
+            return 0;
+        }
+
+        $result = NULL;
+
         // Asking for Phase2 Status Value
         foreach ($just_matching_child_sas as $child_sa) {
-            $result = $child_sa[$value_key];
+            $result = $child_sa;
 
             // If state is rekeyed go on
             if (strtolower($child_sa["state"]) == "rekeyed") {
