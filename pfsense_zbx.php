@@ -213,6 +213,11 @@ class PfEnv
         return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
     }
 
+    public static function ipsec_conid()
+    {
+        return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
+    }
+
     public static function get_pkg_info()
     {
         return self::call_pfsense_method_with_same_name_and_arguments(func_get_args());
@@ -1232,7 +1237,7 @@ class Command
 
                 $cname = $id_name ? "con$id_name" : "con{$ike_id}00000";
             } else {
-                $cname = ipsec_conid($ph1ent);
+                $cname = PfEnv::ipsec_conid($ph1ent);
             }
 
             return array_merge(
