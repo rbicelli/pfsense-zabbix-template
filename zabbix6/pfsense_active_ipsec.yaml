@@ -1,0 +1,247 @@
+zabbix_export:
+  version: '6.0'
+  date: '2023-02-26T13:19:29Z'
+  groups:
+    -
+      uuid: 4918b88734c54bd094cff7585b5d71fc
+      name: 'Templates/Network Devices'
+  templates:
+    -
+      uuid: 7b956a3e6aa1464781b38a854872a1c6
+      template: 'Template pfSense Active IPsec'
+      name: 'pfSense Active: IPsec'
+      description: |
+        Extension for pfSense Active Template.
+        Monitor IPsec VPN.
+        
+        Requires pfsense_zbx.php installed to pfSense Box.
+        Version 1.0.2
+        
+        https://github.com/rbicelli/pfsense-zabbix-template
+      groups:
+        -
+          name: 'Templates/Network Devices'
+      discovery_rules:
+        -
+          uuid: e7526169245d49a6aa6afbcacaa02b18
+          name: 'IPsec Phase 1 Discovery'
+          type: ZABBIX_ACTIVE
+          key: 'pfsense.discovery[ipsec_ph1]'
+          delay: 1200s
+          description: 'Discovery of IPsec Phase 1'
+          item_prototypes:
+            -
+              uuid: 04d6b1d0a32949bfa96cf503f60b6c53
+              name: 'IPsec Tunnel {#IKEID} {#NAME} Tunnel Enabled'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[ipsec_ph1,{#IKEID},disabled]'
+              delay: 120s
+              description: 'IPsec Phase 1  Tunnel Mode'
+              valuemap:
+                name: 'pfSense IPsec Enabled'
+              tags:
+                -
+                  tag: Application
+                  value: IPsec
+            -
+              uuid: 810da7b475df4d738c702f373771092e
+              name: 'IPsec Tunnel {#IKEID} {#NAME} IKE Type'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[ipsec_ph1,{#IKEID},iketype]'
+              delay: 600s
+              description: 'IPsec Phase 1 IKE Type'
+              valuemap:
+                name: 'pfSense IPsec IKE Type'
+              tags:
+                -
+                  tag: Application
+                  value: IPsec
+            -
+              uuid: 47b54bc4a08e464b839bcfd5106ec5a9
+              name: 'IPsec Tunnel {#IKEID} {#NAME} Tunnel Mode'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[ipsec_ph1,{#IKEID},mode]'
+              delay: 600s
+              description: 'IPsec Phase 1  Tunnel Mode'
+              valuemap:
+                name: 'pfSense IPsec Tunnel Mode'
+              tags:
+                -
+                  tag: Application
+                  value: IPsec
+            -
+              uuid: a404f5d20988445d8777758b95b02076
+              name: 'IPsec Tunnel {#IKEID} {#NAME} Protocol'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[ipsec_ph1,{#IKEID},protocol]'
+              delay: 600s
+              description: 'IPsec Phase 1 Protocol'
+              valuemap:
+                name: 'pfSense IPsec Protocol'
+              tags:
+                -
+                  tag: Application
+                  value: IPsec
+            -
+              uuid: ce0d2464361e41018fdd1831db1ec4b3
+              name: 'IPsec Tunnel {#IKEID} {#NAME}  Remote Gateway'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[ipsec_ph1,{#IKEID},remote-gateway]'
+              delay: 600s
+              trends: '0'
+              value_type: TEXT
+              description: 'IPsec Phase 1  Remote Gateway'
+              tags:
+                -
+                  tag: Application
+                  value: IPsec
+            -
+              uuid: 34d7e2395d8b43ec9c0267664be27881
+              name: 'IPsec Tunnel {#IKEID} {#NAME}  Phase 1 Status'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[ipsec_ph1,{#IKEID},status]'
+              delay: 60s
+              description: 'IPsec Phase 1  Tunnel Mode'
+              valuemap:
+                name: 'pfSense IPsec Phase 1 Status'
+              tags:
+                -
+                  tag: Application
+                  value: IPsec
+          trigger_prototypes:
+            -
+              uuid: d675635e19aa4cd7a7202e983cbe4ce6
+              expression: 'last(/Template pfSense Active IPsec/pfsense.value[ipsec_ph1,{#IKEID},disabled])=0 and last(/Template pfSense Active IPsec/pfsense.value[ipsec_ph1,{#IKEID},status])<>1 and last(/Template pfSense Active IPsec/pfsense.value[ipsec_ph1,{#IKEID},status])<10'
+              name: 'IPsec Tunnel {#IKEID} ({#NAME}) Not Connected'
+              priority: HIGH
+              description: 'IPsec Phase 1 is not connected.'
+        -
+          uuid: fa934077cae64a049e68e2130e5e1e84
+          name: 'IPsec Phase 2 Discovery'
+          type: ZABBIX_ACTIVE
+          key: 'pfsense.discovery[ipsec_ph2]'
+          delay: 1200s
+          description: 'Discovery of IPsec Phase 2'
+          item_prototypes:
+            -
+              uuid: 1857b124103c4f08b5ed962259fcbe06
+              name: 'IPsec Tunnel  {#IKEID}.{#REQID} {#NAME} Phase 2 Enabled'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[ipsec_ph2,{#UNIQID},disabled]'
+              delay: 120s
+              description: 'IPsec Tunnel Phase 2 Protocol'
+              valuemap:
+                name: 'pfSense IPsec Enabled'
+              tags:
+                -
+                  tag: Application
+                  value: IPsec
+            -
+              uuid: 3ac7d6d1be034a3db8afad18791b43aa
+              name: 'IPsec Tunnel  {#IKEID}.{#REQID} {#NAME} Phase 2 Life Time'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[ipsec_ph2,{#UNIQID},lifetime]'
+              delay: 600s
+              units: s
+              description: 'IPsec Tunnel Phase 2 Life Time'
+              tags:
+                -
+                  tag: Application
+                  value: IPsec
+            -
+              uuid: dfbae3fe2bcd45f3ac38c6ea0df5d250
+              name: 'IPsec Tunnel  {#IKEID}.{#REQID} {#NAME} Phase 2 Mode'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[ipsec_ph2,{#UNIQID},mode]'
+              delay: 600s
+              description: 'IPsec Tunnel Phase 2 Mode'
+              tags:
+                -
+                  tag: Application
+                  value: IPsec
+            -
+              uuid: 794565a046ff447ca8ad3a7597ee52f5
+              name: 'IPsec Tunnel  {#IKEID}.{#REQID} {#NAME} Phase 2 Protocol'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[ipsec_ph2,{#UNIQID},protocol]'
+              delay: 600s
+              description: 'IPsec Tunnel Phase 2 Protocol'
+              valuemap:
+                name: 'pfSense IPsec Phase 2 Protocol'
+              tags:
+                -
+                  tag: Application
+                  value: IPsec
+      valuemaps:
+        -
+          uuid: fb66440f3f454b36ae5c5d7b015529a1
+          name: 'pfSense IPsec Enabled'
+          mappings:
+            -
+              value: '0'
+              newvalue: 'Yes'
+            -
+              value: '1'
+              newvalue: 'No'
+        -
+          uuid: 7077365285f14733a55edd9ade5fdfcb
+          name: 'pfSense IPsec IKE Type'
+          mappings:
+            -
+              value: '0'
+              newvalue: Auto
+            -
+              value: '1'
+              newvalue: 'IKE v1'
+            -
+              value: '2'
+              newvalue: 'IKE v2'
+        -
+          uuid: a7a80f8152804c6f882898ca7378c403
+          name: 'pfSense IPsec Phase 1 Status'
+          mappings:
+            -
+              value: '0'
+              newvalue: Down
+            -
+              value: '1'
+              newvalue: Established
+            -
+              value: '2'
+              newvalue: Connecting
+            -
+              value: '10'
+              newvalue: 'Down on CARP Secondary'
+        -
+          uuid: 55e4705203cf4b5996dcd6e10cd508b9
+          name: 'pfSense IPsec Phase 2 Protocol'
+          mappings:
+            -
+              value: '1'
+              newvalue: ESP
+            -
+              value: '2'
+              newvalue: AH
+        -
+          uuid: b72cdb06faec4f9492913ba820677370
+          name: 'pfSense IPsec Protocol'
+          mappings:
+            -
+              value: '0'
+              newvalue: 'Dual Stack (IPv4 & IPv6)'
+            -
+              value: '1'
+              newvalue: IPv4
+            -
+              value: '2'
+              newvalue: IPv6
+        -
+          uuid: 864f6d2be4c544cf8fe38b9a619363b5
+          name: 'pfSense IPsec Tunnel Mode'
+          mappings:
+            -
+              value: '0'
+              newvalue: Main
+            -
+              value: '1'
+              newvalue: Aggressive
