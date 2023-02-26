@@ -33,14 +33,14 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>IPsec Phase 1 Discovery</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.discovery[ipsec_ph1]</key>
-                    <delay>1200s</delay>
+                    <delay>20m</delay>
                     <description>Discovery of IPsec Phase 1</description>
                     <item_prototypes>
                         <item_prototype>
                             <name>IPsec Tunnel {#IKEID} {#NAME} Tunnel Enabled</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[ipsec_ph1,{#IKEID},disabled]</key>
-                            <delay>120s</delay>
+                            <delay>2m</delay>
                             <description>IPsec Phase 1  Tunnel Mode</description>
                             <applications>
                                 <application>
@@ -55,7 +55,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>IPsec Tunnel {#IKEID} {#NAME} IKE Type</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[ipsec_ph1,{#IKEID},iketype]</key>
-                            <delay>600s</delay>
+                            <delay>10m</delay>
                             <description>IPsec Phase 1 IKE Type</description>
                             <applications>
                                 <application>
@@ -70,7 +70,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>IPsec Tunnel {#IKEID} {#NAME} Tunnel Mode</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[ipsec_ph1,{#IKEID},mode]</key>
-                            <delay>600s</delay>
+                            <delay>10m</delay>
                             <description>IPsec Phase 1  Tunnel Mode</description>
                             <applications>
                                 <application>
@@ -85,7 +85,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>IPsec Tunnel {#IKEID} {#NAME} Protocol</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[ipsec_ph1,{#IKEID},protocol]</key>
-                            <delay>600s</delay>
+                            <delay>10m</delay>
                             <description>IPsec Phase 1 Protocol</description>
                             <applications>
                                 <application>
@@ -100,7 +100,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>IPsec Tunnel {#IKEID} {#NAME}  Remote Gateway</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[ipsec_ph1,{#IKEID},remote-gateway]</key>
-                            <delay>600s</delay>
+                            <delay>10m</delay>
                             <trends>0</trends>
                             <value_type>TEXT</value_type>
                             <description>IPsec Phase 1  Remote Gateway</description>
@@ -114,7 +114,6 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>IPsec Tunnel {#IKEID} {#NAME}  Phase 1 Status</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[ipsec_ph1,{#IKEID},status]</key>
-                            <delay>60s</delay>
                             <description>IPsec Phase 1  Tunnel Mode</description>
                             <applications>
                                 <application>
@@ -139,14 +138,14 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>IPsec Phase 2 Discovery</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.discovery[ipsec_ph2]</key>
-                    <delay>1200s</delay>
+                    <delay>20m</delay>
                     <description>Discovery of IPsec Phase 2</description>
                     <item_prototypes>
                         <item_prototype>
                             <name>IPsec Tunnel  {#IKEID}.{#REQID} {#NAME} Phase 2 Enabled</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[ipsec_ph2,{#UNIQID},disabled]</key>
-                            <delay>120s</delay>
+                            <delay>2m</delay>
                             <description>IPsec Tunnel Phase 2 Protocol</description>
                             <applications>
                                 <application>
@@ -161,7 +160,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>IPsec Tunnel  {#IKEID}.{#REQID} {#NAME} Phase 2 Life Time</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[ipsec_ph2,{#UNIQID},lifetime]</key>
-                            <delay>600s</delay>
+                            <delay>10m</delay>
                             <units>s</units>
                             <description>IPsec Tunnel Phase 2 Life Time</description>
                             <applications>
@@ -174,7 +173,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>IPsec Tunnel  {#IKEID}.{#REQID} {#NAME} Phase 2 Mode</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[ipsec_ph2,{#UNIQID},mode]</key>
-                            <delay>600s</delay>
+                            <delay>10m</delay>
                             <description>IPsec Tunnel Phase 2 Mode</description>
                             <applications>
                                 <application>
@@ -186,7 +185,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>IPsec Tunnel  {#IKEID}.{#REQID} {#NAME} Phase 2 Protocol</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[ipsec_ph2,{#UNIQID},protocol]</key>
-                            <delay>600s</delay>
+                            <delay>10m</delay>
                             <description>IPsec Tunnel Phase 2 Protocol</description>
                             <applications>
                                 <application>

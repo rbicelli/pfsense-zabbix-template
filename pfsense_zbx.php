@@ -564,7 +564,6 @@ function pfz_ipsec_discovery_ph1(){
 	
 }
 
-
 function pfz_ipsec_ph1($ikeid,$valuekey){	
 	// Get Value from IPsec Phase 1 Configuration
 	// If Getting "disabled" value only check item presence in config array
@@ -665,13 +664,18 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 	$a_phase1 = &$config['ipsec']['phase1'];
 	$conmap = array();
 	foreach ($a_phase1 as $ph1ent) {
-		if (get_ipsecifnum($ph1ent['ikeid'], 0)) {
-			$cname = "con" . get_ipsecifnum($ph1ent['ikeid'], 0);
-		} else {
-			$cname = "con{$ph1ent['ikeid']}00000";
-		}
-		$conmap[$cname] = $ph1ent['ikeid'];
-	}
+	    if (function_exists('get_ipsecifnum')) {
+            if (get_ipsecifnum($ph1ent['ikeid'], 0)) {
+                $cname = "con" . get_ipsecifnum($ph1ent['ikeid'], 0);
+            } else {
+                $cname = "con{$ph1ent['ikeid']}00000";
+            }
+        } else{
+            $cname = ipsec_conid($ph1ent);
+        }
+        
+        $conmap[$cname] = $ph1ent['ikeid'];
+    }
 
 	$status = ipsec_list_sa();
 	$ipsecconnected = array();
@@ -736,6 +740,42 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 	return $value;
 }
 
+// Temperature sensors Discovery
+function pfz_temperature_sensors_discovery(){
+
+
+	$json_string = '{"data":[';
+	$sensors = [];
+	exec("sysctl -a | grep temperature | cut -d ':' -f 1", $sensors, $code);
+	if ($code != 0) {
+	    echo "";
+	    return;
+	} else {
+        foreach ($sensors as $sensor) {
+            $json_string .= '{"{#SENSORID}":"' . $sensor . '"';
+            $json_string .= '},';
+        }
+    }
+
+	$json_string = rtrim($json_string,",");
+    $json_string .= "]}";
+
+    echo $json_string;
+
+}
+
+// Temperature sensor get value
+function pfz_get_temperature($sensorid){
+
+	exec("sysctl '$sensorid' | cut -d ':' -f 2", $value, $code);
+	if ($code != 0 or count($value)!=1) {
+	    echo "";
+	    return;
+	} else {
+	    echo trim($value[0]);
+    }
+
+}
 
 
 function pfz_carp_status($echo = true){
@@ -1069,6 +1109,29 @@ function pfz_get_smart_status(){
 	echo $status;
 }
 
+// Certificats validity date
+function pfz_get_cert_date($valuekey){
+    global $config;
+    
+    $value = 0;
+	foreach (array("cert", "ca") as $cert_type) {
+		switch ($valuekey){
+		case "validFrom.max":
+			foreach ($config[$cert_type] as $cert) {
+				$certinfo = openssl_x509_parse(base64_decode($cert[crt]));
+				if ($value == 0 or $value < $certinfo['validFrom_time_t']) $value = $certinfo['validFrom_time_t'];
+            }
+			break;
+		case "validTo.min":
+			foreach ($config[$cert_type] as $cert) {
+				$certinfo = openssl_x509_parse(base64_decode($cert[crt]));
+				if ($value == 0 or $value > $certinfo['validTo_time_t']) $value = $certinfo['validTo_time_t'];
+			}
+			break;
+		}
+	}
+	echo $value;
+}
 
 // File is present
 function pfz_file_exists($filename) {
@@ -1205,6 +1268,9 @@ function pfz_discovery($section){
           case "dhcpfailover":
           	   pfz_dhcpfailover_discovery();
                break;
+          case "temperature_sensors":
+               pfz_temperature_sensors_discovery();
+               break;
      }         
 }
 
@@ -1269,6 +1335,12 @@ switch (strtolower($argv[1])){
      case "smart_status":
           pfz_get_smart_status();
           break;     	  
+     case "cert_date":
+          pfz_get_cert_date($argv[2]);
+          break;
+     case "temperature":
+          pfz_get_temperature($argv[2]);
+          break;
      default:
           pfz_test();
 }

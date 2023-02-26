@@ -48,6 +48,7 @@ curl --create-dirs -o /root/scripts/pfsense_zbx.php https://raw.githubuserconten
 
 Then install package "Zabbix Agent 4" on your pfSense Box
 
+Then install package "Zabbix Agent 5" (or "Zabbix Agent 4") on your pfSense Box
 
 In Advanced Features-> User Parameters
 
@@ -104,7 +105,7 @@ For testing if speedtest is installed properly you can try it:
 
 Remember that you will need to install the package on *every* pfSense upgrade.
 
-Speedtest template creates a cron job and checks for entry everytime Zabbix requests its items. If you  want to uninstall the cron jobs simply run, from **Diagnostics/Command Prompt**:
+Speedtest template creates a cron job and check for entry everytime Zabbix requests its items. If you  want to uninstall the cron jobs simply run, from **Diagnostics/Command Prompt**:
 
 ```bash
 /url/local/bin/php /root/scripts/pfsense_zbx.php cron_cleanup
