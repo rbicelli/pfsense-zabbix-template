@@ -1113,24 +1113,36 @@ function pfz_get_smart_status(){
 function pfz_get_cert_date($valuekey){
     global $config;
     
+    // Contains a list of refs that were revoked and should not be considered
+    $revoked_cert_refs;
+    foreach ($config["crl"] as $crl) {
+        foreach ($crl["cert"] as $revoked_cert) {
+            $revoked_cert_refs[] = $revoked_cert["refid"];
+        }
+    }
+    
     $value = 0;
-	foreach (array("cert", "ca") as $cert_type) {
-		switch ($valuekey){
-		case "validFrom.max":
-			foreach ($config[$cert_type] as $cert) {
-				$certinfo = openssl_x509_parse(base64_decode($cert[crt]));
-				if ($value == 0 or $value < $certinfo['validFrom_time_t']) $value = $certinfo['validFrom_time_t'];
-            }
-			break;
-		case "validTo.min":
-			foreach ($config[$cert_type] as $cert) {
-				$certinfo = openssl_x509_parse(base64_decode($cert[crt]));
-				if ($value == 0 or $value > $certinfo['validTo_time_t']) $value = $certinfo['validTo_time_t'];
-			}
-			break;
-		}
-	}
-	echo $value;
+        foreach (array("cert", "ca") as $cert_type) {
+                switch ($valuekey){
+                case "validFrom.max":
+                        foreach ($config[$cert_type] as $cert) {
+                                if ( ! in_array($cert['refid'], $revoked_cert_refs) ) {
+                                        $certinfo = openssl_x509_parse(base64_decode($cert[crt]));
+                                        if ($value == 0 or $value < $certinfo['validFrom_time_t']) $value = $certinfo['validFrom_time_t'];
+                                }
+            		}
+                        break;
+                case "validTo.min":
+                        foreach ($config[$cert_type] as $cert) {
+                                if ( ! in_array($cert['refid'], $revoked_cert_refs) ) {
+                                        $certinfo = openssl_x509_parse(base64_decode($cert[crt]));
+                                        if ($value == 0 or $value > $certinfo['validTo_time_t']) $value = $certinfo['validTo_time_t'];
+                                }
+                        }
+                        break;
+                }
+        }
+        echo $value;
 }
 
 // File is present
