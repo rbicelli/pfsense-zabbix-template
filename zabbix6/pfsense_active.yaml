@@ -1,6 +1,6 @@
 zabbix_export:
   version: '6.0'
-  date: '2023-02-26T15:40:33Z'
+  date: '2023-02-26T16:18:59Z'
   groups:
     -
       uuid: 4918b88734c54bd094cff7585b5d71fc
@@ -207,6 +207,23 @@ zabbix_export:
               name: 'CARP  Problems on {HOST.NAME}'
               priority: HIGH
               description: 'CARP Problems'
+            -
+              uuid: a0ad30cea628413987919bd9bc8e229f
+              expression: 'avg(/Template pfSense Active/pfsense.value[carp_status],#3)>2'
+              name: 'DHCP Failover Problems on {HOST.NAME}'
+              url: 'https://docs.netgate.com/pfsense/en/latest/troubleshooting/ha-dhcp-failover.html'
+              priority: HIGH
+              description: 'One or more DHCP Pools are experiencing failover problems. This could potentially cause other problems in yourr network.'
+        -
+          uuid: 3c38af8aef59489d93224ab03319e997
+          name: 'DHCP Failover Pool Problems'
+          key: 'pfsense.value[dhcp,failover]'
+          delay: 120s
+          description: 'This value indicates, in a HA scenario, if DHCP failover pool partners are out of sync.'
+          tags:
+            -
+              tag: Application
+              value: HA
         -
           uuid: 12399afd70014ce7bf96f6283c946bc2
           name: 'Gateway Status Raw'
@@ -230,6 +247,23 @@ zabbix_export:
               priority: AVERAGE
               description: 'Gateway Status Change, for use with an acion Script (e.g. update DNS record)'
               manual_close: 'YES'
+        -
+          uuid: 856991c40aa043dfa6075468add93f7d
+          name: 'SMART Status'
+          key: 'pfsense.value[smart_status]'
+          delay: 1800s
+          description: 'pfSense SMART Status'
+          tags:
+            -
+              tag: Application
+              value: System
+          triggers:
+            -
+              uuid: 523e16493b534fb7ad9def66fef6f286
+              expression: 'avg(/Template pfSense Active/pfsense.value[smart_status],#3)=1'
+              name: 'SMART Errors on {HOST.NAME}'
+              priority: HIGH
+              description: 'pfSense has detected SMART Problems on one or more drives.'
         -
           uuid: 5820137593604e63869cd3bf009a3dbf
           name: 'pfSense Installed Version'
