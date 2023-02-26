@@ -200,6 +200,8 @@ function pfz_speedtest_cron_install($enable=true){
 }        	
 
 
+// 2023-02-26:
+// Fixed issue #127
 function pfz_speedtest_exec ($ifname, $ipaddr){
 	
 	$filename = "/tmp/speedtest-$ifname";
@@ -216,7 +218,7 @@ function pfz_speedtest_exec ($ifname, $ipaddr){
 
 		if (file_exists($filerun)==false) {	  			  		
 	  		touch($filerun);
-	  		$st_command = "/usr/local/bin/speedtest --source $ipaddr --json > $filetemp";
+	  		$st_command = "/usr/local/bin/speedtest --secure --source $ipaddr --json > $filetemp";
 			exec ($st_command);
 			rename($filetemp,$filename);
 			@unlink($filerun);
@@ -1152,6 +1154,7 @@ function pfz_file_exists($filename) {
 	else
 		echo "0";
 }
+
 
 // Value mappings
 // Each value map is represented by an associative array

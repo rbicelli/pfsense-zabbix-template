@@ -1,6 +1,6 @@
 zabbix_export:
   version: '6.0'
-  date: '2023-02-26T13:18:42Z'
+  date: '2023-02-26T15:40:33Z'
   groups:
     -
       uuid: 4918b88734c54bd094cff7585b5d71fc
@@ -821,7 +821,7 @@ zabbix_export:
           item_prototypes:
             -
               uuid: db89e0dd738148e19c52f08bbc7723f7
-              name: 'Gateway $2 RTT'
+              name: 'Gateway {#GATEWAY} RTT'
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[gw_value,{#GATEWAY},delay]'
               delay: 60s
@@ -838,7 +838,7 @@ zabbix_export:
                   value: Gateways
             -
               uuid: ba759ceb73f949108fddbc4029cfc9f2
-              name: 'Gateway $2 Packet  Loss'
+              name: 'Gateway {#GATEWAY} Packet  Loss'
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[gw_value,{#GATEWAY},loss]'
               delay: 60s
@@ -854,7 +854,7 @@ zabbix_export:
                   value: Gateways
             -
               uuid: 7522dfc8c6724534a8fd4efc4bbf87f8
-              name: 'Gateway $2 Status'
+              name: 'Gateway {#GATEWAY} Status'
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[gw_value,{#GATEWAY},status]'
               delay: 60s
@@ -898,7 +898,7 @@ zabbix_export:
                   description: 'Packet loss on Gateway'
             -
               uuid: c6c8376ac666461a91df53eacdaf5f8b
-              name: 'Gateway $2 RTT Std Deviation'
+              name: 'Gateway {#GATEWAY} RTT Std Deviation'
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[gw_value,{#GATEWAY},stddev]'
               delay: 60s
@@ -1205,7 +1205,7 @@ zabbix_export:
           item_prototypes:
             -
               uuid: 96acea60f88b42cb8fbc9c7d47881d26
-              name: 'Free inodes on $1 (percentage)'
+              name: 'Free inodes on {#FSNAME} (percentage)'
               type: ZABBIX_ACTIVE
               key: 'vfs.fs.inode[{#FSNAME},pfree]'
               delay: '60'
@@ -1224,7 +1224,7 @@ zabbix_export:
                   priority: WARNING
             -
               uuid: ff42876417ee4d6b9a69341f69c3cb5c
-              name: 'Free disk space on $1'
+              name: 'Free disk space on {#FSNAME}'
               type: ZABBIX_ACTIVE
               key: 'vfs.fs.size[{#FSNAME},free]'
               delay: '60'
@@ -1236,7 +1236,7 @@ zabbix_export:
                   value: Filesystems
             -
               uuid: 04c24f47f7ea4ed68416b0b465fc7de5
-              name: 'Free disk space on $1 (percentage)'
+              name: 'Free disk space on {#FSNAME} (percentage)'
               type: ZABBIX_ACTIVE
               key: 'vfs.fs.size[{#FSNAME},pfree]'
               delay: '60'
@@ -1255,7 +1255,7 @@ zabbix_export:
                   priority: WARNING
             -
               uuid: 6466404aa20a40bb95ccadc0662f7eeb
-              name: 'Total disk space on $1'
+              name: 'Total disk space on {#FSNAME}'
               type: ZABBIX_ACTIVE
               key: 'vfs.fs.size[{#FSNAME},total]'
               delay: '3600'
@@ -1267,7 +1267,7 @@ zabbix_export:
                   value: Filesystems
             -
               uuid: bcd151df26344c1580b68a88b80a919e
-              name: 'Used disk space on $1'
+              name: 'Used disk space on {#FSNAME}'
               type: ZABBIX_ACTIVE
               key: 'vfs.fs.size[{#FSNAME},used]'
               delay: '60'
