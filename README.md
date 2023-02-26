@@ -43,12 +43,11 @@ First copy the file pfsense_zbx.php to your pfsense box (e.g. to /root/scripts).
 From **Diagnostics/Command Prompt** input this one-liner:
 
 ```bash
-curl --create-dirs -o /root/scripts/pfsense_zbx.php https://raw.githubusercontent.com/rbicelli/pfsense-zabbix-template/master/pfsense_zbx.php
+curl --create-dirs -o /root/scripts/pfsense_zbx.php https://raw.githubusercontent.com/rbicelli/pfsense-zabbix-template/master/pfsense_zbx_legacy.php
 ```
 
-Then install package "Zabbix Agent 4" on your pfSense Box
 
-Then install package "Zabbix Agent 5" (or "Zabbix Agent 4") on your pfSense Box
+Then install package "Zabbix Agent 5" (or "Zabbix Agent 6") on your pfSense Box
 
 In Advanced Features-> User Parameters
 
@@ -110,6 +109,7 @@ Speedtest template creates a cron job and check for entry everytime Zabbix reque
 ```bash
 /url/local/bin/php /root/scripts/pfsense_zbx.php cron_cleanup
 ```
+
 
 ## Credits
 

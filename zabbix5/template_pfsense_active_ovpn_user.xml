@@ -33,12 +33,14 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <name>OpenVPN User Auth Connected Clients Discovery</name>
                     <type>ZABBIX_ACTIVE</type>
                     <key>pfsense.discovery[openvpn_server_user]</key>
+                    <delay>60s</delay>
                     <description>Discovery of clients connected to OpenVPN Server in User Auth Mode</description>
                     <item_prototypes>
                         <item_prototype>
                             <name>OpenVPN Server {#SERVERNAME}, Client {#USERID}: Bytes Received</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[openvpn_server_uservalue,{#UNIQUEID},bytes_recv]</key>
+                            <delay>60s</delay>
                             <trends>0</trends>
                             <units>bytes</units>
                             <description>Client Bytes Received</description>
@@ -52,6 +54,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>OpenVPN Server {#SERVERNAME}, Client {#USERID}: Bytes Sent</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[openvpn_server_uservalue,{#UNIQUEID},bytes_sent]</key>
+                            <delay>60s</delay>
                             <trends>0</trends>
                             <units>bytes</units>
                             <description>Client Bytes Sent</description>
@@ -65,6 +68,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>OpenVPN Server {#SERVERNAME}, Client {#USERID}: Connection Time</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[openvpn_server_uservalue,{#UNIQUEID},connect_time_unix]</key>
+                            <delay>60s</delay>
                             <trends>0</trends>
                             <units>unixtime</units>
                             <description>Client Connect Time</description>
@@ -78,6 +82,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>OpenVPN Server {#SERVERNAME}, Client {#USERID}: Remote Host</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[openvpn_server_uservalue,{#UNIQUEID},remote_host]</key>
+                            <delay>60s</delay>
                             <trends>0</trends>
                             <value_type>TEXT</value_type>
                             <description>Remote Host</description>
@@ -91,6 +96,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>OpenVPN Server {#SERVERNAME}, Client {#USERID}: User Name</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[openvpn_server_uservalue,{#UNIQUEID},user_name]</key>
+                            <delay>60s</delay>
                             <trends>0</trends>
                             <value_type>TEXT</value_type>
                             <description>Client User Name</description>
@@ -104,6 +110,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>OpenVPN Server {#SERVERNAME}, Client {#USERID}: Virtual IP Address (IPv6)</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[openvpn_server_uservalue,{#UNIQUEID},virtual_addr6]</key>
+                            <delay>60s</delay>
                             <trends>0</trends>
                             <value_type>TEXT</value_type>
                             <description>IPv6 Address assigned from OpenVPN Server</description>
@@ -117,6 +124,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>OpenVPN Server {#SERVERNAME}, Client {#USERID}: Virtual IP Address</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[openvpn_server_uservalue,{#UNIQUEID},virtual_addr]</key>
+                            <delay>60s</delay>
                             <trends>0</trends>
                             <value_type>TEXT</value_type>
                             <description>IP Address assigned from OpenVPN Server</description>
@@ -130,6 +138,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>OpenVPN Server {#SERVERNAME}, Client {#USERID}: Client ID</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[openvpn_server_uservalue_numeric,{#UNIQUEID},client_id]</key>
+                            <delay>60s</delay>
                             <trends>0</trends>
                             <description>Client ID</description>
                             <applications>
@@ -142,6 +151,7 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             <name>OpenVPN Server {#SERVERNAME}, Client {#USERID}: Peer ID</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[openvpn_server_uservalue_numeric,{#UNIQUEID},peer_id]</key>
+                            <delay>60s</delay>
                             <trends>0</trends>
                             <description>Peer ID</description>
                             <applications>
