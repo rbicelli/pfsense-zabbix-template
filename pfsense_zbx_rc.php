@@ -135,8 +135,6 @@ const CARP_RES = [
 // Abstract undefined symbols and globals from code
 class PfEnv
 {
-    public const CRT = crt;
-
     public static function cfg()
     {
         global $config;
@@ -1063,7 +1061,7 @@ class Command
         $all_certs = Util::array_flatten($certs_and_cas);
 
         return Util::result(array_reduce($all_certs, function ($value, $certificate) use ($field) {
-            $cert_info = openssl_x509_parse(base64_decode($certificate[PfEnv::CRT]));
+            $cert_info = openssl_x509_parse(base64_decode($certificate["crt"]));
 
             if ($value == 0 || $value < $cert_info[$field]) {
                 return $cert_info[$field];
