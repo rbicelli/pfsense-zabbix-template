@@ -859,6 +859,13 @@ function pfz_dhcp_get($valuekey) {
 	$leases_count = count($leases_content);
 	@exec("/usr/sbin/arp -an", $rawdata);
 
+	$leases = [];
+	$pools = [];
+	
+	$i = 0;
+	$l = 0;
+	$p = 0;
+
 	foreach ($leases_content as $lease) {
 		/* split the line by space */
 		$data = explode(" ", $lease);
