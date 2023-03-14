@@ -155,7 +155,7 @@ function pfz_interface_speedtest_value($ifname, $value){
 	$filename = "/tmp/speedtest-$ifname";
 	
 	if (file_exists($filename)) {
-		$speedtest_data = json_decode(file_get_contents($filename), true);
+		$speedtest_data = json_decode(file_get_contents($filename), true) ?? [];
 		
 		if (array_key_exists($value, $speedtest_data)) {
 			if ($subvalue == false) 

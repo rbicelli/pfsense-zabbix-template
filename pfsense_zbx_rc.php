@@ -671,7 +671,7 @@ class SpeedTest
             return Util::result("");
         }
 
-        $speed_test_data = json_decode(file_get_contents($filename), true);
+        $speed_test_data = json_decode(file_get_contents($filename), true) ?? [];
         if (!array_key_exists($value, $speed_test_data)) {
             return Util::result("");
         }
