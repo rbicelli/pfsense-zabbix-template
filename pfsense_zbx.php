@@ -472,31 +472,33 @@ function pfz_service_value($name,$value){
                          $status = get_service_status($service);
                          if ($status=="") $status = 0;
                          echo $status;
-                         break;               
+                         return;
 
                     case "name":
                          echo $namecfr;
-                         break;
+                         return;
 
                     case "enabled":
                          if (is_service_enabled($service['name']))
                               echo 1;
                          else
                               echo 0;
-                         break;
+                         return;
 
                     case "run_on_carp_slave":
                          if (in_array($carpcfr,$stopped_on_carp_slave))
                               echo 0;
                          else
                               echo 1;
-                         break;
+                         return;
                     default:               
                          echo $service[$value];
-                         break;
+                         return;
                }
           }                                              
     }
+
+    echo 0;
 }
 
 
