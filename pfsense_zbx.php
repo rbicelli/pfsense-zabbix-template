@@ -155,7 +155,7 @@ function pfz_interface_speedtest_value($ifname, $value){
 	$filename = "/tmp/speedtest-$ifname";
 	
 	if (file_exists($filename)) {
-		$speedtest_data = json_decode(file_get_contents($filename), true);
+		$speedtest_data = json_decode(file_get_contents($filename), true) ?? [];
 		
 		if (array_key_exists($value, $speedtest_data)) {
 			if ($subvalue == false) 
@@ -858,6 +858,13 @@ function pfz_dhcp_get($valuekey) {
 	@exec("/bin/cat {$leasesfile} 2>/dev/null| {$awk} {$cleanpattern} | {$awk} {$splitpattern}", $leases_content);
 	$leases_count = count($leases_content);
 	@exec("/usr/sbin/arp -an", $rawdata);
+
+	$leases = [];
+	$pools = [];
+	
+	$i = 0;
+	$l = 0;
+	$p = 0;
 
 	foreach ($leases_content as $lease) {
 		/* split the line by space */
