@@ -1183,6 +1183,7 @@ function pfz_valuemap($valuename, $value, $default="0"){
           case "openvpn.client.status":          
                     $valuemap = array(
                          "up" => "1",
+                         "connected (success)" => "1",
                          "down" => "0",
                          "none" => "0",
                          "reconnecting; ping-restart" => "2");          
