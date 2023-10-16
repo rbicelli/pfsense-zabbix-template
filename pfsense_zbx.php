@@ -10,6 +10,8 @@ This program is licensed under Apache 2.0 License
 //Some Useful defines
 
 define('SPEEDTEST_INTERVAL', 8); //Speedtest Interval (in hours)
+define('CRON_TIME_LIMIT', 300); // Time limit in seconds of speedtest and sysinfo 
+define('DEFAULT_TIME_LIMIT', 30); // Time limit in seconds otherwise
 
 require_once('globals.inc');
 require_once('functions.inc');
@@ -177,18 +179,15 @@ function pfz_speedtest_cron(){
 		                       
     $ifcs = pfz_interface_discovery(true, true);    
     
-    foreach ($ifcs as $ifname) {    	  
-          
+    foreach ($ifcs as $ifname) {
           foreach ($ifdescrs as $ifn => $ifd){
 		      $ifinfo = get_interface_info($ifn);
 		      if($ifinfo['hwif']==$ifname) {
 		      	$pf_interface_name = $ifn;
 		      	break;
 		      }
-    	  }
-          			
+    	  }	
 		  pfz_speedtest_exec($ifname, $ifinfo['ipaddr']);
-		    	
     }
 }
 
@@ -1065,24 +1064,60 @@ function pfz_packages_uptodate(){
 	return $ret;
 }
 
+
+function pfz_sysversion_cron_install($enable=true){
+	//Install Cron Job
+	$command = "/usr/local/bin/php " . __FILE__ . " systemcheck_cron";
+	install_cron_job($command, $enable, $minute = "0", "9,21", "*", "*", "*", "root", true);
+}    
+
+// System information takes a long time to get on slower systems. 
+// So it is saved via a cronjob.
+function pfz_sysversion_cron (){	
+	$filename = "/tmp/sysversion.json";	
+	$upToDate = pfz_packages_uptodate();
+	$sysVersion = get_system_pkg_version();
+	$sysVersion["packages_update"] = $upToDate;
+	$sysVersionJson = json_encode($sysVersion);
+	if (file_exists($filename)) {
+		if ((time()-filemtime($filename) > CRON_TIME_LIMIT ) ) {
+			@unlink($filename);
+		}
+	}
+	if (file_exists($filename)==false) {	  
+		touch($filename);
+		file_put_contents($filename, $sysVersionJson);
+	}	
+	return true;
+} 
+
 //System Information
 function pfz_get_system_value($section){
+	$filename = "/tmp/sysversion.json";	
+	if(file_exists($filename)) {
+		$sysVersion = json_decode(file_get_contents($filename), true);
+	} else {
+		if($section == "new_version_available") {
+			echo "0";
+		} else {
+			echo "error: cronjob not installed. Run \"php pfsense_zbx.php sysversion_cron\""; 
+		}
+	}
      switch ($section){
           case "version":
-               echo( get_system_pkg_version()['version']);
+               echo( $sysVersion['version']);
                break;
           case "installed_version":
-               echo( get_system_pkg_version()['installed_version']);
+               echo($sysVersion['installed_version']);
                break;
           case "new_version_available":
-               $pkgver = get_system_pkg_version();
-               if ($pkgver['version']==$pkgver['installed_version'])
+               if ($sysVersion['version']==$sysVersion['installed_version'])
                     echo "0";
                else
                     echo "1";
                break;
           case "packages_update":
-          		echo pfz_packages_uptodate();
+          		echo $sysVersion["packages_update"];
           		break;
      }
 }
@@ -1301,7 +1336,16 @@ function pfz_discovery($section){
 }
 
 //Main Code
-switch (strtolower($argv[1])){     
+$mainArgument = strtolower($argv[1]);
+if(substr($mainArgument, -4, 4) == "cron") {
+	// A longer time limit for cron tasks.
+	set_time_limit(CRON_TIME_LIMIT);
+} else {
+	// Set a timeout to prevent a blocked call from stopping all future calls.
+    set_time_limit(DEFAULT_TIME_LIMIT);
+}
+
+switch ($mainArgument){     
      case "discovery":
           pfz_discovery($argv[2]);
           break;
@@ -1336,6 +1380,10 @@ switch (strtolower($argv[1])){
      case "if_name":
           pfz_get_if_name($argv[2]);
           break;
+     case "sysversion_cron":
+          pfz_sysversion_cron_install();
+          pfz_sysversion_cron();
+          break;
      case "system":
           pfz_get_system_value($argv[2]);
           break;
@@ -1357,6 +1405,7 @@ switch (strtolower($argv[1])){
      	  break;
      case "cron_cleanup":
      	  pfz_speedtest_cron_install(false);
+     	  pfz_sysversion_cron_install(false);
      	  break;
      case "smart_status":
           pfz_get_smart_status();

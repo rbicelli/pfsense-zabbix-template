@@ -46,6 +46,11 @@ From **Diagnostics/Command Prompt** input this one-liner:
 curl --create-dirs -o /root/scripts/pfsense_zbx.php https://raw.githubusercontent.com/rbicelli/pfsense-zabbix-template/master/pfsense_zbx.php
 ```
 
+Then, setup the system version cronjob with: 
+
+```bash 
+/usr/local/bin/php /root/scripts/pfsense_zbx.php sysversion_cron
+```
 
 Then install package "Zabbix Agent 5" (or "Zabbix Agent 6") on your pfSense Box
 
@@ -99,6 +104,12 @@ For testing if speedtest is installed properly you can try it:
 
 ```bash
 /usr/local/bin/speedtest
+```
+
+Then, setup the cronjob with: 
+
+```bash 
+/url/local/bin/php /root/scripts/pfsense_zbx.php speedtest_cron
 ```
 
 Remember that you will need to install the package on *every* pfSense upgrade.
