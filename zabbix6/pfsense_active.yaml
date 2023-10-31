@@ -845,6 +845,33 @@ zabbix_export:
               tag: Application
               value: Memory
       discovery_rules:
+         - 
+           uuid: f389a9bc18e34c97941451f19aaa387c
+           name: 'Certificates Discovery'
+           type: ZABBIX_ACTIVE
+           key: 'pfsense.discovery[certificates]'
+           delay: 3600s
+           description: 'Certificates Discovery'
+           item_prototypes:
+             - uuid: 30710705d622493a81320f7dffc7c63c
+               name: '{#CERT_TYPE} "{#CERT_NAME}": valid from'
+               key: 'pfsense.value[cert_ref_date, validFrom, {#CERT_INDEX}]'
+               delay: 3600s
+               units: unixtime
+             - uuid: 2cb4d931571e4089b944dd813c7f35e4
+               name: '{#CERT_TYPE} "{#CERT_NAME}": valid to'
+               key: 'pfsense.value[cert_ref_date, validTo, {#CERT_INDEX}]'
+               delay: 900s
+               units: unixtime
+               trigger_prototypes:
+                 - uuid: 29a7d692c79c4c53bd9e613e71970b98
+                   expression: 'last(/Template pfSense Active/pfsense.value[cert_ref_date, validTo, {#CERT_INDEX}])-now()<0'
+                   name: 'Certificate  "{#CERT_NAME}" ({#CERT_TYPE}) has expired.'
+                   priority: AVERAGE
+                 - uuid: b77a404a43de48c997750fe87574c54e
+                   expression: 'last(/Template pfSense Active/pfsense.value[cert_ref_date, validTo, {#CERT_INDEX}])-now()<2419200 and last(/Template pfSense Active/pfsense.value[cert_ref_date, validTo, {#CERT_INDEX}])-now()>0'
+                   name: 'Certificate  "{#CERT_NAME}" ({#CERT_TYPE}) will expire soon.'
+                   priority: WARNING
         -
           uuid: 4db6be9bdf7b4876a13f9b936cdd3321
           name: 'Gateways Discovery'

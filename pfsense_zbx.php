@@ -1006,6 +1006,8 @@ function pfz_dhcp_get($valuekey) {
 
 }
 
+
+
 function pfz_dhcpfailover_discovery(){
 	//System functions regarding DHCP Leases will be available in the upcoming release of pfSense, so let's wait
 	require_once("system.inc");
@@ -1155,18 +1157,67 @@ function pfz_get_smart_status(){
 	echo $status;
 }
 
-// Certificats validity date
-function pfz_get_cert_date($valuekey){
-    global $config;
-    
-    // Contains a list of refs that were revoked and should not be considered
+function pfz_get_revoked_cert_refs() {
+    global $config;    
     $revoked_cert_refs = [];
     foreach ($config["crl"] as $crl) {
         foreach ($crl["cert"] as $revoked_cert) {
             $revoked_cert_refs[] = $revoked_cert["refid"];
         }
     }
-    
+	return $revoked_cert_refs;
+}
+
+// Certificate discovery
+function pfz_cert_discovery(){
+    global $config;
+    // Contains a list of refs that were revoked and should not be considered
+    $revoked_cert_refs = pfz_get_revoked_cert_refs();
+	$dataObject = new \stdClass();
+	$dataObject->data = [];
+    foreach (array("cert", "ca") as $cert_type) {
+		foreach ($config[$cert_type] as $i => $cert) {
+			if ( ! in_array($cert['refid'], $revoked_cert_refs) ) {
+				$certObject = new \stdClass();
+				// Trick to keep using only 3 parameters. 
+				$certObject->{'{#CERT_INDEX}'} = $cert_type == "cert" ? $i : $i + 0x10000;
+				$certObject->{'{#CERT_REFID}'} = $cert['refid'];
+				$certObject->{'{#CERT_NAME}'} = $cert['descr'];
+				$certObject->{'{#CERT_TYPE}'} = strtoupper($cert_type);
+				$dataObject->data[]= $certObject;
+			}
+		}
+	}
+	$json_string = json_encode($dataObject);
+	echo $json_string;
+}
+
+// Certificate validity for a specific certificate
+function pfz_get_ref_cert_date($valuekey, $index){
+    global $config;    
+	if($index >= 0x10000) {
+		$index -= 0x10000;
+		$certType = "ca";
+	} else {
+		$certType = "cert";
+	}
+	$certinfo = openssl_x509_parse(base64_decode($config[$certType][$index]["crt"]));
+    switch ($valuekey){
+		case "validFrom":
+			$value = $certinfo['validFrom_time_t'];
+			break;
+		case "validTo":
+			$value = $certinfo['validTo_time_t'];
+			break;
+	}
+	echo $value;	
+}
+
+// Certificats validity date
+function pfz_get_cert_date($valuekey){
+    global $config;    
+    // Contains a list of refs that were revoked and should not be considered
+    $revoked_cert_refs = pfz_get_revoked_cert_refs();    
     $value = 0;
         foreach (array("cert", "ca") as $cert_type) {
                 switch ($valuekey){
@@ -1298,7 +1349,10 @@ function pfz_valuemap($valuename, $value, $default="0"){
 
 //Argument parsers for Discovery
 function pfz_discovery($section){
-     switch (strtolower($section)){     
+     switch (strtolower($section)){ 
+          case "certificates":
+               pfz_cert_discovery();
+               break;    
           case "gw":
                pfz_gw_discovery();
                break;
@@ -1409,7 +1463,10 @@ switch ($mainArgument){
      	  break;
      case "smart_status":
           pfz_get_smart_status();
-          break;     	  
+          break;     
+     case "cert_ref_date":
+          pfz_get_ref_cert_date($argv[2], $argv[3]);
+          break;	  
      case "cert_date":
           pfz_get_cert_date($argv[2]);
           break;
