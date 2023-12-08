@@ -954,15 +954,42 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     <description>Certificates Discovery</description>
                     <item_prototypes>
                         <item_prototype>
+                            <name>{#CERT_TYPE} &quot;{#CERT_NAME}&quot;: algorithm</name>
+                            <key>pfsense.value[cert_algo, {#CERT_INDEX}]</key>
+                            <delay>900s</delay>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>{#CERT_TYPE} &quot;{#CERT_NAME}&quot;: key length</name>
+                            <key>pfsense.value[cert_algo_bits, {#CERT_INDEX}]</key>
+                            <delay>900s</delay>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>{#CERT_TYPE} &quot;{#CERT_NAME}&quot;: algo security bits</name>
+                            <key>pfsense.value[cert_algo_secbits, {#CERT_INDEX}]</key>
+                            <delay>900s</delay>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>{#CERT_TYPE} &quot;{#CERT_NAME}&quot;: hash algorithm</name>
+                            <key>pfsense.value[cert_hash, {#CERT_INDEX}]</key>
+                            <delay>900s</delay>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>{#CERT_TYPE} &quot;{#CERT_NAME}&quot;: hash security bits</name>
+                            <key>pfsense.value[cert_hash_secbits, {#CERT_INDEX}]</key>
+                            <delay>900s</delay>
+                        </item_prototype>
+                        <item_prototype>
                             <name>{#CERT_TYPE} &quot;{#CERT_NAME}&quot;: valid from</name>
-                            <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[cert_ref_date, validFrom, {#CERT_INDEX}]</key>
                             <delay>3600s</delay>
                             <units>unixtime</units>
                         </item_prototype>
                         <item_prototype>
                             <name>{#CERT_TYPE} &quot;{#CERT_NAME}&quot;: valid to</name>
-                            <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[cert_ref_date, validTo, {#CERT_INDEX}]</key>
                             <delay>900s</delay>
                             <units>unixtime</units>
@@ -980,6 +1007,14 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                             </trigger_prototypes>
                         </item_prototype>
                     </item_prototypes>
+                    <trigger_prototypes>
+                        <trigger_prototype>
+                            <expression>last(/Template pfSense Active/pfsense.value[cert_algo_secbits, {#CERT_INDEX}])&lt; {$CERT_SECURITY_BITS} or
+last(/Template pfSense Active/pfsense.value[cert_hash_secbits, {#CERT_INDEX}])&lt; {$CERT_SECURITY_BITS}</expression>
+                            <name>Certificate  &quot;{#CERT_NAME}&quot; ({#CERT_TYPE}) has low security</name>
+                            <priority>AVERAGE</priority>
+                        </trigger_prototype>
+                    </trigger_prototypes>
                 </discovery_rule>
                 <discovery_rule>
                     <name>Gateways Discovery</name>
