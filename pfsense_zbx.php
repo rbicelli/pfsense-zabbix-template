@@ -1192,8 +1192,12 @@ function pfz_cert_discovery(){
 	echo $json_string;
 }
 
-// Certificate validity for a specific certificate
-function pfz_get_ref_cert_date($valuekey, $index){
+function pfz_get_cert_info($index) {
+	# Use a cache file to speed up multiple requests for certificate things. 
+	$cacheFile = "/root/.ssl/certinfo_{$index}.json";
+	if(file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
+		return json_decode(file_get_contents($cacheFile), true);		
+	}
     global $config;    
 	if($index >= 0x10000) {
 		$index -= 0x10000;
@@ -1201,7 +1205,175 @@ function pfz_get_ref_cert_date($valuekey, $index){
 	} else {
 		$certType = "cert";
 	}
-	$certinfo = openssl_x509_parse(base64_decode($config[$certType][$index]["crt"]));
+	$certinfo = openssl_x509_parse(base64_decode($config[$certType][$index]["crt"]));	
+	# Don't allow other users access to private keys. 
+	if(file_exists($cacheFile)) {
+		unlink($cacheFile);
+	}
+	touch($cacheFile);
+	chmod($cacheFile, 0600); 
+	if (!is_dir('/root/.ssl')) {
+		mkdir('/root/.ssl');
+	}
+	if(!file_put_contents($cacheFile, json_encode($certinfo))) {
+		unlink($cacheFile);
+	}	
+	return $certinfo;	
+}
+
+function pfz_get_cert_pkey_info($index) {
+	$cacheFile = "/root/.ssl/certinfo_pk_{$index}.json";
+	if(file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
+		return json_decode(file_get_contents($cacheFile), true);		
+	}
+    global $config;    
+	if($index >= 0x10000) {
+		$index -= 0x10000;
+		$certType = "ca";
+	} else {
+		$certType = "cert";
+	}
+	$publicKey = openssl_pkey_get_public(base64_decode($config[$certType][$index]["crt"]));
+	$details = openssl_pkey_get_details($publicKey);	
+	# Don't allow other users access to private keys. 
+	if(file_exists($cacheFile)) {
+		unlink($cacheFile);
+	}
+	touch($cacheFile);
+	chmod($cacheFile, 0600); 
+	if (!is_dir('/root/.ssl')) {
+		mkdir('/root/.ssl');
+	}
+	if(!file_put_contents($cacheFile, json_encode($details))) {
+		unlink($cacheFile);
+	}	
+	return $details;
+}
+
+function pfz_get_ref_cert_algo_len($index){
+	$pkInfo = pfz_get_cert_pkey_info($index);
+	echo $pkInfo["bits"];
+}
+
+# Get the number of bits of security in a cryptographic key. 
+function pfz_get_ref_cert_algo_bits($index){
+	$pkInfo = pfz_get_cert_pkey_info($index);
+	$keyLength = $pkInfo["bits"];
+	switch($pkInfo["type"]) {
+		case(OPENSSL_KEYTYPE_RSA): 
+		case(OPENSSL_KEYTYPE_DSA): 
+		case(OPENSSL_KEYTYPE_DH): 
+			## See articles on the General Number Field Sieve L-notation complexity.
+			$bits = floor( 1 / log(2) * pow(64/9, 1/3) * pow($keyLength * log(2) , 1/3) * pow( log(2048 * log(2)) , 2/3) );
+			break;
+		case (OPENSSL_KEYTYPE_EC): 
+			## Divide by two, floor, via right-shift.
+			$bits = $keyLength >> 1;
+			break;
+	}
+	echo $bits;
+}
+
+function pfz_get_ref_cert_algo($index){
+	$pkInfo = pfz_get_cert_pkey_info($index);
+	switch($pkInfo["type"]) {
+		case(OPENSSL_KEYTYPE_RSA): 
+			echo "RSA";
+			break;
+		case(OPENSSL_KEYTYPE_DSA): 
+			echo "DSA";
+			break;
+		case(OPENSSL_KEYTYPE_DH): 
+			echo "DH";
+			break;
+		case(OPENSSL_KEYTYPE_EC): 
+			echo "EC";
+			break;
+	}
+}
+
+function pfz_get_ref_cert_hash_bits($index){
+	// Get the number of bits of security in the hash algorithm.
+	$certinfo = pfz_get_cert_info($index);
+	$sigType = $certinfo["signatureTypeSN"];
+	$upperSigType = strtoupper($sigType);
+	if(str_contains($upperSigType, "MD2")) {
+		echo 63; 
+		return;		
+	}
+	if(str_contains($upperSigType, "MD4")) {
+		echo 2; 
+		return;		
+	}
+	if(str_contains($upperSigType, "MD5")) {
+		echo 18;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA1")) {
+		echo 61;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA224")) {
+		echo 112;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA3-224")) {
+		echo 112;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA256")) {
+		echo 128;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA3-256")) {
+		echo 128;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHAKE128")) {
+		echo 128;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA384")) {
+		echo 192;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA3-384")) {
+		echo 192;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA512")) {
+		echo 256;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA3-512")) {
+		echo 256;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHAKE256")) {
+		echo 256;
+		return;		
+	}
+	if(str_contains($upperSigType, "WHIRLPOOL")) {
+		echo 256;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA")) {
+		# Assuming 'SHA1' (worst case scenario) for other 'sha' things.
+		echo 61;
+		return;		
+	}
+	echo 0;
+	return;	
+}
+
+function pfz_get_ref_cert_hash($index){
+	$certinfo = pfz_get_cert_info($index);
+	echo $certinfo["signatureTypeSN"];
+}
+
+// Certificate validity for a specific certificate
+function pfz_get_ref_cert_date($valuekey, $index){
+	$certinfo = pfz_get_cert_info($index);
     switch ($valuekey){
 		case "validFrom":
 			$value = $certinfo['validFrom_time_t'];
@@ -1469,7 +1641,23 @@ switch ($mainArgument){
           break;	  
      case "cert_date":
           pfz_get_cert_date($argv[2]);
-          break;
+          break;   
+     case "cert_algo":
+          pfz_get_ref_cert_algo($argv[2]);
+          break;	
+     case "cert_algo_bits":
+          pfz_get_ref_cert_algo_len($argv[2]);
+          break;	
+     case "cert_algo_secbits":
+          pfz_get_ref_cert_algo_bits($argv[2]);
+          break;	
+     case "cert_hash":
+          pfz_get_ref_cert_hash($argv[2]);
+          break;	
+     case "cert_hash_secbits":
+          pfz_get_ref_cert_hash_bits($argv[2]);
+          break;	
+		  
      case "temperature":
           pfz_get_temperature($argv[2]);
           break;
