@@ -1,13 +1,11 @@
 zabbix_export:
   version: '6.0'
-  date: '2023-02-26T16:18:59Z'
+  date: '2023-12-08T12:18:49Z'
   groups:
-    -
-      uuid: 4918b88734c54bd094cff7585b5d71fc
+    - uuid: 4918b88734c54bd094cff7585b5d71fc
       name: 'Templates/Network Devices'
   templates:
-    -
-      uuid: 7a0b3294155c4454bd5df455f7a827b6
+    - uuid: 7a0b3294155c4454bd5df455f7a827b6
       template: 'Template pfSense Active'
       name: 'pfsense Active'
       description: |
@@ -16,11 +14,9 @@ zabbix_export:
         
         https://github.com/rbicelli/pfsense-zabbix-template
       groups:
-        -
-          name: 'Templates/Network Devices'
+        - name: 'Templates/Network Devices'
       items:
-        -
-          uuid: fe0bfdabfd494c859bae516980bb412c
+        - uuid: fe0bfdabfd494c859bae516980bb412c
           name: 'Maximum number of opened files'
           type: ZABBIX_ACTIVE
           key: kernel.maxfiles
@@ -28,17 +24,14 @@ zabbix_export:
           history: 27d
           description: 'It could be increased by using sysctrl utility or modifying file /etc/sysctl.conf.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: OS
           triggers:
-            -
-              uuid: d081e34519d4449ca9379b74ef276141
+            - uuid: d081e34519d4449ca9379b74ef276141
               expression: 'last(/Template pfSense Active/kernel.maxfiles)<1024'
               name: 'Configured max number of opened files is too low on {HOST.NAME}'
               priority: INFO
-        -
-          uuid: d9b8395c028b43fd8a2c2b667165747e
+        - uuid: d9b8395c028b43fd8a2c2b667165747e
           name: 'Maximum number of processes'
           type: ZABBIX_ACTIVE
           key: kernel.maxproc
@@ -46,17 +39,14 @@ zabbix_export:
           history: 27d
           description: 'It could be increased by using sysctrl utility or modifying file /etc/sysctl.conf.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: OS
           triggers:
-            -
-              uuid: 9854402b6a474f05af721835dc464338
+            - uuid: 9854402b6a474f05af721835dc464338
               expression: 'last(/Template pfSense Active/kernel.maxproc)<256'
               name: 'Configured max number of processes is too low on {HOST.NAME}'
               priority: INFO
-        -
-          uuid: 906d29a9443d4e3d8ae58d6db61ffebd
+        - uuid: 906d29a9443d4e3d8ae58d6db61ffebd
           name: 'Used memory (calc)'
           type: CALCULATED
           key: kt.mem.used
@@ -65,58 +55,48 @@ zabbix_export:
           units: B
           params: 'last(//vm.memory.size[total]) - last(//vm.memory.size[available])'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Memory
-        -
-          uuid: a233016d2e664687a480052812297879
+        - uuid: a233016d2e664687a480052812297879
           name: 'Expected CARP Status'
           type: CALCULATED
           key: pfsense.expected_carp_status
-          delay: 600s
+          delay: 30s
           params: '{$EXPECTED_CARP_STATUS}'
           description: 'Expected CARP Status'
           valuemap:
             name: 'pfSense CARP Status'
           tags:
-            -
-              tag: Application
-              value: CARP
-        -
-          uuid: dd3d8f993d3e468197500b09da067b20
+            - tag: Application
+              value: HA
+        - uuid: dd3d8f993d3e468197500b09da067b20
           name: 'MBUF Cache'
           type: ZABBIX_ACTIVE
           key: pfsense.mbuf.cache
           delay: '60'
           history: 27d
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: 'Network Limits'
-        -
-          uuid: f184df5af3104ac9b1e28ae7dbc6f6af
+        - uuid: f184df5af3104ac9b1e28ae7dbc6f6af
           name: 'MBUF Current'
           type: ZABBIX_ACTIVE
           key: pfsense.mbuf.current
           delay: '60'
           history: 27d
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: 'Network Limits'
-        -
-          uuid: cf70cf5e8b294e359a7bce7b64cc2f88
+        - uuid: cf70cf5e8b294e359a7bce7b64cc2f88
           name: 'MBUF Max'
           type: ZABBIX_ACTIVE
           key: pfsense.mbuf.max
           delay: '600'
           history: 27d
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: 'Network Limits'
-        -
-          uuid: 154c27479d50479b9824e8253ac687fa
+        - uuid: 154c27479d50479b9824e8253ac687fa
           name: 'MBUF Total Used (percent)'
           type: CALCULATED
           key: pfsense.mbuf.ptotal
@@ -126,44 +106,36 @@ zabbix_export:
           units: '%'
           params: '((last(//pfsense.mbuf.current) + last(//pfsense.mbuf.cache)) * 100) / last(//pfsense.mbuf.max)'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: 'Network Limits'
           triggers:
-            -
-              uuid: 4453b627d68b4c44b5a909426fd06784
+            - uuid: 4453b627d68b4c44b5a909426fd06784
               expression: 'last(/Template pfSense Active/pfsense.mbuf.ptotal)>80'
               name: 'MBUF used at 80%'
               priority: WARNING
-            -
-              uuid: 5bfdf44122ee4a16b97909f1071256a5
+            - uuid: 5bfdf44122ee4a16b97909f1071256a5
               expression: 'last(/Template pfSense Active/pfsense.mbuf.ptotal)>90'
               name: 'MBUF used at 90%'
               priority: HIGH
-        -
-          uuid: a61781a790734d71a512e592fec87b84
+        - uuid: a61781a790734d71a512e592fec87b84
           name: 'States Table Current'
           type: ZABBIX_ACTIVE
           key: pfsense.states.current
           delay: '60'
           history: 27d
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: 'Network Limits'
-        -
-          uuid: 022009a762ee4ec8bc4988a57b0d1412
+        - uuid: 022009a762ee4ec8bc4988a57b0d1412
           name: 'States Table Max'
           type: ZABBIX_ACTIVE
           key: pfsense.states.max
           delay: '600'
           history: 27d
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: 'Network Limits'
-        -
-          uuid: 6d0f8d81fd3d46b39e9bbccacb2aaf4c
+        - uuid: 6d0f8d81fd3d46b39e9bbccacb2aaf4c
           name: 'States Table Current (percent)'
           type: CALCULATED
           key: pfsense.states.pused
@@ -173,59 +145,50 @@ zabbix_export:
           units: '%'
           params: '(last(//pfsense.states.current) * 100) / last(//pfsense.states.max)'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: 'Network Limits'
           triggers:
-            -
-              uuid: 1a7faf6d80ca4a408987de1f039e4dba
+            - uuid: 1a7faf6d80ca4a408987de1f039e4dba
               expression: 'last(/Template pfSense Active/pfsense.states.pused)>80'
               name: 'State Table used at 80%'
               priority: WARNING
-            -
-              uuid: dbd147c6b43144dc9541939fbb9c8eef
+            - uuid: dbd147c6b43144dc9541939fbb9c8eef
               expression: 'last(/Template pfSense Active/pfsense.states.pused)>90'
               name: 'State Table used at 90%'
               priority: HIGH
-        -
-          uuid: cc7fd0d7da504c71b0da3fcc36133510
+        - uuid: cc7fd0d7da504c71b0da3fcc36133510
           name: 'CARP Status'
           type: ZABBIX_ACTIVE
           key: 'pfsense.value[carp_status]'
-          delay: '60'
+          delay: 30s
           description: 'pfSense CARP Status'
           valuemap:
             name: 'pfSense CARP Status'
           tags:
-            -
-              tag: Application
-              value: CARP
+            - tag: Application
+              value: HA
           triggers:
-            -
-              uuid: 43391e9ed3134e689b0b09b1d124178b
+            - uuid: 43391e9ed3134e689b0b09b1d124178b
               expression: 'last(/Template pfSense Active/pfsense.value[carp_status])>2'
               name: 'CARP  Problems on {HOST.NAME}'
               priority: HIGH
               description: 'CARP Problems'
-            -
-              uuid: a0ad30cea628413987919bd9bc8e229f
-              expression: 'avg(/Template pfSense Active/pfsense.value[carp_status],#3)>2'
+            - uuid: d763eb3d9b574e99a9852d7c595d4d08
+              expression: 'last(/Template pfSense Active/pfsense.value[carp_status])>2'
               name: 'DHCP Failover Problems on {HOST.NAME}'
               url: 'https://docs.netgate.com/pfsense/en/latest/troubleshooting/ha-dhcp-failover.html'
               priority: HIGH
               description: 'One or more DHCP Pools are experiencing failover problems. This could potentially cause other problems in yourr network.'
-        -
-          uuid: 3c38af8aef59489d93224ab03319e997
+        - uuid: 0e2337e935cd4ef596d48ba52ebe6f46
           name: 'DHCP Failover Pool Problems'
+          type: ZABBIX_ACTIVE
           key: 'pfsense.value[dhcp,failover]'
           delay: 120s
           description: 'This value indicates, in a HA scenario, if DHCP failover pool partners are out of sync.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: HA
-        -
-          uuid: 12399afd70014ce7bf96f6283c946bc2
+        - uuid: 12399afd70014ce7bf96f6283c946bc2
           name: 'Gateway Status Raw'
           type: ZABBIX_ACTIVE
           key: 'pfsense.value[gw_status]'
@@ -234,12 +197,10 @@ zabbix_export:
           value_type: TEXT
           description: 'Gateway Status Raw'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Gateways
           triggers:
-            -
-              uuid: 44df9b029fe64ef1b70aa6142d38d105
+            - uuid: 44df9b029fe64ef1b70aa6142d38d105
               expression: '(last(/Template pfSense Active/pfsense.value[gw_status],#1)<>last(/Template pfSense Active/pfsense.value[gw_status],#2))>0'
               recovery_mode: RECOVERY_EXPRESSION
               recovery_expression: '(last(/Template pfSense Active/pfsense.value[gw_status],#1)<>last(/Template pfSense Active/pfsense.value[gw_status],#2))=0'
@@ -247,25 +208,7 @@ zabbix_export:
               priority: AVERAGE
               description: 'Gateway Status Change, for use with an acion Script (e.g. update DNS record)'
               manual_close: 'YES'
-        -
-          uuid: 856991c40aa043dfa6075468add93f7d
-          name: 'SMART Status'
-          key: 'pfsense.value[smart_status]'
-          delay: 1800s
-          description: 'pfSense SMART Status'
-          tags:
-            -
-              tag: Application
-              value: System
-          triggers:
-            -
-              uuid: 523e16493b534fb7ad9def66fef6f286
-              expression: 'avg(/Template pfSense Active/pfsense.value[smart_status],#3)=1'
-              name: 'SMART Errors on {HOST.NAME}'
-              priority: HIGH
-              description: 'pfSense has detected SMART Problems on one or more drives.'
-        -
-          uuid: 5820137593604e63869cd3bf009a3dbf
+        - uuid: 5820137593604e63869cd3bf009a3dbf
           name: 'pfSense Installed Version'
           type: ZABBIX_ACTIVE
           key: 'pfsense.value[system,installed_version]'
@@ -273,11 +216,9 @@ zabbix_export:
           trends: '0'
           value_type: TEXT
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: System
-        -
-          uuid: 36a0a399f1ad4ca3aea3e52c1dfe0de1
+        - uuid: 36a0a399f1ad4ca3aea3e52c1dfe0de1
           name: 'New Version of pfSense Available'
           type: ZABBIX_ACTIVE
           key: 'pfsense.value[system,new_version_available]'
@@ -285,37 +226,31 @@ zabbix_export:
           valuemap:
             name: 'Generic YesNo'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: System
           triggers:
-            -
-              uuid: ac1745d4a3d24445a9c53e294a3aba0a
+            - uuid: ac1745d4a3d24445a9c53e294a3aba0a
               expression: 'last(/Template pfSense Active/pfsense.value[system,new_version_available])=1'
               name: 'New Version of pfSense Available on {HOST.NAME}'
               priority: INFO
               description: 'A new version of pfSense is available for update.'
               manual_close: 'YES'
-        -
-          uuid: 47855133ddb6495280fdcf8b52fc38f9
+        - uuid: 47855133ddb6495280fdcf8b52fc38f9
           name: 'Packages Needing Update'
           type: ZABBIX_ACTIVE
           key: 'pfsense.value[system,packages_update]'
           delay: 1d
           description: 'Number of packages needing update.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: System
           triggers:
-            -
-              uuid: aa627e1f209741c0a7490665fd15c4bc
+            - uuid: aa627e1f209741c0a7490665fd15c4bc
               expression: 'last(/Template pfSense Active/pfsense.value[system,packages_update])>0'
               name: 'Packages Update Available on {HOST.NAME}'
               priority: INFO
-              description: 'Notify of new version of packages are available'
-        -
-          uuid: d801429fd147415396b61f5f6c47af27
+              description: 'New version of packages are available'
+        - uuid: d801429fd147415396b61f5f6c47af27
           name: 'pfSense Available Version'
           type: ZABBIX_ACTIVE
           key: 'pfsense.value[system,version]'
@@ -323,11 +258,9 @@ zabbix_export:
           trends: '0'
           value_type: TEXT
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: System
-        -
-          uuid: 65a633fa48e64fa7b3e56e2e1294a396
+        - uuid: 65a633fa48e64fa7b3e56e2e1294a396
           name: 'Number of running processes'
           type: ZABBIX_ACTIVE
           key: 'proc.num[,,run]'
@@ -335,17 +268,14 @@ zabbix_export:
           history: 27d
           description: 'Number of processes in running state.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Processes
           triggers:
-            -
-              uuid: 8e87c7171e4e43d5b4ee51922fb634ff
+            - uuid: 8e87c7171e4e43d5b4ee51922fb634ff
               expression: 'avg(/Template pfSense Active/proc.num[,,run],5m)>30'
               name: 'Too many processes running on {HOST.NAME}'
               priority: WARNING
-        -
-          uuid: 5ac8f03d4fa74700ad96d139acfe6baf
+        - uuid: 5ac8f03d4fa74700ad96d139acfe6baf
           name: 'Number of processes'
           type: ZABBIX_ACTIVE
           key: 'proc.num[]'
@@ -353,17 +283,14 @@ zabbix_export:
           history: 27d
           description: 'Total number of processes in any state.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Processes
           triggers:
-            -
-              uuid: 8237ec2c23b6449298ff7d9327f93b2d
+            - uuid: 8237ec2c23b6449298ff7d9327f93b2d
               expression: 'avg(/Template pfSense Active/proc.num[],5m)>300'
               name: 'Too many processes on {HOST.NAME}'
               priority: WARNING
-        -
-          uuid: b8c1f4bac1834aee87f0bda3a546f98a
+        - uuid: b8c1f4bac1834aee87f0bda3a546f98a
           name: 'Host boot time'
           type: ZABBIX_ACTIVE
           key: system.boottime
@@ -371,11 +298,9 @@ zabbix_export:
           history: 27d
           units: unixtime
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: OS
-        -
-          uuid: d4823bbc8d9849e0bb36e5418168fe06
+        - uuid: d4823bbc8d9849e0bb36e5418168fe06
           name: 'Interrupts per second'
           type: ZABBIX_ACTIVE
           key: system.cpu.intr
@@ -383,61 +308,67 @@ zabbix_export:
           history: 27d
           units: ips
           preprocessing:
-            -
-              type: CHANGE_PER_SECOND
+            - type: CHANGE_PER_SECOND
               parameters:
                 - ''
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: CPU
-        -
-          uuid: ff36a3e91fd44e7981874e8e363069df
+        - uuid: ff36a3e91fd44e7981874e8e363069df
           name: 'Processor load (1min/core)'
-          type: ZABBIX_ACTIVE
           key: 'system.cpu.load[percpu,avg1]'
           delay: '60'
           history: 27d
           value_type: FLOAT
           description: 'The processor load is calculated as system CPU load divided by number of CPU cores.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: CPU
           triggers:
-            -
-              uuid: b9bdc3be79eb40f0be33931a5c6f5378
-              expression: 'avg(/Template pfSense Active/system.cpu.load[percpu,avg1],5m)>5'
+            - uuid: c55d5752b0754f17bfc309e638f507c3
+              expression: 'avg(/Template pfSense Active/system.cpu.load[percpu,avg1],10m)>0.35'
               name: 'Processor load is too high on {HOST.NAME}'
               priority: WARNING
-        -
-          uuid: 6ac7d111b73d4150aaead8f470ff41ba
+        - uuid: 6ac7d111b73d4150aaead8f470ff41ba
           name: 'Processor load (5min/core)'
-          type: ZABBIX_ACTIVE
           key: 'system.cpu.load[percpu,avg5]'
           delay: '60'
           history: 27d
           value_type: FLOAT
           description: 'The processor load is calculated as system CPU load divided by number of CPU cores.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: CPU
-        -
-          uuid: d244b629aaf74fa1af608332df014df4
+        - uuid: d244b629aaf74fa1af608332df014df4
           name: 'Processor load (15min/core)'
-          type: ZABBIX_ACTIVE
           key: 'system.cpu.load[percpu,avg15]'
           delay: '60'
           history: 27d
           value_type: FLOAT
           description: 'The processor load is calculated as system CPU load divided by number of CPU cores.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: CPU
-        -
-          uuid: d450e0b3d0b441f191d7f7e5faab4f38
+        - uuid: 849c54d7d68541ab8e67f3b498867456
+          name: 'Processor load (percent)'
+          type: CALCULATED
+          key: 'system.cpu.load[percpu,pct1]'
+          delay: '60'
+          history: 27d
+          value_type: FLOAT
+          units: '%'
+          params: '100 * last(//system.cpu.load[percpu,avg1])'
+          tags:
+            - tag: 'Application: CPU'
+        - uuid: 2b39f0b0b3c54c249027375f0d23fb12
+          name: 'CPU Core count'
+          key: 'system.cpu.num[online]'
+          delay: 1h
+          description: 'Number of cores zabbix thinks the CPU has.'
+          tags:
+            - tag: Application
+              value: CPU
+        - uuid: d450e0b3d0b441f191d7f7e5faab4f38
           name: 'Context switches per second'
           type: ZABBIX_ACTIVE
           key: system.cpu.switches
@@ -445,17 +376,14 @@ zabbix_export:
           history: 27d
           units: sps
           preprocessing:
-            -
-              type: CHANGE_PER_SECOND
+            - type: CHANGE_PER_SECOND
               parameters:
                 - ''
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: CPU
-        -
-          uuid: 8bc963352bef46e5a92763b9c866d0a7
-          name: 'CPU $2 time'
+        - uuid: 8bc963352bef46e5a92763b9c866d0a7
+          name: 'CPU idle time'
           type: ZABBIX_ACTIVE
           key: 'system.cpu.util[,idle]'
           delay: '60'
@@ -464,12 +392,10 @@ zabbix_export:
           units: '%'
           description: 'The time the CPU has spent doing nothing.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: CPU
-        -
-          uuid: f2f60c68e4604f55b0a437542507fd86
-          name: 'CPU $2 time'
+        - uuid: f2f60c68e4604f55b0a437542507fd86
+          name: 'CPU interrupt time'
           type: ZABBIX_ACTIVE
           key: 'system.cpu.util[,interrupt]'
           delay: '60'
@@ -478,12 +404,10 @@ zabbix_export:
           units: '%'
           description: 'The amount of time the CPU has been servicing hardware interrupts.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: CPU
-        -
-          uuid: b81c545ae21b417b85b62ce115e1dd8e
-          name: 'CPU $2 time'
+        - uuid: b81c545ae21b417b85b62ce115e1dd8e
+          name: 'CPU nice time'
           type: ZABBIX_ACTIVE
           key: 'system.cpu.util[,nice]'
           delay: '60'
@@ -492,12 +416,10 @@ zabbix_export:
           units: '%'
           description: 'The time the CPU has spent running users'' processes that have been niced.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: CPU
-        -
-          uuid: e0ddfcc0ffe34a60a575cdae1f1d8a98
-          name: 'CPU $2 time'
+        - uuid: e0ddfcc0ffe34a60a575cdae1f1d8a98
+          name: 'CPU system time'
           type: ZABBIX_ACTIVE
           key: 'system.cpu.util[,system]'
           delay: '60'
@@ -506,12 +428,10 @@ zabbix_export:
           units: '%'
           description: 'The time the CPU has spent running the kernel and its processes.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: CPU
-        -
-          uuid: b99746ff4914473f9c2d3e39dfb9d6fc
-          name: 'CPU $2 time'
+        - uuid: b99746ff4914473f9c2d3e39dfb9d6fc
+          name: 'CPU user time'
           type: ZABBIX_ACTIVE
           key: 'system.cpu.util[,user]'
           delay: '60'
@@ -520,11 +440,9 @@ zabbix_export:
           units: '%'
           description: 'The time the CPU has spent running users'' processes that are not niced.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: CPU
-        -
-          uuid: b2797942c3404742a068e2c5f90a796f
+        - uuid: b2797942c3404742a068e2c5f90a796f
           name: 'Host name'
           type: ZABBIX_ACTIVE
           key: system.hostname
@@ -535,17 +453,14 @@ zabbix_export:
           description: 'System host name.'
           inventory_link: NAME
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: OS
           triggers:
-            -
-              uuid: ef84b7baa0564b50a8ad6537ec8c81b9
+            - uuid: ef84b7baa0564b50a8ad6537ec8c81b9
               expression: '(last(/Template pfSense Active/system.hostname,#1)<>last(/Template pfSense Active/system.hostname,#2))>0'
               name: 'Hostname was changed on {HOST.NAME}'
               priority: INFO
-        -
-          uuid: def69b566341465f971635459ecf3a93
+        - uuid: def69b566341465f971635459ecf3a93
           name: 'Host local time'
           type: ZABBIX_ACTIVE
           key: system.localtime
@@ -553,11 +468,9 @@ zabbix_export:
           history: 27d
           units: unixtime
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: OS
-        -
-          uuid: 9370c5052d564338b74bbd3d38847d35
+        - uuid: 9370c5052d564338b74bbd3d38847d35
           name: 'Free swap space'
           type: ZABBIX_ACTIVE
           key: 'system.swap.size[,free]'
@@ -565,11 +478,9 @@ zabbix_export:
           history: 27d
           units: B
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Memory
-        -
-          uuid: 709cac33a5384f85b62fd3ff1b35d173
+        - uuid: 709cac33a5384f85b62fd3ff1b35d173
           name: 'Free swap space in %'
           type: ZABBIX_ACTIVE
           key: 'system.swap.size[,pfree]'
@@ -578,18 +489,15 @@ zabbix_export:
           value_type: FLOAT
           units: '%'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Memory
           triggers:
-            -
-              uuid: 7ad93b922ed8416495109bf6eb14bdf4
+            - uuid: 7ad93b922ed8416495109bf6eb14bdf4
               expression: 'last(/Template pfSense Active/system.swap.size[,pfree])<50'
               name: 'Lack of free swap space on {HOST.NAME}'
               priority: WARNING
               description: 'It probably means that the systems requires more physical memory.'
-        -
-          uuid: b902dc19ad4e48e0bfc8bf90773f7f64
+        - uuid: b902dc19ad4e48e0bfc8bf90773f7f64
           name: 'Total swap space'
           type: ZABBIX_ACTIVE
           key: 'system.swap.size[,total]'
@@ -597,11 +505,9 @@ zabbix_export:
           history: 27d
           units: B
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Memory
-        -
-          uuid: b4516badf0ab41cba862482a3c9ebf37
+        - uuid: b4516badf0ab41cba862482a3c9ebf37
           name: 'Used swap space'
           type: ZABBIX_ACTIVE
           key: 'system.swap.size[,used]'
@@ -609,11 +515,9 @@ zabbix_export:
           history: 27d
           units: B
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Memory
-        -
-          uuid: 4266ddd2f44546e4b4856c7edfe5c37e
+        - uuid: 4266ddd2f44546e4b4856c7edfe5c37e
           name: 'System information'
           type: ZABBIX_ACTIVE
           key: system.uname
@@ -624,17 +528,14 @@ zabbix_export:
           description: 'The information as normally returned by ''uname -a''.'
           inventory_link: OS
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: OS
           triggers:
-            -
-              uuid: 299fcdc70a8c4b3aa1b187f05eebf983
+            - uuid: 299fcdc70a8c4b3aa1b187f05eebf983
               expression: '(last(/Template pfSense Active/system.uname,#1)<>last(/Template pfSense Active/system.uname,#2))>0'
               name: 'Host information was changed on {HOST.NAME}'
               priority: INFO
-        -
-          uuid: adde548d1da74e72ba7d25d30515cf31
+        - uuid: adde548d1da74e72ba7d25d30515cf31
           name: 'System uptime'
           type: ZABBIX_ACTIVE
           key: system.uptime
@@ -642,17 +543,14 @@ zabbix_export:
           history: 27d
           units: uptime
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: OS
           triggers:
-            -
-              uuid: 982e988c84bb43d197b157b9d85f5d46
+            - uuid: 982e988c84bb43d197b157b9d85f5d46
               expression: 'change(/Template pfSense Active/system.uptime)<0'
               name: '{HOST.NAME} has just been restarted'
               priority: INFO
-        -
-          uuid: c0543949d4004092a1c0446b5615b5e8
+        - uuid: c0543949d4004092a1c0446b5615b5e8
           name: 'Number of logged in users'
           type: ZABBIX_ACTIVE
           key: system.users.num
@@ -660,28 +558,23 @@ zabbix_export:
           history: 27d
           description: 'Number of users who are currently logged in.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: OS
-        -
-          uuid: bbaf67d0ca854704b1d13ba08f4108fe
-          name: 'Checksum of $1'
+        - uuid: bbaf67d0ca854704b1d13ba08f4108fe
+          name: 'Checksum of /etc/passwd'
           type: ZABBIX_ACTIVE
           key: 'vfs.file.cksum[/etc/passwd]'
           delay: '3600'
           history: 27d
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: OS
           triggers:
-            -
-              uuid: 703ce0e80d0b45009d714413a3c336b4
+            - uuid: 703ce0e80d0b45009d714413a3c336b4
               expression: '(last(/Template pfSense Active/vfs.file.cksum[/etc/passwd],#1)<>last(/Template pfSense Active/vfs.file.cksum[/etc/passwd],#2))>0'
               name: '/etc/passwd has been changed on {HOST.NAME}'
               priority: WARNING
-        -
-          uuid: a6d63cd84a314056bd638e25c5f0308b
+        - uuid: a6d63cd84a314056bd638e25c5f0308b
           name: 'Active memory'
           type: ZABBIX_ACTIVE
           key: 'vm.memory.size[active]'
@@ -690,11 +583,9 @@ zabbix_export:
           units: B
           description: 'quantité de mémoire en cours d''utilisation par les processus'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Memory
-        -
-          uuid: 092eb762e52a45db9aa27a167b517dfa
+        - uuid: 092eb762e52a45db9aa27a167b517dfa
           name: 'Available memory'
           type: ZABBIX_ACTIVE
           key: 'vm.memory.size[available]'
@@ -703,17 +594,14 @@ zabbix_export:
           units: B
           description: 'Available memory is defined as free+cached+buffers memory.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Memory
           triggers:
-            -
-              uuid: 8146acaf455344c39add5460c7d48186
+            - uuid: 8146acaf455344c39add5460c7d48186
               expression: 'last(/Template pfSense Active/vm.memory.size[available])<20M'
               name: 'Lack of available memory on server {HOST.NAME}'
               priority: AVERAGE
-        -
-          uuid: 75329478c6da472894fc3afd9bc4ff78
+        - uuid: 75329478c6da472894fc3afd9bc4ff78
           name: 'Buffered memory'
           type: ZABBIX_ACTIVE
           key: 'vm.memory.size[buffers]'
@@ -726,11 +614,9 @@ zabbix_export:
             
             (Item désactivé car buggé)
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Memory
-        -
-          uuid: 112b875916c74b418e33964e4134d88a
+        - uuid: 112b875916c74b418e33964e4134d88a
           name: 'Cached memory'
           type: ZABBIX_ACTIVE
           key: 'vm.memory.size[cached]'
@@ -739,11 +625,9 @@ zabbix_export:
           units: B
           description: 'quantité de mémoire utilisée pour mettre des données en cache'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Memory
-        -
-          uuid: d403943f72ef41c6ac893d55f56991cc
+        - uuid: d403943f72ef41c6ac893d55f56991cc
           name: 'Free memory'
           type: ZABBIX_ACTIVE
           key: 'vm.memory.size[free]'
@@ -752,11 +636,9 @@ zabbix_export:
           units: B
           description: 'quantité de mémoire complètement libre et prête a être utilisée directement.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Memory
-        -
-          uuid: 6299a6e55f394ed8bb888443c6cf9c12
+        - uuid: 6299a6e55f394ed8bb888443c6cf9c12
           name: 'Inactive memory'
           type: ZABBIX_ACTIVE
           key: 'vm.memory.size[inactive]'
@@ -765,11 +647,9 @@ zabbix_export:
           units: B
           description: 'quantité de mémoire qui contient des données qui ne sont plus utilisées (peut être directement libéré si besoin)'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Memory
-        -
-          uuid: 2600308db79349a2884b3e44099fe486
+        - uuid: 2600308db79349a2884b3e44099fe486
           name: 'Available memory (percent)'
           type: ZABBIX_ACTIVE
           key: 'vm.memory.size[pavailable]'
@@ -779,16 +659,22 @@ zabbix_export:
           units: '%'
           description: 'Available memory is defined as free+cached+buffers memory.'
           preprocessing:
-            -
-              type: MULTIPLIER
+            - type: MULTIPLIER
               parameters:
                 - '1'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Memory
-        -
-          uuid: 1f4b1470af3f408aa08001620ff0ec5d
+        - uuid: c7f4062003fc4116a5832e4a332a9adb
+          name: 'Used Memory (percent)'
+          type: CALCULATED
+          key: 'vm.memory.size[pused]'
+          delay: '60'
+          history: 28d
+          value_type: FLOAT
+          units: '%'
+          params: '100 - last(//vm.memory.size[pavailable])'
+        - uuid: 1f4b1470af3f408aa08001620ff0ec5d
           name: 'Shared memory'
           type: ZABBIX_ACTIVE
           key: 'vm.memory.size[shared]'
@@ -801,11 +687,9 @@ zabbix_export:
             
             (Item désactivé car non utilisé)
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Memory
-        -
-          uuid: 69bec6035e964582832732239f8c07a4
+        - uuid: 69bec6035e964582832732239f8c07a4
           name: 'Total memory'
           type: ZABBIX_ACTIVE
           key: 'vm.memory.size[total]'
@@ -814,11 +698,9 @@ zabbix_export:
           units: B
           description: 'quantité de mémoire totale'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Memory
-        -
-          uuid: 3214f881ee01414cb1d824671ae0074b
+        - uuid: 3214f881ee01414cb1d824671ae0074b
           name: 'Used memory'
           type: ZABBIX_ACTIVE
           key: 'vm.memory.size[used]'
@@ -828,11 +710,9 @@ zabbix_export:
           units: B
           description: 'Item désactivé car non utilisé'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Memory
-        -
-          uuid: 79a6075f223d442199accef75762f8b4
+        - uuid: 79a6075f223d442199accef75762f8b4
           name: 'Wired memory'
           type: ZABBIX_ACTIVE
           key: 'vm.memory.size[wired]'
@@ -841,20 +721,74 @@ zabbix_export:
           units: B
           description: 'quantité de mémoire utilisée par le kernel, ne peut être ni déchargée en swap, ni compressée.'
           tags:
-            -
-              tag: Application
+            - tag: Application
               value: Memory
       discovery_rules:
-        -
-          uuid: 4db6be9bdf7b4876a13f9b936cdd3321
+        - uuid: f389a9bc18e34c97941451f19aaa387c
+          name: 'Certificates Discovery'
+          type: ZABBIX_ACTIVE
+          key: 'pfsense.discovery[certificates]'
+          delay: 3600s
+          description: 'Certificates Discovery'
+          item_prototypes:
+            - uuid: a3521a3bb0be4525be1462ac7f1ab56e
+              name: '{#CERT_TYPE} "{#CERT_NAME}": algorithm'
+              key: 'pfsense.value[cert_algo, {#CERT_INDEX}]'
+              delay: 900s
+              trends: '0'
+              value_type: TEXT
+            - uuid: 266a387f14d6486d918fa6d831d75f23
+              name: '{#CERT_TYPE} "{#CERT_NAME}": key length'
+              key: 'pfsense.value[cert_algo_bits, {#CERT_INDEX}]'
+              delay: 900s
+            - uuid: 935171af2228470284fd6c6bb4cea56b
+              name: '{#CERT_TYPE} "{#CERT_NAME}": algo security bits'
+              key: 'pfsense.value[cert_algo_secbits, {#CERT_INDEX}]'
+              delay: 900s
+            - uuid: aafb159ad8024d94b09d1ab33ef1b230
+              name: '{#CERT_TYPE} "{#CERT_NAME}": hash algorithm'
+              key: 'pfsense.value[cert_hash, {#CERT_INDEX}]'
+              delay: 900s
+              trends: '0'
+              value_type: TEXT
+            - uuid: 7043dab3a32e49a7b1128747fbaab7be
+              name: '{#CERT_TYPE} "{#CERT_NAME}": hash security bits'
+              key: 'pfsense.value[cert_hash_secbits, {#CERT_INDEX}]'
+              delay: 900s
+            - uuid: 30710705d622493a81320f7dffc7c63c
+              name: '{#CERT_TYPE} "{#CERT_NAME}": valid from'
+              key: 'pfsense.value[cert_ref_date, validFrom, {#CERT_INDEX}]'
+              delay: 3600s
+              units: unixtime
+            - uuid: 2cb4d931571e4089b944dd813c7f35e4
+              name: '{#CERT_TYPE} "{#CERT_NAME}": valid to'
+              key: 'pfsense.value[cert_ref_date, validTo, {#CERT_INDEX}]'
+              delay: 900s
+              units: unixtime
+              trigger_prototypes:
+                - uuid: 29a7d692c79c4c53bd9e613e71970b98
+                  expression: 'last(/Template pfSense Active/pfsense.value[cert_ref_date, validTo, {#CERT_INDEX}])-now()<0'
+                  name: 'Certificate  "{#CERT_NAME}" ({#CERT_TYPE}) has expired.'
+                  priority: AVERAGE
+                - uuid: b77a404a43de48c997750fe87574c54e
+                  expression: 'last(/Template pfSense Active/pfsense.value[cert_ref_date, validTo, {#CERT_INDEX}])-now()<2419200 and last(/Template pfSense Active/pfsense.value[cert_ref_date, validTo, {#CERT_INDEX}])-now()>0'
+                  name: 'Certificate  "{#CERT_NAME}" ({#CERT_TYPE}) will expire soon.'
+                  priority: WARNING
+          trigger_prototypes:
+            - uuid: 87cfe7be3f824782a22b3249ec8e37fe
+              expression: |
+                last(/Template pfSense Active/pfsense.value[cert_algo_secbits, {#CERT_INDEX}])< {$CERT_SECURITY_BITS} or
+                last(/Template pfSense Active/pfsense.value[cert_hash_secbits, {#CERT_INDEX}])< {$CERT_SECURITY_BITS}
+              name: 'Certificate  "{#CERT_NAME}" ({#CERT_TYPE}) has low security'
+              priority: AVERAGE
+        - uuid: 4db6be9bdf7b4876a13f9b936cdd3321
           name: 'Gateways Discovery'
           type: ZABBIX_ACTIVE
           key: 'pfsense.discovery[gw]'
           delay: 300s
           description: 'Gateway Discovery'
           item_prototypes:
-            -
-              uuid: db89e0dd738148e19c52f08bbc7723f7
+            - uuid: db89e0dd738148e19c52f08bbc7723f7
               name: 'Gateway {#GATEWAY} RTT'
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[gw_value,{#GATEWAY},delay]'
@@ -862,32 +796,26 @@ zabbix_export:
               value_type: FLOAT
               units: ms
               preprocessing:
-                -
-                  type: RTRIM
+                - type: RTRIM
                   parameters:
                     - ms
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: Gateways
-            -
-              uuid: ba759ceb73f949108fddbc4029cfc9f2
+            - uuid: ba759ceb73f949108fddbc4029cfc9f2
               name: 'Gateway {#GATEWAY} Packet  Loss'
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[gw_value,{#GATEWAY},loss]'
               delay: 60s
               units: '%'
               preprocessing:
-                -
-                  type: RTRIM
+                - type: RTRIM
                   parameters:
                     - '%'
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: Gateways
-            -
-              uuid: 7522dfc8c6724534a8fd4efc4bbf87f8
+            - uuid: 7522dfc8c6724534a8fd4efc4bbf87f8
               name: 'Gateway {#GATEWAY} Status'
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[gw_value,{#GATEWAY},status]'
@@ -896,42 +824,60 @@ zabbix_export:
               valuemap:
                 name: 'pfSense Gateway Status'
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: Gateways
               trigger_prototypes:
-                -
-                  uuid: 2523755541f242d190825ae67f8039fb
-                  expression: 'avg(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=5'
+                - uuid: 1f6139c8b7fc4e878a329a9db1e0097d
+                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status])=5'
                   name: 'Gateway {#GATEWAY} is down'
                   priority: DISASTER
                   description: 'Gateway is Down'
-                -
-                  uuid: 4c306732349b4cfe8e66d7656bc0d397
-                  expression: 'avg(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=4'
+                - uuid: 2523755541f242d190825ae67f8039fb
+                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=5'
+                  name: 'Gateway {#GATEWAY} is down'
+                  priority: DISASTER
+                  description: 'Gateway is Down'
+                - uuid: 3a10654398fb4323ab7804e09db754aa
+                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status])=4'
                   name: 'Gateway {#GATEWAY} is forced down'
                   priority: INFO
                   description: 'Gateway is forced down by system administrator'
-                -
-                  uuid: faaa981f96444c90accf769c5d1949a7
-                  expression: 'avg(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=2'
+                - uuid: 4c306732349b4cfe8e66d7656bc0d397
+                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=4'
+                  name: 'Gateway {#GATEWAY} is forced down'
+                  priority: INFO
+                  description: 'Gateway is forced down by system administrator'
+                - uuid: fca46e537f144ea49eca155570f8da4d
+                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status])=2'
                   name: 'High Delay on gateway {#GATEWAY}'
                   priority: WARNING
                   description: 'Gateway is lagging'
-                -
-                  uuid: a89a7d0dbd87432fa13ee7e4d15a4bdf
-                  expression: 'avg(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=3'
+                - uuid: faaa981f96444c90accf769c5d1949a7
+                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=2'
+                  name: 'High Delay on gateway {#GATEWAY}'
+                  priority: WARNING
+                  description: 'Gateway is lagging'
+                - uuid: 0c308b53dee341e388f0c3a5ac1580ba
+                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status])=3'
                   name: 'High packet Loss on {#GATEWAY}'
                   priority: HIGH
                   description: 'High Packet Loss on Gateway'
-                -
-                  uuid: f5e9d80e672042aeb609f9ad82a019e4
-                  expression: 'avg(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=1'
+                - uuid: a89a7d0dbd87432fa13ee7e4d15a4bdf
+                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=3'
+                  name: 'High packet Loss on {#GATEWAY}'
+                  priority: HIGH
+                  description: 'High Packet Loss on Gateway'
+                - uuid: 392ba753c67b4c4ea79cb2b0e1767a09
+                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status])=1'
                   name: 'Packet Loss on {#GATEWAY}'
                   priority: WARNING
                   description: 'Packet loss on Gateway'
-            -
-              uuid: c6c8376ac666461a91df53eacdaf5f8b
+                - uuid: f5e9d80e672042aeb609f9ad82a019e4
+                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=1'
+                  name: 'Packet Loss on {#GATEWAY}'
+                  priority: WARNING
+                  description: 'Packet loss on Gateway'
+            - uuid: c6c8376ac666461a91df53eacdaf5f8b
               name: 'Gateway {#GATEWAY} RTT Std Deviation'
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[gw_value,{#GATEWAY},stddev]'
@@ -939,165 +885,137 @@ zabbix_export:
               value_type: FLOAT
               units: ms
               preprocessing:
-                -
-                  type: RTRIM
+                - type: RTRIM
                   parameters:
                     - ms
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: Gateways
           graph_prototypes:
-            -
-              uuid: 25f10d4fe86549e893bf8ebb8de8f39c
+            - uuid: 25f10d4fe86549e893bf8ebb8de8f39c
               name: 'Gateway {#GATEWAY} Availability'
               graph_items:
-                -
-                  color: 199C0D
+                - color: 199C0D
                   calc_fnc: ALL
                   item:
                     host: 'Template pfSense Active'
                     key: 'pfsense.value[gw_value,{#GATEWAY},delay]'
-                -
-                  sortorder: '1'
+                - sortorder: '1'
                   color: FF5722
                   calc_fnc: ALL
                   item:
                     host: 'Template pfSense Active'
                     key: 'pfsense.value[gw_value,{#GATEWAY},loss]'
-            -
-              uuid: 05c556c8a8c24703a06be8d2b6a7a082
+            - uuid: 05c556c8a8c24703a06be8d2b6a7a082
               name: 'Gateway {#GATEWAY} Status'
               yaxismax: '5'
               ymin_type_1: FIXED
               ymax_type_1: FIXED
               graph_items:
-                -
-                  color: 199C0D
+                - color: 199C0D
                   calc_fnc: ALL
                   item:
                     host: 'Template pfSense Active'
                     key: 'pfsense.value[gw_value,{#GATEWAY},status]'
-        -
-          uuid: baa842b8e5bf40b3bfbeb4d3b6507d08
+        - uuid: baa842b8e5bf40b3bfbeb4d3b6507d08
           name: 'Network interface discovery'
           type: ZABBIX_ACTIVE
           key: 'pfsense.discovery[interfaces]'
           delay: 3600s
           filter:
             conditions:
-              -
-                macro: '{#IFNAME}'
+              - macro: '{#IFNAME}'
                 value: '@Network interfaces for discovery'
                 formulaid: A
           lifetime: 7d
           description: 'Discovery of network interfaces as defined in global regular expression "Network interfaces for discovery".'
           item_prototypes:
-            -
-              uuid: 71301cd82a0749b4abed0feb58061a37
+            - uuid: 71301cd82a0749b4abed0feb58061a37
               name: 'Incoming Errors on {#IFDESCR}'
               type: ZABBIX_ACTIVE
               key: 'net.if.in[{#IFNAME},errors]'
               delay: '60'
               history: 7d
               preprocessing:
-                -
-                  type: CHANGE_PER_SECOND
+                - type: CHANGE_PER_SECOND
                   parameters:
                     - ''
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: 'Network interfaces'
-            -
-              uuid: cbadb376e2924e438a81f068fd8553ef
+            - uuid: cbadb376e2924e438a81f068fd8553ef
               name: 'Incoming network traffic on {#IFDESCR}'
               type: ZABBIX_ACTIVE
               key: 'net.if.in[{#IFNAME}]'
-              delay: '60'
+              delay: '2'
               history: 7d
               units: bps
               preprocessing:
-                -
-                  type: CHANGE_PER_SECOND
+                - type: CHANGE_PER_SECOND
                   parameters:
                     - ''
-                -
-                  type: MULTIPLIER
+                - type: MULTIPLIER
                   parameters:
                     - '8'
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: 'Network interfaces'
-            -
-              uuid: a885e855bdda4eeda877a91ac30bbcb1
+            - uuid: a885e855bdda4eeda877a91ac30bbcb1
               name: 'Outgoing errors on {#IFDESCR}'
               type: ZABBIX_ACTIVE
               key: 'net.if.out[{#IFNAME},errors]'
               delay: '60'
               history: 7d
               preprocessing:
-                -
-                  type: CHANGE_PER_SECOND
+                - type: CHANGE_PER_SECOND
                   parameters:
                     - ''
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: 'Network interfaces'
-            -
-              uuid: 74c6ae5e88bb4be49a23f82c50a957ac
+            - uuid: 74c6ae5e88bb4be49a23f82c50a957ac
               name: 'Outgoing network traffic on {#IFDESCR}'
               type: ZABBIX_ACTIVE
               key: 'net.if.out[{#IFNAME}]'
-              delay: '60'
+              delay: '2'
               history: 7d
               units: bps
               preprocessing:
-                -
-                  type: CHANGE_PER_SECOND
+                - type: CHANGE_PER_SECOND
                   parameters:
                     - ''
-                -
-                  type: MULTIPLIER
+                - type: MULTIPLIER
                   parameters:
                     - '8'
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: 'Network interfaces'
           graph_prototypes:
-            -
-              uuid: adcaff7d4cdf4dbb8df4a5c1069a9fff
+            - uuid: adcaff7d4cdf4dbb8df4a5c1069a9fff
               name: 'Network traffic on {#IFDESCR}'
               show_triggers: 'NO'
               show_legend: 'NO'
               ymin_type_1: FIXED
               graph_items:
-                -
-                  drawtype: GRADIENT_LINE
+                - drawtype: GRADIENT_LINE
                   color: '29E900'
                   item:
                     host: 'Template pfSense Active'
                     key: 'net.if.in[{#IFNAME}]'
-                -
-                  sortorder: '1'
+                - sortorder: '1'
                   drawtype: GRADIENT_LINE
                   color: FD0000
                   item:
                     host: 'Template pfSense Active'
                     key: 'net.if.out[{#IFNAME}]'
-        -
-          uuid: 111d1d4374084b4d94bd930dfa16e216
+        - uuid: 111d1d4374084b4d94bd930dfa16e216
           name: 'OpenVPN Client Discovery'
           type: ZABBIX_ACTIVE
           key: 'pfsense.discovery[openvpn_client]'
           delay: 300s
           description: 'OpenVPN Client Discovery'
           item_prototypes:
-            -
-              uuid: 15e5067016824fc7963ae22df7a675ea
+            - uuid: 15e5067016824fc7963ae22df7a675ea
               name: 'OpenVPN Client  {#NAME} Tunnel Status'
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[openvpn_clientvalue,{#CLIENT},status]'
@@ -1105,35 +1023,29 @@ zabbix_export:
               valuemap:
                 name: 'pfSense OpenVPN Interface Status'
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: 'OpenVPN Client'
               trigger_prototypes:
-                -
-                  uuid: 33ac9b529a1f485394bca3b7a04d113f
-                  expression: 'avg(/Template pfSense Active/pfsense.value[openvpn_clientvalue,{#CLIENT},status],#3)=0'
+                - uuid: 50f5ee98fee046068003354f379ada75
+                  expression: 'last(/Template pfSense Active/pfsense.value[openvpn_clientvalue,{#CLIENT},status])=0'
                   name: 'OpenVPN Client {#NAME} Tunnel is Down'
                   priority: HIGH
                   description: 'OpenVPN Tunnel Down'
-        -
-          uuid: 9afe1fad6b6a4ec88ae81969a57c6107
+        - uuid: 9afe1fad6b6a4ec88ae81969a57c6107
           name: 'OpenVPN Server Discovery'
           type: ZABBIX_ACTIVE
           key: 'pfsense.discovery[openvpn_server]'
           delay: 300s
           item_prototypes:
-            -
-              uuid: 0a6ee94cefe8457eb56ef832d8734790
+            - uuid: 0a6ee94cefe8457eb56ef832d8734790
               name: 'OpenVPN Server {#NAME} Clients Connected'
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[openvpn_servervalue,{#SERVER},conns]'
               delay: 60s
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: 'OpenVPN Server'
-            -
-              uuid: d3cadc40e5d74acf8e0549e9d28771ea
+            - uuid: d3cadc40e5d74acf8e0549e9d28771ea
               name: 'OpenVPN Server {#NAME} Mode'
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[openvpn_servervalue,{#SERVER},mode]'
@@ -1141,21 +1053,17 @@ zabbix_export:
               valuemap:
                 name: 'pfSense OpenVPN Mode'
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: 'OpenVPN Server'
-            -
-              uuid: c2187f680f92432d9dc3b1609b1f7fa7
+            - uuid: c2187f680f92432d9dc3b1609b1f7fa7
               name: 'OpenVPN Server {#NAME} Port'
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[openvpn_servervalue,{#SERVER},port]'
               delay: 300s
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: 'OpenVPN Server'
-            -
-              uuid: be75ce1d23fa48cf80d8ba7ab181ad12
+            - uuid: be75ce1d23fa48cf80d8ba7ab181ad12
               name: 'OpenVPN Server {#NAME} Tunnel Status'
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[openvpn_servervalue,{#SERVER},status]'
@@ -1163,53 +1071,45 @@ zabbix_export:
               valuemap:
                 name: 'pfSense OpenVPN Interface Status'
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: 'OpenVPN Server'
           trigger_prototypes:
-            -
-              uuid: ea2851d79a11460fa467f3c02038dcf9
-              expression: 'avg(/Template pfSense Active/pfsense.expected_carp_status,#3)<>2 and last(/Template pfSense Active/pfsense.value[openvpn_servervalue,{#SERVER},status],#3)=0'
+            - uuid: e879868caa0c474da7d5dfc003ceadc9
+              expression: 'last(/Template pfSense Active/pfsense.expected_carp_status)<>2 and last(/Template pfSense Active/pfsense.value[openvpn_servervalue,{#SERVER},status])=0'
               name: 'OpenVPN Server {#NAME} is Down'
               priority: HIGH
               description: 'OpenVPN Tunnel is Down'
-        -
-          uuid: f99425c237ad457b8c17ac6e87fb26fc
+        - uuid: f99425c237ad457b8c17ac6e87fb26fc
           name: 'Services Discovery'
           type: ZABBIX_ACTIVE
           key: 'pfsense.discovery[services]'
           delay: 300s
           item_prototypes:
-            -
-              uuid: 072e3f3d659c4414adb7054e268383e9
+            - uuid: 072e3f3d659c4414adb7054e268383e9
               name: 'Service {#DESCRIPTION}  enabled on CARP Slave'
               key: 'pfsense.value[service_value,{#SERVICE},run_on_carp_slave]'
               delay: 600s
               valuemap:
                 name: 'Generic YesNo'
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: Services
-            -
-              uuid: a082002e7599481b8b58ad2d5e1d4e43
+            - uuid: a082002e7599481b8b58ad2d5e1d4e43
               name: 'Service {#DESCRIPTION} Status'
               key: 'pfsense.value[service_value,{#SERVICE},status]'
               delay: 60s
               valuemap:
                 name: 'Service state'
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: Services
           trigger_prototypes:
-            -
-              uuid: f9f34f0546b24f30b098254d052507f1
+            - uuid: 6663f0535b8e46fba8330ff57fe89dc6
               expression: |
-                avg(/Template pfSense Active/pfsense.value[service_value,{#SERVICE},status],#3)=0 and (
+                last(/Template pfSense Active/pfsense.value[service_value,{#SERVICE},status])=0 and (
                 
                 (last(/Template pfSense Active/pfsense.value[service_value,{#SERVICE},run_on_carp_slave])=1 and 
-                avg(/Template pfSense Active/pfsense.value[carp_status],#3)=2)
+                last(/Template pfSense Active/pfsense.value[carp_status])=2)
                 
                 or
                 
@@ -1222,23 +1122,20 @@ zabbix_export:
               name: 'Service {#DESCRIPTION} is not running'
               priority: HIGH
               description: 'Service is not running'
-        -
-          uuid: 06f42546705d4a7b89178d8f024f4a03
+        - uuid: 06f42546705d4a7b89178d8f024f4a03
           name: 'Mounted filesystem discovery'
           type: ZABBIX_ACTIVE
           key: vfs.fs.discovery
           delay: '3600'
           filter:
             conditions:
-              -
-                macro: '{#FSTYPE}'
+              - macro: '{#FSTYPE}'
                 value: '@File systems for discovery'
                 formulaid: A
           lifetime: 7d
           description: 'Discovery of file systems of different types as defined in global regular expression "File systems for discovery".'
           item_prototypes:
-            -
-              uuid: 96acea60f88b42cb8fbc9c7d47881d26
+            - uuid: 96acea60f88b42cb8fbc9c7d47881d26
               name: 'Free inodes on {#FSNAME} (percentage)'
               type: ZABBIX_ACTIVE
               key: 'vfs.fs.inode[{#FSNAME},pfree]'
@@ -1247,17 +1144,14 @@ zabbix_export:
               value_type: FLOAT
               units: '%'
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: Filesystems
               trigger_prototypes:
-                -
-                  uuid: 1ea81cdc56fd483d82f187d209cff516
+                - uuid: 1ea81cdc56fd483d82f187d209cff516
                   expression: 'last(/Template pfSense Active/vfs.fs.inode[{#FSNAME},pfree])<20'
                   name: 'Free inodes is less than 20% on volume {#FSNAME}'
                   priority: WARNING
-            -
-              uuid: ff42876417ee4d6b9a69341f69c3cb5c
+            - uuid: ff42876417ee4d6b9a69341f69c3cb5c
               name: 'Free disk space on {#FSNAME}'
               type: ZABBIX_ACTIVE
               key: 'vfs.fs.size[{#FSNAME},free]'
@@ -1265,11 +1159,9 @@ zabbix_export:
               history: 7d
               units: B
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: Filesystems
-            -
-              uuid: 04c24f47f7ea4ed68416b0b465fc7de5
+            - uuid: 04c24f47f7ea4ed68416b0b465fc7de5
               name: 'Free disk space on {#FSNAME} (percentage)'
               type: ZABBIX_ACTIVE
               key: 'vfs.fs.size[{#FSNAME},pfree]'
@@ -1278,17 +1170,14 @@ zabbix_export:
               value_type: FLOAT
               units: '%'
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: Filesystems
               trigger_prototypes:
-                -
-                  uuid: 41119ea7e7924b95ba5e148277745f3c
+                - uuid: 41119ea7e7924b95ba5e148277745f3c
                   expression: 'last(/Template pfSense Active/vfs.fs.size[{#FSNAME},pfree])<20'
                   name: 'Free disk space is less than 20% on volume {#FSNAME}'
                   priority: WARNING
-            -
-              uuid: 6466404aa20a40bb95ccadc0662f7eeb
+            - uuid: 6466404aa20a40bb95ccadc0662f7eeb
               name: 'Total disk space on {#FSNAME}'
               type: ZABBIX_ACTIVE
               key: 'vfs.fs.size[{#FSNAME},total]'
@@ -1296,11 +1185,9 @@ zabbix_export:
               history: 7d
               units: B
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: Filesystems
-            -
-              uuid: bcd151df26344c1580b68a88b80a919e
+            - uuid: bcd151df26344c1580b68a88b80a919e
               name: 'Used disk space on {#FSNAME}'
               type: ZABBIX_ACTIVE
               key: 'vfs.fs.size[{#FSNAME},used]'
@@ -1308,12 +1195,10 @@ zabbix_export:
               history: 7d
               units: B
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: Filesystems
           graph_prototypes:
-            -
-              uuid: e0fcad45031446ee81562fa2c5a19740
+            - uuid: e0fcad45031446ee81562fa2c5a19740
               name: 'Disk space usage {#FSNAME}'
               width: '600'
               height: '340'
@@ -1323,205 +1208,162 @@ zabbix_export:
               type: PIE
               show_3d: 'YES'
               graph_items:
-                -
-                  color: CC0000
+                - color: CC0000
                   type: GRAPH_SUM
                   item:
                     host: 'Template pfSense Active'
                     key: 'vfs.fs.size[{#FSNAME},total]'
-                -
-                  sortorder: '1'
+                - sortorder: '1'
                   color: 5B5B5B
                   item:
                     host: 'Template pfSense Active'
                     key: 'vfs.fs.size[{#FSNAME},free]'
-                -
-                  sortorder: '2'
+                - sortorder: '2'
                   color: AEEE00
                   item:
                     host: 'Template pfSense Active'
                     key: 'vfs.fs.size[{#FSNAME},used]'
       macros:
-        -
-          macro: '{$CARP_SERVICES_STOPPED}'
+        - macro: '{$CARP_SERVICES_STOPPED}'
           value: ^(haproxy|openvpn)$
-        -
-          macro: '{$CARP_SLAVE_SERVICES:"haproxy"}'
+        - macro: '{$CARP_SLAVE_SERVICES:"haproxy"}'
           value: '0'
-        -
-          macro: '{$CARP_SLAVE_SERVICES:"openvpn"}'
+        - macro: '{$CARP_SLAVE_SERVICES:"openvpn"}'
           value: '0'
-        -
-          macro: '{$EXPECTED_CARP_STATUS}'
+        - macro: '{$CERT_SECURITY_BITS}'
+          value: '112'
+          description: 'Set to 80 for seclevel=0, set to 128 for seclevel=2'
+        - macro: '{$EXPECTED_CARP_STATUS}'
           value: '0'
       dashboards:
-        -
-          uuid: a88c02addc374f83ade5063845b7a828
+        - uuid: a88c02addc374f83ade5063845b7a828
           name: 'System performance'
           pages:
-            -
-              widgets:
-                -
-                  type: GRAPH_CLASSIC
+            - widgets:
+                - type: GRAPH_CLASSIC
                   width: '12'
                   height: '7'
                   fields:
-                    -
-                      type: GRAPH
+                    - type: GRAPH
                       name: graphid
                       value:
                         host: 'Template pfSense Active'
                         name: 'Active Connections (pie)'
-                -
-                  type: GRAPH_CLASSIC
+                - type: GRAPH_CLASSIC
                   x: '12'
                   width: '12'
                   height: '7'
                   fields:
-                    -
-                      type: GRAPH
+                    - type: GRAPH
                       name: graphid
                       value:
                         host: 'Template pfSense Active'
                         name: 'Network Memory Buffer (pie)'
-                -
-                  type: GRAPH_CLASSIC
+                - type: GRAPH_CLASSIC
                   'y': '7'
                   width: '12'
                   height: '7'
                   fields:
-                    -
-                      type: GRAPH
+                    - type: GRAPH
                       name: graphid
                       value:
                         host: 'Template pfSense Active'
                         name: 'CPU load'
-                -
-                  type: GRAPH_CLASSIC
+                - type: GRAPH_CLASSIC
                   x: '12'
                   'y': '7'
                   width: '12'
                   height: '7'
                   fields:
-                    -
-                      type: GRAPH
+                    - type: GRAPH
                       name: graphid
                       value:
                         host: 'Template pfSense Active'
                         name: 'Memory Usage simple (pie)'
       valuemaps:
-        -
-          uuid: c1dcf6e418b94f07bf15ca15844d3eb3
+        - uuid: c1dcf6e418b94f07bf15ca15844d3eb3
           name: 'Generic YesNo'
           mappings:
-            -
-              value: '0'
+            - value: '0'
               newvalue: 'No'
-            -
-              value: '1'
+            - value: '1'
               newvalue: 'Yes'
-        -
-          uuid: cc85f86bc6974aaca6cf474d69d404fa
+        - uuid: cc85f86bc6974aaca6cf474d69d404fa
           name: 'pfSense CARP Status'
           mappings:
-            -
-              value: '0'
+            - value: '0'
               newvalue: Disabled
-            -
-              value: '1'
+            - value: '1'
               newvalue: Master
-            -
-              value: '2'
+            - value: '2'
               newvalue: Backup
-            -
-              value: '3'
+            - value: '3'
               newvalue: Inconsistent
-            -
-              value: '4'
+            - value: '4'
               newvalue: Problem
-        -
-          uuid: e5ef9028f13144a994c65b1b0fd866ee
+        - uuid: e5ef9028f13144a994c65b1b0fd866ee
           name: 'pfSense Gateway Status'
           mappings:
-            -
-              value: '0'
+            - value: '0'
               newvalue: Up
-            -
-              value: '1'
+            - value: '1'
               newvalue: 'Packet Loss'
-            -
-              value: '2'
+            - value: '2'
               newvalue: 'High Delay'
-            -
-              value: '3'
+            - value: '3'
               newvalue: 'High Packet Loss'
-            -
-              value: '4'
+            - value: '4'
               newvalue: 'Forced Down'
-            -
-              value: '5'
+            - value: '5'
               newvalue: Down
-        -
-          uuid: 0230121a072c459582593d9d70686f6e
+        - uuid: 0230121a072c459582593d9d70686f6e
           name: 'pfSense OpenVPN Interface Status'
           mappings:
-            -
-              value: '0'
+            - value: '0'
               newvalue: Down
-            -
-              value: '1'
+            - value: '1'
               newvalue: Up
-            -
-              value: '2'
+            - value: '2'
               newvalue: None
-            -
-              value: '3'
+            - value: '3'
               newvalue: Reconnecting
-            -
-              value: '4'
+            - value: '4'
               newvalue: Waiting
-            -
-              value: '5'
+            - value: '5'
               newvalue: Up/Listening
-        -
-          uuid: e394e9e9642e4999aaeb4bae2f67e612
+        - uuid: e394e9e9642e4999aaeb4bae2f67e612
           name: 'pfSense OpenVPN Mode'
           mappings:
-            -
-              value: '1'
+            - value: '1'
               newvalue: 'Peer to Peer (SSL/TLS)'
-            -
-              value: '2'
+            - value: '2'
               newvalue: 'P2P Shared Key'
-            -
-              value: '3'
+            - value: '3'
               newvalue: 'Remote Access (SSL/TLS)'
-            -
-              value: '4'
+            - value: '4'
               newvalue: 'Remote Access (User Auth)'
-            -
-              value: '5'
+            - value: '5'
               newvalue: 'Remote Access 8SSL/TLS + User Auth)'
-        -
-          uuid: 8e060d1f44054f2499c649a299dd6f42
+        - uuid: 8e060d1f44054f2499c649a299dd6f42
           name: 'Service state'
           mappings:
-            -
-              value: '0'
+            - value: '0'
               newvalue: Down
-            -
-              value: '1'
+            - value: '1'
               newvalue: Up
   triggers:
-    -
-      uuid: ba26b37d090c439faf2ed71f0e8b2be3
+    - uuid: ba26b37d090c439faf2ed71f0e8b2be3
       expression: 'last(/Template pfSense Active/pfsense.expected_carp_status)<>0 and last(/Template pfSense Active/pfsense.value[carp_status])<>{$EXPECTED_CARP_STATUS}'
       name: 'CARP Status not Expected on {HOST.NAME}'
       priority: HIGH
       description: 'pfSense CARP is not in the state Expected. This means that a failover could be in process.'
+    - uuid: 23b24281dd5d47c58be38ecb2333b8de
+      expression: '(last(/Template pfSense Active/pfsense.value[system,version])<>last(/Template pfSense Active/pfsense.value[system,installed_version]))=1'
+      name: 'New Version Available on {HOST.NAME}'
+      priority: INFO
+      description: 'Noify of new version of pfsense available'
   graphs:
-    -
-      uuid: 499d867c58974a8e914b0423bdbf3d01
+    - uuid: 499d867c58974a8e914b0423bdbf3d01
       name: 'Active Connections'
       show_triggers: 'NO'
       ymin_type_1: FIXED
@@ -1530,14 +1372,12 @@ zabbix_export:
         host: 'Template pfSense Active'
         key: pfsense.states.max
       graph_items:
-        -
-          drawtype: GRADIENT_LINE
+        - drawtype: GRADIENT_LINE
           color: FF2C27
           item:
             host: 'Template pfSense Active'
             key: pfsense.states.current
-    -
-      uuid: 6cd23b5084844a2481beb5c34f1e603a
+    - uuid: 6cd23b5084844a2481beb5c34f1e603a
       name: 'Active Connections (pie)'
       width: '600'
       height: '340'
@@ -1546,101 +1386,85 @@ zabbix_export:
       show_triggers: 'NO'
       type: PIE
       graph_items:
-        -
-          color: 5B5B5B
+        - color: 5B5B5B
           type: GRAPH_SUM
           item:
             host: 'Template pfSense Active'
             key: pfsense.states.max
-        -
-          sortorder: '1'
+        - sortorder: '1'
           drawtype: GRADIENT_LINE
           color: FF2C27
           item:
             host: 'Template pfSense Active'
             key: pfsense.states.current
-    -
-      uuid: 15db8adacf6e4b35ba5a6b36b2ddef1f
+    - uuid: 15db8adacf6e4b35ba5a6b36b2ddef1f
       name: 'CPU jumps'
       graph_items:
-        -
-          drawtype: GRADIENT_LINE
+        - drawtype: GRADIENT_LINE
           color: '009900'
           item:
             host: 'Template pfSense Active'
             key: system.cpu.switches
-        -
-          sortorder: '1'
+        - sortorder: '1'
           drawtype: GRADIENT_LINE
           color: '000099'
           item:
             host: 'Template pfSense Active'
             key: system.cpu.intr
-    -
-      uuid: c515614caf3445e6b28858907b1d1713
+    - uuid: c515614caf3445e6b28858907b1d1713
       name: 'CPU load'
       type: STACKED
       ymin_type_1: FIXED
       graph_items:
-        -
-          color: FFA619
+        - color: FFA619
           item:
             host: 'Template pfSense Active'
             key: 'system.cpu.load[percpu,avg1]'
-        -
-          sortorder: '1'
+        - sortorder: '1'
           color: E86E30
           item:
             host: 'Template pfSense Active'
             key: 'system.cpu.load[percpu,avg5]'
-        -
-          sortorder: '2'
+        - sortorder: '2'
           color: FF2F26
           item:
             host: 'Template pfSense Active'
             key: 'system.cpu.load[percpu,avg15]'
-    -
-      uuid: aa694daef9004553952ec7cf3fa153b1
+    - uuid: aa694daef9004553952ec7cf3fa153b1
       name: 'CPU utilization (Line)'
       show_triggers: 'NO'
       ymin_type_1: FIXED
       ymax_type_1: FIXED
       graph_items:
-        -
-          drawtype: GRADIENT_LINE
+        - drawtype: GRADIENT_LINE
           color: FFE819
           item:
             host: 'Template pfSense Active'
             key: 'system.cpu.util[,interrupt]'
-        -
-          sortorder: '1'
+        - sortorder: '1'
           drawtype: GRADIENT_LINE
           color: E85D17
           item:
             host: 'Template pfSense Active'
             key: 'system.cpu.util[,nice]'
-        -
-          sortorder: '2'
+        - sortorder: '2'
           drawtype: GRADIENT_LINE
           color: DF26FF
           item:
             host: 'Template pfSense Active'
             key: 'system.cpu.util[,system]'
-        -
-          sortorder: '3'
+        - sortorder: '3'
           drawtype: GRADIENT_LINE
           color: '1775E8'
           item:
             host: 'Template pfSense Active'
             key: 'system.cpu.util[,user]'
-        -
-          sortorder: '4'
+        - sortorder: '4'
           color: 03D933
           item:
             host: 'Template pfSense Active'
             key: 'system.cpu.util[,idle]'
-    -
-      uuid: 61378e27951a4882b1f88d041922ad16
+    - uuid: 61378e27951a4882b1f88d041922ad16
       name: 'Memory Available details (pie)'
       width: '600'
       height: '340'
@@ -1649,32 +1473,27 @@ zabbix_export:
       show_triggers: 'NO'
       type: PIE
       graph_items:
-        -
-          color: '003300'
+        - color: '003300'
           type: GRAPH_SUM
           item:
             host: 'Template pfSense Active'
             key: 'vm.memory.size[available]'
-        -
-          sortorder: '1'
+        - sortorder: '1'
           color: '005500'
           item:
             host: 'Template pfSense Active'
             key: 'vm.memory.size[free]'
-        -
-          sortorder: '2'
+        - sortorder: '2'
           color: '007700'
           item:
             host: 'Template pfSense Active'
             key: 'vm.memory.size[cached]'
-        -
-          sortorder: '3'
+        - sortorder: '3'
           color: '009900'
           item:
             host: 'Template pfSense Active'
             key: 'vm.memory.size[inactive]'
-    -
-      uuid: 625d8fc33a5d410ab2229dd2e8e99762
+    - uuid: 625d8fc33a5d410ab2229dd2e8e99762
       name: 'Memory usage'
       show_triggers: 'NO'
       type: STACKED
@@ -1684,37 +1503,31 @@ zabbix_export:
         host: 'Template pfSense Active'
         key: 'vm.memory.size[total]'
       graph_items:
-        -
-          color: 00EE00
+        - color: 00EE00
           item:
             host: 'Template pfSense Active'
             key: 'vm.memory.size[wired]'
-        -
-          sortorder: '1'
+        - sortorder: '1'
           color: 00CC00
           item:
             host: 'Template pfSense Active'
             key: 'vm.memory.size[active]'
-        -
-          sortorder: '2'
+        - sortorder: '2'
           color: '007700'
           item:
             host: 'Template pfSense Active'
             key: 'vm.memory.size[inactive]'
-        -
-          sortorder: '3'
+        - sortorder: '3'
           color: '005500'
           item:
             host: 'Template pfSense Active'
             key: 'vm.memory.size[cached]'
-        -
-          sortorder: '4'
+        - sortorder: '4'
           color: '003300'
           item:
             host: 'Template pfSense Active'
             key: 'vm.memory.size[free]'
-    -
-      uuid: eeb86545b71145949b241b7d89b3a79b
+    - uuid: eeb86545b71145949b241b7d89b3a79b
       name: 'Memory Usage simple (pie)'
       width: '600'
       height: '340'
@@ -1723,19 +1536,16 @@ zabbix_export:
       show_triggers: 'NO'
       type: PIE
       graph_items:
-        -
-          color: '003300'
+        - color: '003300'
           item:
             host: 'Template pfSense Active'
             key: 'vm.memory.size[available]'
-        -
-          sortorder: '1'
+        - sortorder: '1'
           color: 00DD00
           item:
             host: 'Template pfSense Active'
             key: kt.mem.used
-    -
-      uuid: ab954e447cb14b10bb902e7c43a6d31a
+    - uuid: ab954e447cb14b10bb902e7c43a6d31a
       name: 'Network Memory Buffer'
       show_triggers: 'NO'
       type: STACKED
@@ -1745,19 +1555,16 @@ zabbix_export:
         host: 'Template pfSense Active'
         key: pfsense.mbuf.max
       graph_items:
-        -
-          color: B26E16
+        - color: B26E16
           item:
             host: 'Template pfSense Active'
             key: pfsense.mbuf.current
-        -
-          sortorder: '1'
+        - sortorder: '1'
           color: FFCE8E
           item:
             host: 'Template pfSense Active'
             key: pfsense.mbuf.cache
-    -
-      uuid: eab355b1ef2f450a938441c913b7631a
+    - uuid: eab355b1ef2f450a938441c913b7631a
       name: 'Network Memory Buffer (pie)'
       width: '600'
       height: '340'
@@ -1766,26 +1573,22 @@ zabbix_export:
       show_triggers: 'NO'
       type: PIE
       graph_items:
-        -
-          color: 5B5B5B
+        - color: 5B5B5B
           type: GRAPH_SUM
           item:
             host: 'Template pfSense Active'
             key: pfsense.mbuf.max
-        -
-          sortorder: '1'
+        - sortorder: '1'
           color: FFCE8E
           item:
             host: 'Template pfSense Active'
             key: pfsense.mbuf.cache
-        -
-          sortorder: '2'
+        - sortorder: '2'
           color: B26E16
           item:
             host: 'Template pfSense Active'
             key: pfsense.mbuf.current
-    -
-      uuid: 9522838e31244b6e88a9a020bdd07602
+    - uuid: 9522838e31244b6e88a9a020bdd07602
       name: 'Swap usage'
       width: '600'
       height: '340'
@@ -1795,14 +1598,12 @@ zabbix_export:
       type: PIE
       show_3d: 'YES'
       graph_items:
-        -
-          color: 5B5B5B
+        - color: 5B5B5B
           type: GRAPH_SUM
           item:
             host: 'Template pfSense Active'
             key: 'system.swap.size[,total]'
-        -
-          sortorder: '1'
+        - sortorder: '1'
           color: FFFF33
           item:
             host: 'Template pfSense Active'
