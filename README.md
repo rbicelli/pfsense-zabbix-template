@@ -109,7 +109,7 @@ For testing if speedtest is installed properly you can try it:
 Then, setup the cronjob with: 
 
 ```bash 
-/url/local/bin/php /root/scripts/pfsense_zbx.php speedtest_cron
+/usr/local/bin/php /root/scripts/pfsense_zbx.php speedtest_cron
 ```
 
 Remember that you will need to install the package on *every* pfSense upgrade.
