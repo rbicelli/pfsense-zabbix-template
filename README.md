@@ -83,16 +83,21 @@ Possible values are:
 
 This is useful when monitoring services which could stay stopped on CARP Backup Member.
 
-
 ## Setup Speedtest
 
-For running speedtests on WAN interfaces you have to install the speedtest package.
-
-From **Diagnostics/Command Prompt** input this commands:
+For running speedtests on WAN interfaces on the latest pfSense CE (2.7.2), it's recommended to check the available speedtest package first using:
 
 ```bash
-pkg update && pkg install -y py38-speedtest-cli
+pkg search speedtest
 ```
+
+This will provide you with the latest package information. To install the speedtest package, use the following commands in **Diagnostics/Command Prompt**:
+
+```bash
+pkg update && pkg install -y py311-speedtest-cli
+```
+
+Make sure to replace `py311-speedtest-cli` with the correct package name based on the results of the pkg search speedtest command.
 
 Speedtest python package could be broken at the moment, so you could need an extra step, *only if manually executing speedtest results in an error*: download the latest version from package author's github repo.
 
