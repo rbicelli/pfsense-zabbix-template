@@ -1193,7 +1193,7 @@ function pfz_cert_discovery(){
 }
 
 function pfz_get_cert_info($index) {
-	# Use a cache file to speed up multiple requests for certificate things. 
+	// Use a cache file to speed up multiple requests for certificate things. 
 	$cacheFile = "/root/.ssl/certinfo_{$index}.json";
 	if(file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
 		return json_decode(file_get_contents($cacheFile), true);		
@@ -1233,19 +1233,22 @@ function pfz_get_cert_pkey_info($index) {
 	} else {
 		$certType = "cert";
 	}
-	$publicKey = openssl_pkey_get_public(base64_decode($config[$certType][$index]["crt"]));
-	$details = openssl_pkey_get_details($publicKey);	
-	# Don't allow other users access to private keys. 
-	if(file_exists($cacheFile)) {
-		unlink($cacheFile);
-	}
-	touch($cacheFile);
-	chmod($cacheFile, 0600); 
-	if (!is_dir('/root/.ssl')) {
-		mkdir('/root/.ssl');
-	}
-	if(!file_put_contents($cacheFile, json_encode($details))) {
-		unlink($cacheFile);
+	$cert_key = $config[$certType][$index]["crt"]);
+	if ($cert_key!=false) {
+		$publicKey = openssl_pkey_get_public(base64_decode($cert_key);
+		$details = openssl_pkey_get_details($publicKey);	
+		# Don't allow other users access to private keys. 
+		if(file_exists($cacheFile)) {
+			unlink($cacheFile);
+		}
+		touch($cacheFile);
+		chmod($cacheFile, 0600); 
+		if (!is_dir('/root/.ssl')) {
+			mkdir('/root/.ssl');
+		}
+		if(!file_put_contents($cacheFile, json_encode($details))) {
+			unlink($cacheFile);
+		}
 	}	
 	return $details;
 }
