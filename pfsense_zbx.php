@@ -33,6 +33,16 @@ require_once('pkg-utils.inc');
 
 //For DHCP
 
+//backporting php 8 functions
+if (!function_exists('str_contains')){
+
+	function str_contains($haystack,$needle){
+
+		return strstr($haystack,$needle);
+	}
+
+}
+
 //Testing function, for template creating purpose
 function pfz_test(){
         $line = "-------------------\n";
