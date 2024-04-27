@@ -4,8 +4,9 @@
 
 This is a pfSense active template for Zabbix, based on Standard Agent and a php script using pfSense functions library for monitoring specific data.
 
+Tested with pfSense 2.7.x, Zabbix 6.0.
 
-Tested with pfSense 2.5.x, Zabbix 4.0, Zabbix 5.0, Zabbix 6.0
+I'm actively maintaning only template only for the current LTS Zabbix Template. Newest features will be explicitily added on current LTS.
 
 ## What it does
 
@@ -19,6 +20,7 @@ Tested with pfSense 2.5.x, Zabbix 4.0, Zabbix 5.0, Zabbix 6.0
  - Basic Service Discovery and Monitoring (Service Status)
  - pfSense Version/Update Available
  - Packages Update Available
+ - Certificate Discovery and Monitoring
  
 **Template pfSense Active: OpenVPN Server User Auth**
 
@@ -33,6 +35,7 @@ Tested with pfSense 2.5.x, Zabbix 4.0, Zabbix 5.0, Zabbix 6.0
 **Template pfSense Active: Speedtest**
 
  - Discovery of WAN Interfaces
+ - Discover public IP Address/ISP Name of WAN Interfaces
  - Perform speed tests and collect metrics
 
 

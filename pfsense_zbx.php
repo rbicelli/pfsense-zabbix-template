@@ -33,7 +33,7 @@ require_once('pkg-utils.inc');
 
 //For DHCP
 
-//backporting php 8 functions
+//Backporting php 8 functions
 if (!function_exists('str_contains')){
 
 	function str_contains($haystack,$needle){

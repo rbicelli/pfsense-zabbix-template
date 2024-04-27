@@ -1,13 +1,11 @@
 zabbix_export:
   version: '6.0'
-  date: '2023-02-26T13:20:29Z'
+  date: '2024-04-27T15:16:18Z'
   groups:
-    -
-      uuid: 4918b88734c54bd094cff7585b5d71fc
+    - uuid: 4918b88734c54bd094cff7585b5d71fc
       name: 'Templates/Network Devices'
   templates:
-    -
-      uuid: 1c7cba22540d4c10a5ee14c2b25223ca
+    - uuid: 1c7cba22540d4c10a5ee14c2b25223ca
       template: 'pfSense Active Speedtest'
       name: 'pfSense Active: Speedtest'
       description: |
@@ -15,23 +13,48 @@ zabbix_export:
         Executes Speedtests on WAN Interfaces.
         
         Requires pfsense_zbx.php installed to pfSense Box.
-        Version 1.0.5
+        Version 0.24.04
         
         https://github.com/rbicelli/pfsense-zabbix-template
       groups:
-        -
-          name: 'Templates/Network Devices'
+        - name: 'Templates/Network Devices'
       discovery_rules:
-        -
-          uuid: 40288914aa9742adb93120c367263690
+        - uuid: 40288914aa9742adb93120c367263690
           name: 'WAN Interfaces'
           type: ZABBIX_ACTIVE
           key: 'pfsense.discovery[wan]'
           delay: 300s
           description: 'Discover WAN Interfaces'
           item_prototypes:
-            -
-              uuid: a79d28cf3f3b4981b59f571117e64d24
+            - uuid: 07312f1cfd424a0eb65b5b45c2c2582d
+              name: 'Speedtest publc IP address of {#IFDESCR}'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[if_speedtest_value,{#IFNAME},client.ip]'
+              delay: 1h
+              trends: '0'
+              value_type: TEXT
+              description: 'Public IP Address'
+              tags:
+                - tag: Application
+                  value: 'Network interfaces'
+              trigger_prototypes:
+                - uuid: d7f05a232f004f0b8c2a974666a31c55
+                  expression: 'last(/pfSense Active Speedtest/pfsense.value[if_speedtest_value,{#IFNAME},client.ip],#1)<>last(/pfSense Active Speedtest/pfsense.value[if_speedtest_value,{#IFNAME},client.ip],#2)'
+                  name: 'Publc IP address of {#IFDESCR} has changed'
+                  priority: INFO
+                  description: 'Public IP Address has changed.'
+            - uuid: b1bef62fecb840c2bf9eb081da8fa3f7
+              name: 'Speedtest ISP name of {#IFDESCR}'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[if_speedtest_value,{#IFNAME},client.isp]'
+              delay: 1h
+              trends: '0'
+              value_type: TEXT
+              description: 'ISP Name'
+              tags:
+                - tag: Application
+                  value: 'Network interfaces'
+            - uuid: a79d28cf3f3b4981b59f571117e64d24
               name: 'Speedtest Download on {#IFDESCR}'
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[if_speedtest_value,{#IFNAME},download]'
@@ -40,11 +63,9 @@ zabbix_export:
               units: bps
               description: 'Download speed determined by Ookla Speedtest package'
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: 'Network interfaces'
-            -
-              uuid: 52b640fcdf484b538f85bf32d2afbcf3
+            - uuid: 52b640fcdf484b538f85bf32d2afbcf3
               name: 'Speedtest Ping on {#IFDESCR}'
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[if_speedtest_value,{#IFNAME},ping]'
@@ -53,11 +74,9 @@ zabbix_export:
               units: ms
               description: 'Ping determined by Ookla Speedtest package'
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: 'Network interfaces'
-            -
-              uuid: 4bd063f24e554832b59bfa2231d53bf1
+            - uuid: 4bd063f24e554832b59bfa2231d53bf1
               name: 'Speedtest Upload on {#IFDESCR}'
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[if_speedtest_value,{#IFNAME},upload]'
@@ -66,30 +85,25 @@ zabbix_export:
               units: bps
               description: 'Ping determined by Ookla Speedtest package'
               tags:
-                -
-                  tag: Application
+                - tag: Application
                   value: 'Network interfaces'
           graph_prototypes:
-            -
-              uuid: 74cdea0b8136495496bb90593bd78a59
+            - uuid: 74cdea0b8136495496bb90593bd78a59
               name: 'Speedtest metrics on {#IFDESCR}'
               graph_items:
-                -
-                  sortorder: '1'
+                - sortorder: '1'
                   color: 199C0D
                   calc_fnc: ALL
                   item:
                     host: 'pfSense Active Speedtest'
                     key: 'pfsense.value[if_speedtest_value,{#IFNAME},download]'
-                -
-                  sortorder: '2'
+                - sortorder: '2'
                   color: FFFF00
                   calc_fnc: ALL
                   item:
                     host: 'pfSense Active Speedtest'
                     key: 'pfsense.value[if_speedtest_value,{#IFNAME},upload]'
-                -
-                  sortorder: '3'
+                - sortorder: '3'
                   color: 0040FF
                   calc_fnc: ALL
                   item:
