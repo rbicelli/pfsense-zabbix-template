@@ -1,6 +1,6 @@
 zabbix_export:
   version: '6.0'
-  date: '2023-12-08T12:18:49Z'
+  date: '2024-04-27T13:30:24Z'
   groups:
     - uuid: 4918b88734c54bd094cff7585b5d71fc
       name: 'Templates/Network Devices'
@@ -10,7 +10,7 @@ zabbix_export:
       name: 'pfsense Active'
       description: |
         Active template for pfsense, requires pfsense_zbx.php installed to pfSense Box.
-        Version 1.0.2
+        Version 0.24.04
         
         https://github.com/rbicelli/pfsense-zabbix-template
       groups:
@@ -61,14 +61,14 @@ zabbix_export:
           name: 'Expected CARP Status'
           type: CALCULATED
           key: pfsense.expected_carp_status
-          delay: 30s
+          delay: 600s
           params: '{$EXPECTED_CARP_STATUS}'
           description: 'Expected CARP Status'
           valuemap:
             name: 'pfSense CARP Status'
           tags:
             - tag: Application
-              value: HA
+              value: CARP
         - uuid: dd3d8f993d3e468197500b09da067b20
           name: 'MBUF Cache'
           type: ZABBIX_ACTIVE
@@ -160,28 +160,73 @@ zabbix_export:
           name: 'CARP Status'
           type: ZABBIX_ACTIVE
           key: 'pfsense.value[carp_status]'
-          delay: 30s
+          delay: '60'
           description: 'pfSense CARP Status'
           valuemap:
             name: 'pfSense CARP Status'
           tags:
             - tag: Application
-              value: HA
+              value: CARP
           triggers:
             - uuid: 43391e9ed3134e689b0b09b1d124178b
               expression: 'last(/Template pfSense Active/pfsense.value[carp_status])>2'
               name: 'CARP  Problems on {HOST.NAME}'
               priority: HIGH
               description: 'CARP Problems'
-            - uuid: d763eb3d9b574e99a9852d7c595d4d08
-              expression: 'last(/Template pfSense Active/pfsense.value[carp_status])>2'
+            - uuid: a0ad30cea628413987919bd9bc8e229f
+              expression: 'avg(/Template pfSense Active/pfsense.value[carp_status],#3)>2'
               name: 'DHCP Failover Problems on {HOST.NAME}'
               url: 'https://docs.netgate.com/pfsense/en/latest/troubleshooting/ha-dhcp-failover.html'
               priority: HIGH
               description: 'One or more DHCP Pools are experiencing failover problems. This could potentially cause other problems in yourr network.'
-        - uuid: 0e2337e935cd4ef596d48ba52ebe6f46
+        - uuid: 61960002473248a59f26d953a59b4912
+          name: 'Certificates Manager: latest validFrom'
+          key: 'pfsense.value[cert_date,validFrom.max]'
+          delay: 1d
+          units: unixtime
+          description: 'This item will return will return the latest date "validFrom" from all the certificates (including CA). This is used to find new/renewed certificates.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          triggers:
+            - uuid: ad255a3cc27b470d94570f02e06f88c6
+              expression: 'now()-last(/Template pfSense Active/pfsense.value[cert_date,validFrom.max]) < 1d'
+              name: 'One or more certificates have been renewed in the past 24h'
+              opdata: 'Latest "Valid From" {ITEM.LASTVALUE1}'
+              priority: INFO
+              manual_close: 'YES'
+        - uuid: 7c27ed43d653416a8a7e200cfa97aa44
+          name: 'Certificates Manager: earliest validTo'
+          key: 'pfsense.value[cert_date,validTo.min]'
+          delay: 1d
+          units: unixtime
+          description: 'his item will return will return the earliest date "validTo" from all the certificates (including CA). This is used to find expiring certificates.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          triggers:
+            - uuid: f83c811a4df34be189def2aefe5bf987
+              expression: 'last(/Template pfSense Active/pfsense.value[cert_date,validTo.min])-now()<{$PFSENSE.CERT_EXPIRATION.AVERAGE}'
+              name: 'One or more certificates are expiring less than {$PFSENSE.CERT_EXPIRATION.AVERAGE}'
+              opdata: 'Earliest "Valid To": {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              dependencies:
+                - name: 'One or more certificates are expired'
+                  expression: 'last(/Template pfSense Active/pfsense.value[cert_date,validTo.min])<last(/Template pfSense Active/pfsense.value[cert_date,validFrom.max])'
+            - uuid: 5e3be006678c4d5496ab30cd76bfc89a
+              expression: 'last(/Template pfSense Active/pfsense.value[cert_date,validTo.min])-now()<{$PFSENSE.CERT_EXPIRATION.WARN}'
+              name: 'One or more certificates are expiring less than {$PFSENSE_CERT_EXPIRATION.WARN}'
+              opdata: 'Earliest "Valid To": {ITEM.LASTVALUE1}'
+              priority: HIGH
+              dependencies:
+                - name: 'One or more certificates are expired'
+                  expression: 'last(/Template pfSense Active/pfsense.value[cert_date,validTo.min])<last(/Template pfSense Active/pfsense.value[cert_date,validFrom.max])'
+                - name: 'One or more certificates are expiring less than {$PFSENSE.CERT_EXPIRATION.AVERAGE}'
+                  expression: 'last(/Template pfSense Active/pfsense.value[cert_date,validTo.min])-now()<{$PFSENSE.CERT_EXPIRATION.AVERAGE}'
+        - uuid: 3c38af8aef59489d93224ab03319e997
           name: 'DHCP Failover Pool Problems'
-          type: ZABBIX_ACTIVE
           key: 'pfsense.value[dhcp,failover]'
           delay: 120s
           description: 'This value indicates, in a HA scenario, if DHCP failover pool partners are out of sync.'
@@ -208,6 +253,20 @@ zabbix_export:
               priority: AVERAGE
               description: 'Gateway Status Change, for use with an acion Script (e.g. update DNS record)'
               manual_close: 'YES'
+        - uuid: 856991c40aa043dfa6075468add93f7d
+          name: 'SMART Status'
+          key: 'pfsense.value[smart_status]'
+          delay: 1800s
+          description: 'pfSense SMART Status'
+          tags:
+            - tag: Application
+              value: System
+          triggers:
+            - uuid: 523e16493b534fb7ad9def66fef6f286
+              expression: 'avg(/Template pfSense Active/pfsense.value[smart_status],#3)=1'
+              name: 'SMART Errors on {HOST.NAME}'
+              priority: HIGH
+              description: 'pfSense has detected SMART Problems on one or more drives.'
         - uuid: 5820137593604e63869cd3bf009a3dbf
           name: 'pfSense Installed Version'
           type: ZABBIX_ACTIVE
@@ -249,7 +308,23 @@ zabbix_export:
               expression: 'last(/Template pfSense Active/pfsense.value[system,packages_update])>0'
               name: 'Packages Update Available on {HOST.NAME}'
               priority: INFO
-              description: 'New version of packages are available'
+              description: 'Notify of new version of packages are available'
+        - uuid: ec8fa9ead018462bb2e41d6b5917c26a
+          name: 'Agent Script Version'
+          key: 'pfsense.value[system,script_version]'
+          delay: 8h
+          trends: '0'
+          value_type: TEXT
+          description: 'pFsense Agent Script Version'
+          triggers:
+            - uuid: c41c033f27d84ce480da25391677e0ff
+              expression: '(last(/Template pfSense Active/pfsense.value[system,script_version],#1)<>last(/Template pfSense Active/pfsense.value[system,script_version],#2))>0'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: '(last(/Template pfSense Active/pfsense.value[system,script_version],#1)<>last(/Template pfSense Active/pfsense.value[system,script_version],#2))=0'
+              name: 'Agent Script Version has been changed on {HOST.NAME}'
+              priority: INFO
+              description: 'Agent Script version is changed on host.'
+              manual_close: 'YES'
         - uuid: d801429fd147415396b61f5f6c47af27
           name: 'pfSense Available Version'
           type: ZABBIX_ACTIVE
@@ -316,6 +391,7 @@ zabbix_export:
               value: CPU
         - uuid: ff36a3e91fd44e7981874e8e363069df
           name: 'Processor load (1min/core)'
+          type: ZABBIX_ACTIVE
           key: 'system.cpu.load[percpu,avg1]'
           delay: '60'
           history: 27d
@@ -325,12 +401,13 @@ zabbix_export:
             - tag: Application
               value: CPU
           triggers:
-            - uuid: c55d5752b0754f17bfc309e638f507c3
-              expression: 'avg(/Template pfSense Active/system.cpu.load[percpu,avg1],10m)>0.35'
+            - uuid: b9bdc3be79eb40f0be33931a5c6f5378
+              expression: 'avg(/Template pfSense Active/system.cpu.load[percpu,avg1],5m)>5'
               name: 'Processor load is too high on {HOST.NAME}'
               priority: WARNING
         - uuid: 6ac7d111b73d4150aaead8f470ff41ba
           name: 'Processor load (5min/core)'
+          type: ZABBIX_ACTIVE
           key: 'system.cpu.load[percpu,avg5]'
           delay: '60'
           history: 27d
@@ -341,30 +418,12 @@ zabbix_export:
               value: CPU
         - uuid: d244b629aaf74fa1af608332df014df4
           name: 'Processor load (15min/core)'
+          type: ZABBIX_ACTIVE
           key: 'system.cpu.load[percpu,avg15]'
           delay: '60'
           history: 27d
           value_type: FLOAT
           description: 'The processor load is calculated as system CPU load divided by number of CPU cores.'
-          tags:
-            - tag: Application
-              value: CPU
-        - uuid: 849c54d7d68541ab8e67f3b498867456
-          name: 'Processor load (percent)'
-          type: CALCULATED
-          key: 'system.cpu.load[percpu,pct1]'
-          delay: '60'
-          history: 27d
-          value_type: FLOAT
-          units: '%'
-          params: '100 * last(//system.cpu.load[percpu,avg1])'
-          tags:
-            - tag: 'Application: CPU'
-        - uuid: 2b39f0b0b3c54c249027375f0d23fb12
-          name: 'CPU Core count'
-          key: 'system.cpu.num[online]'
-          delay: 1h
-          description: 'Number of cores zabbix thinks the CPU has.'
           tags:
             - tag: Application
               value: CPU
@@ -383,7 +442,7 @@ zabbix_export:
             - tag: Application
               value: CPU
         - uuid: 8bc963352bef46e5a92763b9c866d0a7
-          name: 'CPU idle time'
+          name: 'CPU $2 time'
           type: ZABBIX_ACTIVE
           key: 'system.cpu.util[,idle]'
           delay: '60'
@@ -395,7 +454,7 @@ zabbix_export:
             - tag: Application
               value: CPU
         - uuid: f2f60c68e4604f55b0a437542507fd86
-          name: 'CPU interrupt time'
+          name: 'CPU $2 time'
           type: ZABBIX_ACTIVE
           key: 'system.cpu.util[,interrupt]'
           delay: '60'
@@ -407,7 +466,7 @@ zabbix_export:
             - tag: Application
               value: CPU
         - uuid: b81c545ae21b417b85b62ce115e1dd8e
-          name: 'CPU nice time'
+          name: 'CPU $2 time'
           type: ZABBIX_ACTIVE
           key: 'system.cpu.util[,nice]'
           delay: '60'
@@ -419,7 +478,7 @@ zabbix_export:
             - tag: Application
               value: CPU
         - uuid: e0ddfcc0ffe34a60a575cdae1f1d8a98
-          name: 'CPU system time'
+          name: 'CPU $2 time'
           type: ZABBIX_ACTIVE
           key: 'system.cpu.util[,system]'
           delay: '60'
@@ -431,7 +490,7 @@ zabbix_export:
             - tag: Application
               value: CPU
         - uuid: b99746ff4914473f9c2d3e39dfb9d6fc
-          name: 'CPU user time'
+          name: 'CPU $2 time'
           type: ZABBIX_ACTIVE
           key: 'system.cpu.util[,user]'
           delay: '60'
@@ -561,7 +620,7 @@ zabbix_export:
             - tag: Application
               value: OS
         - uuid: bbaf67d0ca854704b1d13ba08f4108fe
-          name: 'Checksum of /etc/passwd'
+          name: 'Checksum of $1'
           type: ZABBIX_ACTIVE
           key: 'vfs.file.cksum[/etc/passwd]'
           delay: '3600'
@@ -581,7 +640,7 @@ zabbix_export:
           delay: '60'
           history: 28d
           units: B
-          description: 'quantité de mémoire en cours d''utilisation par les processus'
+          description: 'Amount of memory being used by processes'
           tags:
             - tag: Application
               value: Memory
@@ -609,10 +668,7 @@ zabbix_export:
           history: 28d
           status: DISABLED
           units: B
-          description: |
-            Cache d'entrées des IO disque.
-            
-            (Item désactivé car buggé)
+          description: 'Disk IO input cache. (Item disabled due to bug)'
           tags:
             - tag: Application
               value: Memory
@@ -623,7 +679,7 @@ zabbix_export:
           delay: '60'
           history: 28d
           units: B
-          description: 'quantité de mémoire utilisée pour mettre des données en cache'
+          description: 'Amount of memory used to cache data'
           tags:
             - tag: Application
               value: Memory
@@ -665,15 +721,6 @@ zabbix_export:
           tags:
             - tag: Application
               value: Memory
-        - uuid: c7f4062003fc4116a5832e4a332a9adb
-          name: 'Used Memory (percent)'
-          type: CALCULATED
-          key: 'vm.memory.size[pused]'
-          delay: '60'
-          history: 28d
-          value_type: FLOAT
-          units: '%'
-          params: '100 - last(//vm.memory.size[pavailable])'
         - uuid: 1f4b1470af3f408aa08001620ff0ec5d
           name: 'Shared memory'
           type: ZABBIX_ACTIVE
@@ -769,18 +816,18 @@ zabbix_export:
                 - uuid: 29a7d692c79c4c53bd9e613e71970b98
                   expression: 'last(/Template pfSense Active/pfsense.value[cert_ref_date, validTo, {#CERT_INDEX}])-now()<0'
                   name: 'Certificate  "{#CERT_NAME}" ({#CERT_TYPE}) has expired.'
-                  priority: AVERAGE
+                  priority: HIGH
                 - uuid: b77a404a43de48c997750fe87574c54e
                   expression: 'last(/Template pfSense Active/pfsense.value[cert_ref_date, validTo, {#CERT_INDEX}])-now()<2419200 and last(/Template pfSense Active/pfsense.value[cert_ref_date, validTo, {#CERT_INDEX}])-now()>0'
                   name: 'Certificate  "{#CERT_NAME}" ({#CERT_TYPE}) will expire soon.'
-                  priority: WARNING
+                  priority: AVERAGE
           trigger_prototypes:
             - uuid: 87cfe7be3f824782a22b3249ec8e37fe
               expression: |
                 last(/Template pfSense Active/pfsense.value[cert_algo_secbits, {#CERT_INDEX}])< {$CERT_SECURITY_BITS} or
                 last(/Template pfSense Active/pfsense.value[cert_hash_secbits, {#CERT_INDEX}])< {$CERT_SECURITY_BITS}
               name: 'Certificate  "{#CERT_NAME}" ({#CERT_TYPE}) has low security'
-              priority: AVERAGE
+              priority: WARNING
         - uuid: 4db6be9bdf7b4876a13f9b936cdd3321
           name: 'Gateways Discovery'
           type: ZABBIX_ACTIVE
@@ -827,53 +874,28 @@ zabbix_export:
                 - tag: Application
                   value: Gateways
               trigger_prototypes:
-                - uuid: 1f6139c8b7fc4e878a329a9db1e0097d
-                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status])=5'
-                  name: 'Gateway {#GATEWAY} is down'
-                  priority: DISASTER
-                  description: 'Gateway is Down'
                 - uuid: 2523755541f242d190825ae67f8039fb
-                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=5'
+                  expression: 'avg(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=5'
                   name: 'Gateway {#GATEWAY} is down'
                   priority: DISASTER
                   description: 'Gateway is Down'
-                - uuid: 3a10654398fb4323ab7804e09db754aa
-                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status])=4'
-                  name: 'Gateway {#GATEWAY} is forced down'
-                  priority: INFO
-                  description: 'Gateway is forced down by system administrator'
                 - uuid: 4c306732349b4cfe8e66d7656bc0d397
-                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=4'
+                  expression: 'avg(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=4'
                   name: 'Gateway {#GATEWAY} is forced down'
                   priority: INFO
                   description: 'Gateway is forced down by system administrator'
-                - uuid: fca46e537f144ea49eca155570f8da4d
-                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status])=2'
-                  name: 'High Delay on gateway {#GATEWAY}'
-                  priority: WARNING
-                  description: 'Gateway is lagging'
                 - uuid: faaa981f96444c90accf769c5d1949a7
-                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=2'
+                  expression: 'avg(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=2'
                   name: 'High Delay on gateway {#GATEWAY}'
                   priority: WARNING
                   description: 'Gateway is lagging'
-                - uuid: 0c308b53dee341e388f0c3a5ac1580ba
-                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status])=3'
-                  name: 'High packet Loss on {#GATEWAY}'
-                  priority: HIGH
-                  description: 'High Packet Loss on Gateway'
                 - uuid: a89a7d0dbd87432fa13ee7e4d15a4bdf
-                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=3'
+                  expression: 'avg(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=3'
                   name: 'High packet Loss on {#GATEWAY}'
                   priority: HIGH
                   description: 'High Packet Loss on Gateway'
-                - uuid: 392ba753c67b4c4ea79cb2b0e1767a09
-                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status])=1'
-                  name: 'Packet Loss on {#GATEWAY}'
-                  priority: WARNING
-                  description: 'Packet loss on Gateway'
                 - uuid: f5e9d80e672042aeb609f9ad82a019e4
-                  expression: 'last(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=1'
+                  expression: 'avg(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=1'
                   name: 'Packet Loss on {#GATEWAY}'
                   priority: WARNING
                   description: 'Packet loss on Gateway'
@@ -947,7 +969,7 @@ zabbix_export:
               name: 'Incoming network traffic on {#IFDESCR}'
               type: ZABBIX_ACTIVE
               key: 'net.if.in[{#IFNAME}]'
-              delay: '2'
+              delay: '60'
               history: 7d
               units: bps
               preprocessing:
@@ -977,7 +999,7 @@ zabbix_export:
               name: 'Outgoing network traffic on {#IFDESCR}'
               type: ZABBIX_ACTIVE
               key: 'net.if.out[{#IFNAME}]'
-              delay: '2'
+              delay: '60'
               history: 7d
               units: bps
               preprocessing:
@@ -1026,8 +1048,8 @@ zabbix_export:
                 - tag: Application
                   value: 'OpenVPN Client'
               trigger_prototypes:
-                - uuid: 50f5ee98fee046068003354f379ada75
-                  expression: 'last(/Template pfSense Active/pfsense.value[openvpn_clientvalue,{#CLIENT},status])=0'
+                - uuid: 33ac9b529a1f485394bca3b7a04d113f
+                  expression: 'avg(/Template pfSense Active/pfsense.value[openvpn_clientvalue,{#CLIENT},status],#3)=0'
                   name: 'OpenVPN Client {#NAME} Tunnel is Down'
                   priority: HIGH
                   description: 'OpenVPN Tunnel Down'
@@ -1074,8 +1096,8 @@ zabbix_export:
                 - tag: Application
                   value: 'OpenVPN Server'
           trigger_prototypes:
-            - uuid: e879868caa0c474da7d5dfc003ceadc9
-              expression: 'last(/Template pfSense Active/pfsense.expected_carp_status)<>2 and last(/Template pfSense Active/pfsense.value[openvpn_servervalue,{#SERVER},status])=0'
+            - uuid: ea2851d79a11460fa467f3c02038dcf9
+              expression: 'avg(/Template pfSense Active/pfsense.expected_carp_status,#3)<>2 and last(/Template pfSense Active/pfsense.value[openvpn_servervalue,{#SERVER},status],#3)=0'
               name: 'OpenVPN Server {#NAME} is Down'
               priority: HIGH
               description: 'OpenVPN Tunnel is Down'
@@ -1104,12 +1126,12 @@ zabbix_export:
                 - tag: Application
                   value: Services
           trigger_prototypes:
-            - uuid: 6663f0535b8e46fba8330ff57fe89dc6
+            - uuid: f9f34f0546b24f30b098254d052507f1
               expression: |
-                last(/Template pfSense Active/pfsense.value[service_value,{#SERVICE},status])=0 and (
+                avg(/Template pfSense Active/pfsense.value[service_value,{#SERVICE},status],#3)=0 and (
                 
                 (last(/Template pfSense Active/pfsense.value[service_value,{#SERVICE},run_on_carp_slave])=1 and 
-                last(/Template pfSense Active/pfsense.value[carp_status])=2)
+                avg(/Template pfSense Active/pfsense.value[carp_status],#3)=2)
                 
                 or
                 
@@ -1226,15 +1248,20 @@ zabbix_export:
       macros:
         - macro: '{$CARP_SERVICES_STOPPED}'
           value: ^(haproxy|openvpn)$
+          description: 'Regular expression for for services stopped on CARP slave'
         - macro: '{$CARP_SLAVE_SERVICES:"haproxy"}'
           value: '0'
         - macro: '{$CARP_SLAVE_SERVICES:"openvpn"}'
           value: '0'
-        - macro: '{$CERT_SECURITY_BITS}'
-          value: '112'
-          description: 'Set to 80 for seclevel=0, set to 128 for seclevel=2'
         - macro: '{$EXPECTED_CARP_STATUS}'
           value: '0'
+          description: 'Expected CARP Status, 0: Master, 1: Slave'
+        - macro: '{$PFSENSE.CERT_EXPIRATION.AVERAGE}'
+          value: 30d
+          description: 'Certificate Expiration Average Message Threshold'
+        - macro: '{$PFSENSE.CERT_EXPIRATION.WARN}'
+          value: 14d
+          description: 'Certificate Expiration Warning Message Threshold'
       dashboards:
         - uuid: a88c02addc374f83ade5063845b7a828
           name: 'System performance'
@@ -1250,16 +1277,6 @@ zabbix_export:
                         host: 'Template pfSense Active'
                         name: 'Active Connections (pie)'
                 - type: GRAPH_CLASSIC
-                  x: '12'
-                  width: '12'
-                  height: '7'
-                  fields:
-                    - type: GRAPH
-                      name: graphid
-                      value:
-                        host: 'Template pfSense Active'
-                        name: 'Network Memory Buffer (pie)'
-                - type: GRAPH_CLASSIC
                   'y': '7'
                   width: '12'
                   height: '7'
@@ -1269,6 +1286,16 @@ zabbix_export:
                       value:
                         host: 'Template pfSense Active'
                         name: 'CPU load'
+                - type: GRAPH_CLASSIC
+                  x: '12'
+                  width: '12'
+                  height: '7'
+                  fields:
+                    - type: GRAPH
+                      name: graphid
+                      value:
+                        host: 'Template pfSense Active'
+                        name: 'Network Memory Buffer (pie)'
                 - type: GRAPH_CLASSIC
                   x: '12'
                   'y': '7'
@@ -1357,11 +1384,10 @@ zabbix_export:
       name: 'CARP Status not Expected on {HOST.NAME}'
       priority: HIGH
       description: 'pfSense CARP is not in the state Expected. This means that a failover could be in process.'
-    - uuid: 23b24281dd5d47c58be38ecb2333b8de
-      expression: '(last(/Template pfSense Active/pfsense.value[system,version])<>last(/Template pfSense Active/pfsense.value[system,installed_version]))=1'
-      name: 'New Version Available on {HOST.NAME}'
-      priority: INFO
-      description: 'Noify of new version of pfsense available'
+    - uuid: 082f53ba6baf4c74abc91290d5d2d945
+      expression: 'last(/Template pfSense Active/pfsense.value[cert_date,validTo.min])<last(/Template pfSense Active/pfsense.value[cert_date,validFrom.max])'
+      name: 'One or more certificates are expired'
+      priority: DISASTER
   graphs:
     - uuid: 499d867c58974a8e914b0423bdbf3d01
       name: 'Active Connections'

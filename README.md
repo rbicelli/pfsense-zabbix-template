@@ -46,13 +46,7 @@ From **Diagnostics/Command Prompt** input this one-liner:
 curl --create-dirs -o /root/scripts/pfsense_zbx.php https://raw.githubusercontent.com/rbicelli/pfsense-zabbix-template/master/pfsense_zbx.php
 ```
 
-Then, setup the system version cronjob with: 
-
-```bash 
-/usr/local/bin/php /root/scripts/pfsense_zbx.php sysversion_cron
-```
-
-Then install package "Zabbix Agent 5" (or "Zabbix Agent 6") on your pfSense Box
+Then install package "Zabbix Agent 6" (or "Zabbix Agent 5") on your pfSense Box
 
 In Advanced Features-> User Parameters
 
@@ -92,6 +86,11 @@ pkg search speedtest
 ```
 
 This will provide you with the latest package information. To install the speedtest package, use the following commands in **Diagnostics/Command Prompt**:
+Then, setup the system version cronjob with: 
+
+```bash 
+/usr/local/bin/php /root/scripts/pfsense_zbx.php sysversion_cron
+```
 
 ```bash
 pkg update && pkg install -y py311-speedtest-cli
