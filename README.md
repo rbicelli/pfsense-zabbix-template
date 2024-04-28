@@ -6,7 +6,7 @@ This is a pfSense active template for Zabbix, based on Standard Agent and a php 
 
 Tested with pfSense 2.7.x, Zabbix 6.0.
 
-I'm actively maintaning only template only for the current LTS Zabbix Template. Newest features will be explicitily added on current LTS.
+I'm actively maintaning template only for the current Zabbix LTS Release. Newest features will be explicitily added on current LTS.
 
 ## What it does
 
