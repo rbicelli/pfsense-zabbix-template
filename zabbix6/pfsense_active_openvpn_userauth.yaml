@@ -1,0 +1,147 @@
+zabbix_export:
+  version: '6.0'
+  date: '2023-02-26T13:19:53Z'
+  groups:
+    -
+      uuid: 4918b88734c54bd094cff7585b5d71fc
+      name: 'Templates/Network Devices'
+  templates:
+    -
+      uuid: 6a1ef5e767cc4aba85c0d1712972eeb2
+      template: 'Template pfSense Active OpenVPN Server User Auth'
+      name: 'pfSense Active: OpenVPN Server User Auth'
+      description: |
+        Extension for pfSense Active Template.
+        Monitor client Connections of OpenVPN Server.
+        
+        Requires pfsense_zbx.php installed to pfSense Box.
+        Version 1.0.2
+        
+        https://github.com/rbicelli/pfsense-zabbix-template
+      groups:
+        -
+          name: 'Templates/Network Devices'
+      discovery_rules:
+        -
+          uuid: bae30f6a683e407aa9eeafbf9edb9179
+          name: 'OpenVPN User Auth Connected Clients Discovery'
+          type: ZABBIX_ACTIVE
+          key: 'pfsense.discovery[openvpn_server_user]'
+          delay: 60s
+          description: 'Discovery of clients connected to OpenVPN Server in User Auth Mode'
+          item_prototypes:
+            -
+              uuid: 272166157ee4456b887e7df305167c2d
+              name: 'OpenVPN Server {#SERVERNAME}, Client {#USERID}: Bytes Received'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[openvpn_server_uservalue,{#UNIQUEID},bytes_recv]'
+              delay: 60s
+              trends: '0'
+              units: bytes
+              description: 'Client Bytes Received'
+              tags:
+                -
+                  tag: Application
+                  value: 'OpenVPN Server Clients'
+            -
+              uuid: 1acfb6c10d4d4a8d97281f37e757d3bf
+              name: 'OpenVPN Server {#SERVERNAME}, Client {#USERID}: Bytes Sent'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[openvpn_server_uservalue,{#UNIQUEID},bytes_sent]'
+              delay: 60s
+              trends: '0'
+              units: bytes
+              description: 'Client Bytes Sent'
+              tags:
+                -
+                  tag: Application
+                  value: 'OpenVPN Server Clients'
+            -
+              uuid: 5f779a0e03b84be19030766d6fcffd92
+              name: 'OpenVPN Server {#SERVERNAME}, Client {#USERID}: Connection Time'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[openvpn_server_uservalue,{#UNIQUEID},connect_time_unix]'
+              delay: 60s
+              trends: '0'
+              units: unixtime
+              description: 'Client Connect Time'
+              tags:
+                -
+                  tag: Application
+                  value: 'OpenVPN Server Clients'
+            -
+              uuid: 40b0a64862a44a99a33581b916ad6467
+              name: 'OpenVPN Server {#SERVERNAME}, Client {#USERID}: Remote Host'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[openvpn_server_uservalue,{#UNIQUEID},remote_host]'
+              delay: 60s
+              trends: '0'
+              value_type: TEXT
+              description: 'Remote Host'
+              tags:
+                -
+                  tag: Application
+                  value: 'OpenVPN Server Clients'
+            -
+              uuid: 8e1b6f2d8397483d8a2768babd93a1a7
+              name: 'OpenVPN Server {#SERVERNAME}, Client {#USERID}: User Name'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[openvpn_server_uservalue,{#UNIQUEID},user_name]'
+              delay: 60s
+              trends: '0'
+              value_type: TEXT
+              description: 'Client User Name'
+              tags:
+                -
+                  tag: Application
+                  value: 'OpenVPN Server Clients'
+            -
+              uuid: 0329f5bf3fb94bdaa30c0e412bc337f8
+              name: 'OpenVPN Server {#SERVERNAME}, Client {#USERID}: Virtual IP Address (IPv6)'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[openvpn_server_uservalue,{#UNIQUEID},virtual_addr6]'
+              delay: 60s
+              trends: '0'
+              value_type: TEXT
+              description: 'IPv6 Address assigned from OpenVPN Server'
+              tags:
+                -
+                  tag: Application
+                  value: 'OpenVPN Server Clients'
+            -
+              uuid: 1c21ccdd3bf14aa3b8b65986b5317f6a
+              name: 'OpenVPN Server {#SERVERNAME}, Client {#USERID}: Virtual IP Address'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[openvpn_server_uservalue,{#UNIQUEID},virtual_addr]'
+              delay: 60s
+              trends: '0'
+              value_type: TEXT
+              description: 'IP Address assigned from OpenVPN Server'
+              tags:
+                -
+                  tag: Application
+                  value: 'OpenVPN Server Clients'
+            -
+              uuid: 15192106b2164e0e9df447ba330007db
+              name: 'OpenVPN Server {#SERVERNAME}, Client {#USERID}: Client ID'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[openvpn_server_uservalue_numeric,{#UNIQUEID},client_id]'
+              delay: 60s
+              trends: '0'
+              description: 'Client ID'
+              tags:
+                -
+                  tag: Application
+                  value: 'OpenVPN Server Clients'
+            -
+              uuid: de719e75d02440fe96c987bd5ddcb367
+              name: 'OpenVPN Server {#SERVERNAME}, Client {#USERID}: Peer ID'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[openvpn_server_uservalue_numeric,{#UNIQUEID},peer_id]'
+              delay: 60s
+              trends: '0'
+              description: 'Peer ID'
+              tags:
+                -
+                  tag: Application
+                  value: 'OpenVPN Server Clients'
