@@ -8,11 +8,13 @@ This program is licensed under Apache 2.0 License
 */
 
 //Some Useful defines
-define ('SCRIPT_VERSION','0.24.7');
+define ('SCRIPT_VERSION','0.24.27');
+define ('UPDATE_URL','https://raw.githubusercontent.com/rbicelli/pfsense-zabbix-template/develop/');
 
 define('SPEEDTEST_INTERVAL', 8); //Speedtest Interval (in hours)
 define('CRON_TIME_LIMIT', 300); // Time limit in seconds of speedtest and sysinfo 
 define('DEFAULT_TIME_LIMIT', 30); // Time limit in seconds otherwise
+
 
 require_once('globals.inc');
 require_once('functions.inc');
@@ -296,8 +298,7 @@ function pfz_openvpn_servervalue($server_id,$valuekey){
                     $value = "0";
                break;     
                
-          case "status":
-               
+          case "status":              
                $value = pfz_valuemap("openvpn.server.status", $value);
                break;
 
@@ -1447,6 +1448,61 @@ function pfz_file_exists($filename) {
 		echo "0";
 }
 
+// Auto Update Script
+function pfz_script_auto_update($action=""){
+	
+	$command = "/usr/local/bin/php " . __FILE__ . " auto_update";
+	switch ($action) {
+		case "install":			
+			install_cron_job($command, true, $minute = "0", "*/8", "*", "*", "*", "root", true);
+			return true;
+			break;
+
+		case "uninstall":
+			install_cron_job($command, false, $minute = "0", "*/8", "*", "*", "*", "root", true);
+			return true;
+			break;
+	}
+
+	$url =  UPDATE_URL . "/release.json";           
+    $file_name = "/tmp/" . basename($url);
+    
+    if (file_put_contents($file_name, file_get_contents($url))) 
+    { 
+        $upd_data = json_decode(file_get_contents($file_name));
+		
+		$url =  UPDATE_URL . "/pfsense_zbx.php";
+		$file_name = "/tmp/" . basename($url);
+
+		if (file_put_contents($file_name, file_get_contents($url)))
+		{
+			if ($upd_data['version']!=SCRIPT_VERSION) { 
+				if ($upd_data['pfsense_zbx_checksum'] == md5_file($file_name)) {
+
+					if (rename ($file_name, __FILE__))
+						echo "Update Successful";
+					else
+						echo "Cannot replace Script File";				
+				}			
+			}
+			else
+			{
+				echo "Update not Required";
+			}			
+		}
+		else
+		{
+			echo "Download failed: " . $url;
+			exit(1);
+		}		
+    } 
+    else
+    { 
+        //Download Failed
+		echo "Download failed: " . $url;
+		exit(1); 
+    } 
+}
 
 // Value mappings
 // Each value map is represented by an associative array
@@ -1627,14 +1683,7 @@ switch ($mainArgument){
           break;
      case "carp_status":
           pfz_carp_status();
-          break;
-     case "if_name":
-          pfz_get_if_name($argv[2]);
-          break;
-     case "syscheck_cron":
-          pfz_syscheck_cron_install();
-          pfz_syscheck_cron();
-          break;
+          break;          
      case "system":
           pfz_get_system_value($argv[2]);
           break;
@@ -1689,6 +1738,8 @@ switch ($mainArgument){
      case "temperature":
           pfz_get_temperature($argv[2]);
           break;
+	 case "auto_update":
+		  pfz_script_auto_update($argv[2]);
      default:
           pfz_test();
 }
