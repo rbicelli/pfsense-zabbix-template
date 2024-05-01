@@ -1,6 +1,6 @@
 zabbix_export:
   version: '6.0'
-  date: '2024-04-27T13:30:24Z'
+  date: '2024-05-01T13:28:59Z'
   groups:
     - uuid: 4918b88734c54bd094cff7585b5d71fc
       name: 'Templates/Network Devices'
@@ -442,7 +442,7 @@ zabbix_export:
             - tag: Application
               value: CPU
         - uuid: 8bc963352bef46e5a92763b9c866d0a7
-          name: 'CPU $2 time'
+          name: 'CPU idle time'
           type: ZABBIX_ACTIVE
           key: 'system.cpu.util[,idle]'
           delay: '60'
@@ -454,7 +454,7 @@ zabbix_export:
             - tag: Application
               value: CPU
         - uuid: f2f60c68e4604f55b0a437542507fd86
-          name: 'CPU $2 time'
+          name: 'CPU interrupt time'
           type: ZABBIX_ACTIVE
           key: 'system.cpu.util[,interrupt]'
           delay: '60'
@@ -466,7 +466,7 @@ zabbix_export:
             - tag: Application
               value: CPU
         - uuid: b81c545ae21b417b85b62ce115e1dd8e
-          name: 'CPU $2 time'
+          name: 'CPU nice time'
           type: ZABBIX_ACTIVE
           key: 'system.cpu.util[,nice]'
           delay: '60'
@@ -478,7 +478,7 @@ zabbix_export:
             - tag: Application
               value: CPU
         - uuid: e0ddfcc0ffe34a60a575cdae1f1d8a98
-          name: 'CPU $2 time'
+          name: 'CPU System time'
           type: ZABBIX_ACTIVE
           key: 'system.cpu.util[,system]'
           delay: '60'
@@ -490,7 +490,7 @@ zabbix_export:
             - tag: Application
               value: CPU
         - uuid: b99746ff4914473f9c2d3e39dfb9d6fc
-          name: 'CPU $2 time'
+          name: 'CPU user time'
           type: ZABBIX_ACTIVE
           key: 'system.cpu.util[,user]'
           delay: '60'
@@ -620,7 +620,7 @@ zabbix_export:
             - tag: Application
               value: OS
         - uuid: bbaf67d0ca854704b1d13ba08f4108fe
-          name: 'Checksum of $1'
+          name: 'Checksum of /etc/passwd'
           type: ZABBIX_ACTIVE
           key: 'vfs.file.cksum[/etc/passwd]'
           delay: '3600'
