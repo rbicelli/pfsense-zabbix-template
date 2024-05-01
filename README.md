@@ -127,9 +127,6 @@ Speedtest template creates a cron job and check for entry everytime Zabbix reque
 /url/local/bin/php /root/scripts/pfsense_zbx.php cron_cleanup
 ```
 
-**NOTE**: With *pfSense < 2.7*, when used in multiple gateways scenario, speedtest results are OK only with default gateway. This is a known behavior that must be fixed upstream.
-
-
 ## Credits
 
 [Keenton Zabbix Template](https://github.com/keentonsas/zabbix-template-pfsense) for Zabbix Agent freeBSD part.
