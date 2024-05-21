@@ -217,7 +217,7 @@ zabbix_export:
                   expression: 'last(/Template pfSense Active/pfsense.value[cert_date,validTo.min])<last(/Template pfSense Active/pfsense.value[cert_date,validFrom.max])'
             - uuid: 5e3be006678c4d5496ab30cd76bfc89a
               expression: 'last(/Template pfSense Active/pfsense.value[cert_date,validTo.min])-now()<{$PFSENSE.CERT_EXPIRATION.WARN}'
-              name: 'One or more certificates are expiring less than {$PFSENSE_CERT_EXPIRATION.WARN}'
+              name: 'One or more certificates are expiring less than {$PFSENSE.CERT_EXPIRATION.WARN}'
               opdata: 'Earliest "Valid To": {ITEM.LASTVALUE1}'
               priority: HIGH
               dependencies:
