@@ -4,8 +4,9 @@
 
 This is a pfSense active template for Zabbix, based on Standard Agent and a php script using pfSense functions library for monitoring specific data.
 
+Tested with pfSense 2.7.x, Zabbix 6.0.
 
-Tested with pfSense 2.5.x, Zabbix 4.0, Zabbix 5.0, Zabbix 6.0
+I'm actively maintaning template only for the current Zabbix LTS Release. Newest features will be explicitily added on current LTS.
 
 ## What it does
 
@@ -19,6 +20,7 @@ Tested with pfSense 2.5.x, Zabbix 4.0, Zabbix 5.0, Zabbix 6.0
  - Basic Service Discovery and Monitoring (Service Status)
  - pfSense Version/Update Available
  - Packages Update Available
+ - Certificate Discovery and Monitoring
  
 **Template pfSense Active: OpenVPN Server User Auth**
 
@@ -33,6 +35,7 @@ Tested with pfSense 2.5.x, Zabbix 4.0, Zabbix 5.0, Zabbix 6.0
 **Template pfSense Active: Speedtest**
 
  - Discovery of WAN Interfaces
+ - Discover public IP Address/ISP Name of WAN Interfaces
  - Perform speed tests and collect metrics
 
 
@@ -46,13 +49,7 @@ From **Diagnostics/Command Prompt** input this one-liner:
 curl --create-dirs -o /root/scripts/pfsense_zbx.php https://raw.githubusercontent.com/rbicelli/pfsense-zabbix-template/master/pfsense_zbx.php
 ```
 
-Then, setup the system version cronjob with: 
-
-```bash 
-/usr/local/bin/php /root/scripts/pfsense_zbx.php sysversion_cron
-```
-
-Then install package "Zabbix Agent 5" (or "Zabbix Agent 6") on your pfSense Box
+Then install package "Zabbix Agent 6" (or "Zabbix Agent 5") on your pfSense Box
 
 In Advanced Features-> User Parameters
 
@@ -83,16 +80,26 @@ Possible values are:
 
 This is useful when monitoring services which could stay stopped on CARP Backup Member.
 
-
 ## Setup Speedtest
 
-For running speedtests on WAN interfaces you have to install the speedtest package.
-
-From **Diagnostics/Command Prompt** input this commands:
+For running speedtests on WAN interfaces on the latest pfSense CE (2.7.2), it's recommended to check the available speedtest package first using:
 
 ```bash
-pkg update && pkg install -y py38-speedtest-cli
+pkg search speedtest
 ```
+
+This will provide you with the latest package information. To install the speedtest package, use the following commands in **Diagnostics/Command Prompt**:
+Then, setup the system version cronjob with: 
+
+```bash 
+/usr/local/bin/php /root/scripts/pfsense_zbx.php sysversion_cron
+```
+
+```bash
+pkg update && pkg install -y py311-speedtest-cli
+```
+
+Make sure to replace `py311-speedtest-cli` with the correct package name based on the results of the pkg search speedtest command.
 
 Speedtest python package could be broken at the moment, so you could need an extra step, *only if manually executing speedtest results in an error*: download the latest version from package author's github repo.
 
@@ -109,7 +116,7 @@ For testing if speedtest is installed properly you can try it:
 Then, setup the cronjob with: 
 
 ```bash 
-/url/local/bin/php /root/scripts/pfsense_zbx.php speedtest_cron
+/usr/local/bin/php /root/scripts/pfsense_zbx.php speedtest_cron
 ```
 
 Remember that you will need to install the package on *every* pfSense upgrade.
@@ -119,9 +126,6 @@ Speedtest template creates a cron job and check for entry everytime Zabbix reque
 ```bash
 /url/local/bin/php /root/scripts/pfsense_zbx.php cron_cleanup
 ```
-
-**NOTE**: When used in multiple gateways scenario, speedtest results are OK only with default gateway. This is a known behavior that must be fixed upstream.
-
 
 ## Credits
 

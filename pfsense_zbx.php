@@ -1,13 +1,14 @@
 <?php
 /*** 
 pfsense_zbx.php - pfSense Zabbix Interface
-Version 1.1.1 - 2021-10-24
+Version 0.24.7 - 2024-04-27
 
 Written by Riccardo Bicelli <r.bicelli@gmail.com>
 This program is licensed under Apache 2.0 License
 */
 
 //Some Useful defines
+define ('SCRIPT_VERSION','0.24.7');
 
 define('SPEEDTEST_INTERVAL', 8); //Speedtest Interval (in hours)
 define('CRON_TIME_LIMIT', 300); // Time limit in seconds of speedtest and sysinfo 
@@ -32,6 +33,16 @@ require_once("service-utils.inc");
 require_once('pkg-utils.inc'); 
 
 //For DHCP
+
+//Backporting php 8 functions
+if (!function_exists('str_contains')){
+
+	function str_contains($haystack,$needle){
+
+		return strstr($haystack,$needle);
+	}
+
+}
 
 //Testing function, for template creating purpose
 function pfz_test(){
@@ -1014,6 +1025,8 @@ function pfz_dhcp_get($valuekey) {
 
 }
 
+
+
 function pfz_dhcpfailover_discovery(){
 	//System functions regarding DHCP Leases will be available in the upcoming release of pfSense, so let's wait
 	require_once("system.inc");
@@ -1073,15 +1086,19 @@ function pfz_packages_uptodate(){
 }
 
 
-function pfz_sysversion_cron_install($enable=true){
+function pfz_syscheck_cron_install($enable=true){
 	//Install Cron Job
+	$command = "/usr/local/bin/php " . __FILE__ . " syscheck_cron";
+	install_cron_job($command, $enable, $minute = "0", "*/8", "*", "*", "*", "root", true);
+
+	// FIX previous, wrong-coded install command
 	$command = "/usr/local/bin/php " . __FILE__ . " systemcheck_cron";
-	install_cron_job($command, $enable, $minute = "0", "9,21", "*", "*", "*", "root", true);
+	install_cron_job($command, false, $minute = "0", "9,21", "*", "*", "*", "root", true);
 }    
 
 // System information takes a long time to get on slower systems. 
 // So it is saved via a cronjob.
-function pfz_sysversion_cron (){	
+function pfz_syscheck_cron (){	
 	$filename = "/tmp/sysversion.json";	
 	$upToDate = pfz_packages_uptodate();
 	$sysVersion = get_system_pkg_version();
@@ -1105,28 +1122,33 @@ function pfz_get_system_value($section){
 	if(file_exists($filename)) {
 		$sysVersion = json_decode(file_get_contents($filename), true);
 	} else {
+		// Install the cron script
+		pfz_syscheck_cron_install();
 		if($section == "new_version_available") {
 			echo "0";
 		} else {
-			echo "error: cronjob not installed. Run \"php pfsense_zbx.php sysversion_cron\""; 
+			echo "";
 		}
 	}
-     switch ($section){
-          case "version":
-               echo( $sysVersion['version']);
-               break;
-          case "installed_version":
-               echo($sysVersion['installed_version']);
-               break;
-          case "new_version_available":
-               if ($sysVersion['version']==$sysVersion['installed_version'])
-                    echo "0";
-               else
-                    echo "1";
-               break;
-          case "packages_update":
-          		echo $sysVersion["packages_update"];
-          		break;
+	switch ($section){
+        case "script_version":
+			echo SCRIPT_VERSION;
+			break;
+		case "version":
+            echo( $sysVersion['version']);
+            break;
+        case "installed_version":
+            echo($sysVersion['installed_version']);
+            break;
+        case "new_version_available":
+            if ($sysVersion['version']==$sysVersion['installed_version'])
+                echo "0";
+            else
+                echo "1";
+            break;
+        case "packages_update":
+          	echo $sysVersion["packages_update"];
+          	break;
      }
 }
 
@@ -1163,18 +1185,244 @@ function pfz_get_smart_status(){
 	echo $status;
 }
 
-// Certificats validity date
-function pfz_get_cert_date($valuekey){
-    global $config;
-    
-    // Contains a list of refs that were revoked and should not be considered
+function pfz_get_revoked_cert_refs() {
+    global $config;    
     $revoked_cert_refs = [];
     foreach ($config["crl"] as $crl) {
         foreach ($crl["cert"] as $revoked_cert) {
             $revoked_cert_refs[] = $revoked_cert["refid"];
         }
     }
-    
+	return $revoked_cert_refs;
+}
+
+// Certificate discovery
+function pfz_cert_discovery(){
+    global $config;
+    // Contains a list of refs that were revoked and should not be considered
+    $revoked_cert_refs = pfz_get_revoked_cert_refs();
+	$dataObject = new \stdClass();
+	$dataObject->data = [];
+    foreach (array("cert", "ca") as $cert_type) {
+		foreach ($config[$cert_type] as $i => $cert) {
+			if ( ! in_array($cert['refid'], $revoked_cert_refs) ) {
+				$certObject = new \stdClass();
+				// Trick to keep using only 3 parameters. 
+				$certObject->{'{#CERT_INDEX}'} = $cert_type == "cert" ? $i : $i + 0x10000;
+				$certObject->{'{#CERT_REFID}'} = $cert['refid'];
+				$certObject->{'{#CERT_NAME}'} = $cert['descr'];
+				$certObject->{'{#CERT_TYPE}'} = strtoupper($cert_type);
+				$dataObject->data[]= $certObject;
+			}
+		}
+	}
+	$json_string = json_encode($dataObject);
+	echo $json_string;
+}
+
+function pfz_get_cert_info($index) {
+	// Use a cache file to speed up multiple requests for certificate things. 
+	$cacheFile = "/root/.ssl/certinfo_{$index}.json";
+	if(file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
+		return json_decode(file_get_contents($cacheFile), true);		
+	}
+    global $config;    
+	if($index >= 0x10000) {
+		$index -= 0x10000;
+		$certType = "ca";
+	} else {
+		$certType = "cert";
+	}
+	$certinfo = openssl_x509_parse(base64_decode($config[$certType][$index]["crt"]));	
+	# Don't allow other users access to private keys. 
+	if(file_exists($cacheFile)) {
+		unlink($cacheFile);
+	}
+	touch($cacheFile);
+	chmod($cacheFile, 0600); 
+	if (!is_dir('/root/.ssl')) {
+		mkdir('/root/.ssl');
+	}
+	if(!file_put_contents($cacheFile, json_encode($certinfo))) {
+		unlink($cacheFile);
+	}	
+	return $certinfo;	
+}
+
+function pfz_get_cert_pkey_info($index) {
+	$details = array();
+	
+	$cacheFile = "/root/.ssl/certinfo_pk_{$index}.json";
+	if(file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
+		return json_decode(file_get_contents($cacheFile), true);		
+	}
+    global $config;    
+	if($index >= 0x10000) {
+		$index -= 0x10000;
+		$certType = "ca";
+	} else {
+		$certType = "cert";
+	}
+	$cert_key = $config[$certType][$index]["crt"];
+	if ($cert_key!=false) {
+		$publicKey = openssl_pkey_get_public(base64_decode($cert_key));
+		$details = openssl_pkey_get_details($publicKey);	
+		# Don't allow other users access to private keys. 
+		if(file_exists($cacheFile)) {
+			unlink($cacheFile);
+		}
+		touch($cacheFile);
+		chmod($cacheFile, 0600); 
+		if (!is_dir('/root/.ssl')) {
+			mkdir('/root/.ssl');
+		}
+		if(!file_put_contents($cacheFile, json_encode($details))) {
+			unlink($cacheFile);
+		}
+	}	
+	return $details;
+}
+
+function pfz_get_ref_cert_algo_len($index){
+	$pkInfo = pfz_get_cert_pkey_info($index);
+	echo $pkInfo["bits"];
+}
+
+# Get the number of bits of security in a cryptographic key. 
+function pfz_get_ref_cert_algo_bits($index){
+	$pkInfo = pfz_get_cert_pkey_info($index);
+	$keyLength = $pkInfo["bits"];
+	switch($pkInfo["type"]) {
+		case(OPENSSL_KEYTYPE_RSA): 
+		case(OPENSSL_KEYTYPE_DSA): 
+		case(OPENSSL_KEYTYPE_DH): 
+			## See articles on the General Number Field Sieve L-notation complexity.
+			$bits = floor( 1 / log(2) * pow(64/9, 1/3) * pow($keyLength * log(2) , 1/3) * pow( log(2048 * log(2)) , 2/3) );
+			break;
+		case (OPENSSL_KEYTYPE_EC): 
+			## Divide by two, floor, via right-shift.
+			$bits = $keyLength >> 1;
+			break;
+	}
+	echo $bits;
+}
+
+function pfz_get_ref_cert_algo($index){
+	$pkInfo = pfz_get_cert_pkey_info($index);
+	switch($pkInfo["type"]) {
+		case(OPENSSL_KEYTYPE_RSA): 
+			echo "RSA";
+			break;
+		case(OPENSSL_KEYTYPE_DSA): 
+			echo "DSA";
+			break;
+		case(OPENSSL_KEYTYPE_DH): 
+			echo "DH";
+			break;
+		case(OPENSSL_KEYTYPE_EC): 
+			echo "EC";
+			break;
+	}
+}
+
+function pfz_get_ref_cert_hash_bits($index){
+	// Get the number of bits of security in the hash algorithm.
+	$certinfo = pfz_get_cert_info($index);
+	$sigType = $certinfo["signatureTypeSN"];
+	$upperSigType = strtoupper($sigType);
+	if(str_contains($upperSigType, "MD2")) {
+		echo 63; 
+		return;		
+	}
+	if(str_contains($upperSigType, "MD4")) {
+		echo 2; 
+		return;		
+	}
+	if(str_contains($upperSigType, "MD5")) {
+		echo 18;
+		return;
+	}
+	if(str_contains($upperSigType, "SHA1")) {
+		echo 61;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA224")) {
+		echo 112;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA3-224")) {
+		echo 112;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA256")) {
+		echo 128;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA3-256")) {
+		echo 128;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHAKE128")) {
+		echo 128;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA384")) {
+		echo 192;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA3-384")) {
+		echo 192;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA512")) {
+		echo 256;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA3-512")) {
+		echo 256;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHAKE256")) {
+		echo 256;
+		return;		
+	}
+	if(str_contains($upperSigType, "WHIRLPOOL")) {
+		echo 256;
+		return;		
+	}
+	if(str_contains($upperSigType, "SHA")) {
+		# Assuming 'SHA1' (worst case scenario) for other 'sha' things.
+		echo 61;
+		return;		
+	}
+	echo 0;
+	return;	
+}
+
+function pfz_get_ref_cert_hash($index){
+	$certinfo = pfz_get_cert_info($index);
+	echo $certinfo["signatureTypeSN"];
+}
+
+// Certificate validity for a specific certificate
+function pfz_get_ref_cert_date($valuekey, $index){
+	$certinfo = pfz_get_cert_info($index);
+    switch ($valuekey){
+		case "validFrom":
+			$value = $certinfo['validFrom_time_t'];
+			break;
+		case "validTo":
+			$value = $certinfo['validTo_time_t'];
+			break;
+	}
+	echo $value;	
+}
+
+// Certificats validity date
+function pfz_get_cert_date($valuekey){
+    global $config;    
+    // Contains a list of refs that were revoked and should not be considered
+    $revoked_cert_refs = pfz_get_revoked_cert_refs();    
     $value = 0;
         foreach (array("cert", "ca") as $cert_type) {
                 switch ($valuekey){
@@ -1306,7 +1554,10 @@ function pfz_valuemap($valuename, $value, $default="0"){
 
 //Argument parsers for Discovery
 function pfz_discovery($section){
-     switch (strtolower($section)){     
+     switch (strtolower($section)){ 
+          case "certificates":
+               pfz_cert_discovery();
+               break;    
           case "gw":
                pfz_gw_discovery();
                break;
@@ -1391,9 +1642,9 @@ switch ($mainArgument){
      case "if_name":
           pfz_get_if_name($argv[2]);
           break;
-     case "sysversion_cron":
-          pfz_sysversion_cron_install();
-          pfz_sysversion_cron();
+     case "syscheck_cron":
+          pfz_syscheck_cron_install();
+          pfz_syscheck_cron();
           break;
      case "system":
           pfz_get_system_value($argv[2]);
@@ -1414,16 +1665,38 @@ switch ($mainArgument){
      	  pfz_speedtest_cron_install();
      	  pfz_speedtest_cron();
      	  break;
+	 case "syscheck_cron":
+		   pfz_syscheck_cron_install();
+		   pfz_syscheck_cron();
+		   break;
      case "cron_cleanup":
      	  pfz_speedtest_cron_install(false);
-     	  pfz_sysversion_cron_install(false);
+     	  pfz_syscheck_cron_install(false);
      	  break;
      case "smart_status":
           pfz_get_smart_status();
-          break;     	  
+          break;     
+     case "cert_ref_date":
+          pfz_get_ref_cert_date($argv[2], $argv[3]);
+          break;	  
      case "cert_date":
           pfz_get_cert_date($argv[2]);
-          break;
+          break;   
+     case "cert_algo":
+          pfz_get_ref_cert_algo($argv[2]);
+          break;	
+     case "cert_algo_bits":
+          pfz_get_ref_cert_algo_len($argv[2]);
+          break;	
+     case "cert_algo_secbits":
+          pfz_get_ref_cert_algo_bits($argv[2]);
+          break;	
+     case "cert_hash":
+          pfz_get_ref_cert_hash($argv[2]);
+          break;	
+     case "cert_hash_secbits":
+          pfz_get_ref_cert_hash_bits($argv[2]);
+          break;			  
      case "temperature":
           pfz_get_temperature($argv[2]);
           break;
