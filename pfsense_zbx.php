@@ -17,6 +17,7 @@ require_once('globals.inc');
 require_once('functions.inc');
 require_once('config.inc');
 require_once('util.inc');
+require_once('gwlb.inc');
 
 //For Interfaces Discovery
 require_once('interfaces.inc');
@@ -527,6 +528,13 @@ function pfz_gw_discovery() {
      echo $json_string;
 }
 
+function pfz_gw_config($gw, $valuekey) {
+    $gws = return_gateways_array();
+    if(array_key_exists($gw,$gws)) {
+         $value = $gws[$gw][$valuekey];
+    }
+    echo $value;   
+}
 
 function pfz_gw_value($gw, $valuekey) {
      $gws = return_gateways_status(true);
@@ -1349,6 +1357,9 @@ switch ($mainArgument){
      case "discovery":
           pfz_discovery($argv[2]);
           break;
+     case "gw_config":
+          pfz_gw_config($argv[2],$argv[3]);
+          break;     
      case "gw_value":
           pfz_gw_value($argv[2],$argv[3]);
           break;     

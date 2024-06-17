@@ -854,6 +854,29 @@ zabbix_export:
           description: 'Gateway Discovery'
           item_prototypes:
             -
+              uuid: 840cd51725f34428a90e15951827a56b
+              name: 'Gateway {#GATEWAY} Interface'
+              type: ZABBIX_ACTIVE
+              key: 'pfsense.value[gw_config,{#GATEWAY},interface]'
+              trends: '0'
+              value_type: CHAR
+            -
+              uuid: a52580ae85f1444cb4d2c713e1cbd2fe
+              name: 'Gateway {#GATEWAY} OpenVPN Server'
+              type: DEPENDENT
+              key: 'pfsense.value[gw_config,{#GATEWAY},vpnserver]'
+              delay: '0'
+              description: 'VPN server number. 0 if not an OpenVPN interface.'
+              preprocessing:
+                - type: REGEX
+                  parameters:
+                    - 'ovpns([0-9]+?)'
+                    - \1
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+              master_item:
+                key: 'pfsense.value[gw_config,{#GATEWAY},interface]'
+            -
               uuid: db89e0dd738148e19c52f08bbc7723f7
               name: 'Gateway {#GATEWAY} RTT'
               type: ZABBIX_ACTIVE
@@ -920,7 +943,7 @@ zabbix_export:
                   description: 'Gateway is lagging'
                 -
                   uuid: a89a7d0dbd87432fa13ee7e4d15a4bdf
-                  expression: 'avg(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=3'
+                  expression: 'avg(/Template pfSense Active/pfsense.value[gw_value,{#GATEWAY},status],#3)=3 and ( last(/Template pfSense Active/pfsense.value[gw_config,{#GATEWAY},vpnserver]) =0 or last(/Template pfSense Active/pfsense.value[carp_status])=1)'
                   name: 'High packet Loss on {#GATEWAY}'
                   priority: HIGH
                   description: 'High Packet Loss on Gateway'
