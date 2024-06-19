@@ -1043,7 +1043,45 @@ last(/Template pfSense Active/pfsense.value[cert_hash_secbits, {#CERT_INDEX}])&l
                             </preprocessing>
                         </item_prototype>
                         <item_prototype>
-                            <name>Gateway $2 Packet  Loss</name>
+                            <name>Gateway $2 Interface</name>
+                            <type>ZABBIX_ACTIVE</type>
+                            <key>pfsense.value[gw_value,{#GATEWAY},interface]</key>
+                            <delay>0</delay>
+                            <value_type>CHAR</value_type>
+                            <applications>
+                                <application>
+                                    <name>Gateways</name>
+                                </application>
+                            </applications>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Gateway $2 OpenVPN Server</name>
+                            <type>DEPENDENT</type>
+                            <key>pfsense.value[gw_value,{#GATEWAY},vpnserver]</key>
+                            <delay>0</delay>
+                            <description>VPN server number. 0 if not an OpenVPN interface.</description>
+                            <applications>
+                                <application>
+                                    <name>Gateways</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>REGEX</type>
+                                    <parameters>
+                                        <parameter>ovpns([0-9]+?)</parameter>
+                                        <parameter>\1</parameter>
+                                    </parameters>
+                                    <error_handler>CUSTOM_VALUE</error_handler>
+                                    <error_handler_params>0</error_handler_params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>pfsense.value[gw_config,{#GATEWAY},interface]</key>
+                            </master_item>                            
+                        </item_prototype>
+                        <item_prototype>
+                            <name>Gateway $2 Packet Loss</name>
                             <type>ZABBIX_ACTIVE</type>
                             <key>pfsense.value[gw_value,{#GATEWAY},loss]</key>
                             <delay>60s</delay>
@@ -1094,7 +1132,7 @@ last(/Template pfSense Active/pfsense.value[cert_hash_secbits, {#CERT_INDEX}])&l
                                     <description>Gateway is lagging</description>
                                 </trigger_prototype>
                                 <trigger_prototype>
-                                    <expression>{last()}=3</expression>
+                                    <expression>{last()}=3 and ( last(/Template pfSense Active/pfsense.value[gw_config,{#GATEWAY},vpnserver]) =0 or last(/Template pfSense Active/pfsense.value[carp_status])=1)</expression>
                                     <name>High packet Loss on {#GATEWAY}</name>
                                     <priority>HIGH</priority>
                                     <description>High Packet Loss on Gateway</description>

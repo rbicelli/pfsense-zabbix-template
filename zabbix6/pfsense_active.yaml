@@ -871,7 +871,7 @@ zabbix_export:
                 - tag: Application
                   value: Gateways
             - uuid: ba759ceb73f949108fddbc4029cfc9f2
-              name: 'Gateway {#GATEWAY} Packet  Loss'
+              name: 'Gateway {#GATEWAY} Packet Loss'
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[gw_value,{#GATEWAY},loss]'
               delay: 60s
