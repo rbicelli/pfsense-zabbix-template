@@ -1532,6 +1532,11 @@ or&#13;
                     <macro>{$EXPECTED_CARP_STATUS}</macro>
                     <value>0</value>
                 </macro>
+                <macro>
+                    <macro>{$CERT_SECURITY_BITS}</macro>
+                    <value>112</value>
+                    <description>Set to 80 for seclevel=0, set to 128 for seclevel=2</description>
+                </macro>
             </macros>
             <screens>
                 <screen>

@@ -1351,8 +1351,10 @@ zabbix_export:
         -
           macro: '{$CARP_SLAVE_SERVICES:"openvpn"}'
           value: '0'
-        -
-          macro: '{$EXPECTED_CARP_STATUS}'
+        - macro: '{$CERT_SECURITY_BITS}'
+          value: '112'
+          description: 'Set to 80 for seclevel=0, set to 128 for seclevel=2'
+        - macro: '{$EXPECTED_CARP_STATUS}'
           value: '0'
       dashboards:
         -
