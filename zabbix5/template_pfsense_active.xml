@@ -1009,8 +1009,8 @@ https://github.com/rbicelli/pfsense-zabbix-template</description>
                     </item_prototypes>
                     <trigger_prototypes>
                         <trigger_prototype>
-                            <expression>last(/Template pfSense Active/pfsense.value[cert_algo_secbits, {#CERT_INDEX}])&lt; {$CERT_SECURITY_BITS} or
-last(/Template pfSense Active/pfsense.value[cert_hash_secbits, {#CERT_INDEX}])&lt; {$CERT_SECURITY_BITS}</expression>
+                            <expression>{Template_pfSense_Active:pfsense.value[cert_algo_secbits,{#CERT_INDEX}].last()} < {$CERT_SECURITY_BITS} or
+{Template_pfSense_Active:pfsense.value[cert_hash_secbits,{#CERT_INDEX}].last()} < {$CERT_SECURITY_BITS}</expression>
                             <name>Certificate  &quot;{#CERT_NAME}&quot; ({#CERT_TYPE}) has low security</name>
                             <priority>AVERAGE</priority>
                         </trigger_prototype>
