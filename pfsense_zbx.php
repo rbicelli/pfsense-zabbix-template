@@ -1152,7 +1152,8 @@ function pfz_get_smart_status(){
 	$status = 0;
 	foreach ($devs as $dev)  { ## for each found drive do                
                 $smartdrive_is_displayed = true;
-                $dev_ident = exec("diskinfo -v /dev/$dev | grep ident   | awk '{print $1}'"); ## get identifier from drive
+                // This does nothing, only beaks the script when you have an NMVE disk
+		//$dev_ident = exec("diskinfo -v /dev/$dev | grep ident   | awk '{print $1}'"); ## get identifier from drive
                 $dev_state = trim(exec("smartctl -H /dev/$dev | awk -F: '/^SMART overall-health self-assessment test result/ {print $2;exit}
 /^SMART Health Status/ {print $2;exit}'")); ## get SMART state from drive
                 switch ($dev_state) {
@@ -1164,12 +1165,12 @@ function pfz_get_smart_status(){
                         case "":
                                 //Unknown
                                 $status=2;
-                                return $status;
+                                //return $status;
                                 break;
                         default:
                         		//Error
                                 $status=1;
-                                return $status;
+                               //return $status;
                                 break;
                 }
 	}
