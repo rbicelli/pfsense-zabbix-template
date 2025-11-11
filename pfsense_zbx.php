@@ -43,6 +43,17 @@ if (!function_exists('str_contains')){
 
 }
 
+//pfSense 2.7-2.8 Compatibility
+if (!function_exists('get_drive_list')){
+
+	function get_drive_list() {
+
+		get_smart_drive_list();
+
+	}
+
+}
+
 //Testing function, for template creating purpose
 function pfz_test(){
         $line = "-------------------\n";
