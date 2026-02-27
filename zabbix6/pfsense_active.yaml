@@ -1280,7 +1280,7 @@ zabbix_export:
                     key: 'vfs.fs.size[{#FSNAME},used]'
       macros:
         - macro: '{$AGENT.NODATA_TIMEOUT}'
-          value: 1m
+          value: 30m
           description: 'No data timeout for active agents. Consider to keep it relatively high.'
         - macro: '{$CARP_SERVICES_STOPPED}'
           value: ^(haproxy|openvpn)$
