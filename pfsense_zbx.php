@@ -14,6 +14,19 @@ define('SPEEDTEST_INTERVAL', 8); //Speedtest Interval (in hours)
 define('CRON_TIME_LIMIT', 300); // Time limit in seconds of speedtest and sysinfo 
 define('DEFAULT_TIME_LIMIT', 30); // Time limit in seconds otherwise
 
+// Interface name prefixes that carry a TUNNEL rather than an internet uplink.
+// A site-to-site tunnel normally HAS a gateway, so without this test it is
+// indistinguishable from a WAN: it gets discovered as one and speed-tested
+// through the tunnel.
+//   ovpn*    OpenVPN            (ovpnc1, ovpns1)
+//   tun_wg*  WireGuard          (as named by the pfSense WireGuard package)
+//   wg<n>    WireGuard          (as named on plain FreeBSD)
+//   ipsec*   IPsec VTI, enc<n>  the IPsec enc device
+//   gif<n>   GIF, gre<n> GRE
+//   l2tp*, pptp*, tun<n>, tap<n>
+// pppoe* and ppp* are deliberately absent - those are real WAN uplinks.
+define('VPN_IF_PATTERN', '/^(ovpn|tun_wg|wg[0-9]|ipsec|enc[0-9]|gif[0-9]|gre[0-9]|l2tp|pptp|tun[0-9]|tap[0-9])/i');
+
 require_once('globals.inc');
 require_once('functions.inc');
 require_once('config.inc');
@@ -144,7 +157,7 @@ function pfz_interface_discovery($is_wan=false,$is_cron=false) {
                         if (array_key_exists("gateway",$ifinfo)) $has_gw=true;
                         //	Issue #81 - https://stackoverflow.com/a/13818647/15093007
                         if (filter_var($ifinfo["ipaddr"], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) $has_public_ip=true;
-                        if (strpos($ifinfo["if"],"ovpn")!==false) $is_vpn=true;
+                        if (preg_match(VPN_IF_PATTERN, $ifinfo["if"])===1) $is_vpn=true;
                         break;
                 }
         }
