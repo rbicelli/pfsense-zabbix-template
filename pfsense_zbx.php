@@ -1123,6 +1123,12 @@ function pfz_syscheck_cron (){
 
 //System Information
 function pfz_get_system_value($section){
+	// The script version is not part of the cached system info
+	if ($section == "script_version") {
+		echo SCRIPT_VERSION;
+		return;
+	}
+
 	$filename = "/tmp/sysversion.json";	
 	// A stale file means the cronjob is not running. Drop it, so the code
 	// below reinstalls the cronjob just like it does on a new install.
@@ -1141,11 +1147,9 @@ function pfz_get_system_value($section){
 		} else {
 			echo "";
 		}
+		return;
 	}
 	switch ($section){
-        case "script_version":
-			echo SCRIPT_VERSION;
-			break;
 		case "version":
             echo( $sysVersion['version']);
             break;
@@ -1675,10 +1679,6 @@ switch ($mainArgument){
      	  pfz_speedtest_cron_install();
      	  pfz_speedtest_cron();
      	  break;
-	 case "syscheck_cron":
-		   pfz_syscheck_cron_install();
-		   pfz_syscheck_cron();
-		   break;
      case "cron_cleanup":
      	  pfz_speedtest_cron_install(false);
      	  pfz_syscheck_cron_install(false);
