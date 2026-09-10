@@ -16,6 +16,25 @@ zabbix_export:
       groups:
         - name: 'Templates/Network Devices'
       items:
+        - uuid: cac15d377937429caf4b746b6968933a
+          name: 'pfSense: Zabbix agent ping'
+          type: ZABBIX_ACTIVE
+          key: agent.ping
+          description: 'The agent always returns "1" for this item. May be used in combination with `nodata()` for the availability check.'
+          tags:
+            - tag: component
+              value: system
+          triggers:
+            - uuid: 7b520c01738246e397c3b6ee11db39df
+              expression: 'nodata(/Template pfSense Active/agent.ping,{$AGENT.NODATA_TIMEOUT})=1'
+              name: 'pfSense: Zabbix agent is not available'
+              event_name: 'pfSense: Zabbix agent is not available (or nodata for {$AGENT.NODATA_TIMEOUT})'
+              priority: AVERAGE
+              description: 'For active agents, nodata() with agent.ping is used with {$AGENT.NODATA_TIMEOUT} as time threshold.'
+              manual_close: 'YES'
+              tags:
+                - tag: scope
+                  value: availability
         - uuid: fe0bfdabfd494c859bae516980bb412c
           name: 'Maximum number of opened files'
           type: ZABBIX_ACTIVE
@@ -1260,6 +1279,9 @@ zabbix_export:
                     host: 'Template pfSense Active'
                     key: 'vfs.fs.size[{#FSNAME},used]'
       macros:
+        - macro: '{$AGENT.NODATA_TIMEOUT}'
+          value: 30m
+          description: 'No data timeout for active agents. Consider to keep it relatively high.'
         - macro: '{$CARP_SERVICES_STOPPED}'
           value: ^(haproxy|openvpn)$
           description: 'Regular expression for for services stopped on CARP slave'
@@ -1390,6 +1412,11 @@ zabbix_export:
           mappings:
             - value: '0'
               newvalue: Down
+            - value: '1'
+              newvalue: Up
+        - uuid: 1479c8df8e3b4a39b2d9bd666e5a99df
+          name: 'Zabbix agent ping status'
+          mappings:
             - value: '1'
               newvalue: Up
   triggers:
