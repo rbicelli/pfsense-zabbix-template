@@ -30,6 +30,20 @@ define("COMMAND_HANDLERS", build_method_lookup(Command::class));
 define("DISCOVERY_SECTION_HANDLERS", build_method_lookup(Discovery::class));
 define("SERVICES_VALUE_HANDLERS", build_method_lookup(Service::class));
 
+// Interface name prefixes that carry a TUNNEL rather than an internet uplink.
+// A site-to-site tunnel normally HAS a gateway, so without this test it is
+// indistinguishable from a WAN: it gets discovered as one and speed-tested
+// through the tunnel.
+//   ovpn*    OpenVPN            (ovpnc1, ovpns1)
+//   tun_wg*  WireGuard          (as named by the pfSense WireGuard package)
+//   wg<n>    WireGuard          (as named on plain FreeBSD)
+//   ipsec*   IPsec VTI, enc<n>  the IPsec enc device
+//   gif<n>   GIF, gre<n> GRE
+//   l2tp*, pptp*, tun<n>, tap<n>
+// pppoe* and ppp* are deliberately absent - those are real WAN uplinks.
+define('VPN_IF_PATTERN', '/^(ovpn|tun_wg|wg[0-9]|ipsec|enc[0-9]|gif[0-9]|gre[0-9]|l2tp|pptp|tun[0-9]|tap[0-9])/i');
+
+
 define("TEXT_ACTIVE", gettext("active"));
 define("TEXT_DYNAMIC", gettext("dynamic"));
 define("TEXT_EXPIRED", gettext("expired"));
@@ -341,7 +355,7 @@ class NetworkInterface
                     $iface_info_ext["ipaddr"],
                     FILTER_VALIDATE_IP,
                     FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
-            $is_vpn = strpos($iface_info_ext["if"], "ovpn") !== false;
+            $is_vpn = preg_match(VPN_IF_PATTERN, $iface_info_ext["if"]) === 1;
 
             return ($has_gw || $has_public_ip) && !$is_vpn;
         });
