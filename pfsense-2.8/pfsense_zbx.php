@@ -1144,92 +1144,156 @@ function pfz_get_system_value($section){
      }
 }
 
-// S.M.A.R.T Status - pfSense CE 2.7.x / 2.8.x
+
+/**
+ * S.M.A.R.T Status - pfSense CE 2.7.x / 2.8.x
+ *
+ * Supports ATA/SATA, SCSI and NVMe devices.
+ *
+ * Return values:
+ *   0 = Healthy
+ *   1 = Failed
+ *   2 = Unknown
+ */
 function pfz_get_smart_status() {
+    $smartctl = '/usr/local/sbin/smartctl';
+    $devices = [];
 
-    $devs = [];
+    // Register supported devices and eliminate duplicates.
+    // NVMe health is queried through nvmeN, not ndaN/nvdN.
+    $add_device = static function ($name, $type = null) use (&$devices) {
+        if (!is_string($name)) {
+            return;
+        }
 
+        $name = basename(trim($name));
+
+        if (!preg_match('/^(ada|da|ad|nvme)[0-9]+$/', $name)) {
+            return;
+        }
+
+        if ($type === null && strpos($name, 'nvme') === 0) {
+            $type = 'nvme';
+        }
+
+        // Prefer protocol information from smartctl discovery.
+        if (!isset($devices[$name]) || $type !== null) {
+            $devices[$name] = $type;
+        }
+    };
+
+    // Native pfSense disk discovery.
     if (function_exists('get_smart_drive_list')) {
-        $result = get_smart_drive_list();
+        $native = get_smart_drive_list();
 
-        if (is_array($result)) {
-            $devs = $result;
-        }
-    }
-
-    if (empty($devs)) {
-        $disks = trim((string) get_single_sysctl('kern.disks'));
-
-        foreach (preg_split('/\s+/', $disks) as $disk) {
-            if (preg_match('/^(ada|da|ad)[0-9]+$/', $disk)) {
-                $devs[] = $disk;
-            }
-        }
-
-        foreach (glob('/dev/nvme[0-9]*') ?: [] as $device) {
-            $name = basename($device);
-
-            if (preg_match('/^nvme[0-9]+$/', $name)) {
-                $devs[] = $name;
+        if (is_array($native)) {
+            foreach ($native as $device) {
+                $add_device($device);
             }
         }
     }
 
-    $devs = array_unique($devs);
+    // Merge disks discovered through FreeBSD.
+    $disk_list = trim((string) get_single_sysctl('kern.disks'));
 
-    if (empty($devs)) {
+    foreach (preg_split('/\s+/', $disk_list) as $device) {
+        $add_device($device);
+    }
+
+    // Discover NVMe controllers.
+    foreach (glob('/dev/nvme[0-9]*') ?: [] as $path) {
+        $add_device($path, 'nvme');
+    }
+
+    // Additional discovery using smartctl.
+    // Ignore commented entries and devices that failed probing.
+    if (is_executable($smartctl)) {
+        $scan_lines = [];
+        $scan_code = 0;
+
+        exec(
+            escapeshellarg($smartctl) . ' --scan-open 2>/dev/null',
+            $scan_lines,
+            $scan_code
+        );
+
+        foreach ($scan_lines as $line) {
+            if (preg_match(
+                '~^(/dev/(?:ada|da|ad|nvme)[0-9]+)\s+-d\s+(atacam|scsi|nvme)\b~',
+                $line,
+                $match
+            )) {
+                $add_device($match[1], $match[2]);
+            }
+        }
+    }
+
+    // No supported disks or smartctl unavailable.
+    if (empty($devices) || !is_executable($smartctl)) {
         echo 2;
         return;
     }
 
     $unknown = false;
 
-    foreach ($devs as $dev) {
+    foreach ($devices as $device => $type) {
+        $command = escapeshellarg($smartctl) . ' -H';
 
-        if (!preg_match('/^(ada|da|ad|nvme)[0-9]+$/', $dev)) {
-            $unknown = true;
-            continue;
+        if ($type !== null) {
+            $command .= ' -d ' . escapeshellarg($type);
         }
 
-        $command = '/usr/local/sbin/smartctl -H '
-                 . escapeshellarg('/dev/' . $dev)
+        $command .= ' '
+                 . escapeshellarg('/dev/' . $device)
                  . ' 2>&1';
 
-        $output = [];
-        $exitCode = 0;
+        $lines = [];
+        $exit_code = 0;
 
-        exec($command, $output, $exitCode);
+        exec($command, $lines, $exit_code);
 
-        $result = implode("\n", $output);
+        $result = implode("\n", $lines);
 
+        // Health failure takes precedence over unknown states.
+        // Bits 3, 4 and 5 indicate SMART health/attribute failures.
         if (
             preg_match(
-                '/SMART overall-health self-assessment test result:\s*FAILED/i',
+                '/SMART overall-health self-assessment test result:\s*FAILED\b/i',
                 $result
             )
             || preg_match(
-                '/SMART Health Status:\s*FAILED/i',
+                '/SMART Health Status:\s*(?:FAILED|BAD)\b/i',
                 $result
             )
-            || ($exitCode & 0x08)
+            || ($exit_code & 0x38)
         ) {
             echo 1;
             return;
         }
 
+        // Recognize healthy ATA, SCSI and NVMe responses.
         $passed = preg_match(
-            '/SMART overall-health self-assessment test result:\s*PASSED/i',
+            '/SMART overall-health self-assessment test result:\s*PASSED\b/i',
             $result
         ) || preg_match(
-            '/SMART Health Status:\s*(OK|PASSED)/i',
+            '/SMART Health Status:\s*(?:OK|PASSED)\b/i',
             $result
         );
 
-        if (!$passed || ($exitCode & 0x07)) {
+        // Bits 0-2 indicate command/device errors.
+        // Bits 6-7 indicate errors recorded in SMART logs.
+        if (
+            !$passed
+            || $exit_code < 0
+            || ($exit_code & 0xC7)
+        ) {
             $unknown = true;
         }
     }
 
+    // All disks healthy = 0
+    // Any failure = 1
+    // Any unknown without failure = 2
     echo $unknown ? 2 : 0;
 }
 
