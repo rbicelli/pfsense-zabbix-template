@@ -13,6 +13,7 @@ define ('SCRIPT_VERSION','0.24.7');
 define('SPEEDTEST_INTERVAL', 8); //Speedtest Interval (in hours)
 define('CRON_TIME_LIMIT', 300); // Time limit in seconds of speedtest and sysinfo 
 define('DEFAULT_TIME_LIMIT', 30); // Time limit in seconds otherwise
+define('SYSCHECK_STALE_LIMIT', 86400); // sysversion.json older than this means the cronjob is not running
 
 require_once('globals.inc');
 require_once('functions.inc');
@@ -1123,6 +1124,13 @@ function pfz_syscheck_cron (){
 //System Information
 function pfz_get_system_value($section){
 	$filename = "/tmp/sysversion.json";	
+	// A stale file means the cronjob is not running. Drop it, so the code
+	// below reinstalls the cronjob just like it does on a new install.
+	if (file_exists($filename)) {
+		if ( (time()-filemtime($filename) > SYSCHECK_STALE_LIMIT) ) {
+			@unlink($filename);
+		}
+	}
 	if(file_exists($filename)) {
 		$sysVersion = json_decode(file_get_contents($filename), true);
 	} else {
