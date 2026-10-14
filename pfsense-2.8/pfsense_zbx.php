@@ -562,19 +562,26 @@ function pfz_gw_discovery() {
 }
 
 
+
 function pfz_gw_value($gw, $valuekey) {
      $gws = return_gateways_status(true);
-     if(array_key_exists($gw,$gws)) {
-          $value = $gws[$gw][$valuekey];
-          if ($valuekey=="status") { 
-               //Issue #70: Gateway Forced Down
-               if ($gws[$gw]["substatus"]<>"none") 
-                    $value = $gws[$gw]["substatus"];
-               
-               $value = pfz_valuemap("gateway.status", $value);
-          }     
-          echo $value;         
+
+     if (!isset($gws[$gw]) || !array_key_exists($valuekey, $gws[$gw])) {
+          return;
      }
+
+     $value = $gws[$gw][$valuekey];
+
+     if ($valuekey == "status") {
+          // Issue #70: Gateway Forced Down
+          if (($gws[$gw]["substatus"] ?? "none") != "none") {
+               $value = $gws[$gw]["substatus"];
+          }
+
+          $value = pfz_valuemap("gateway.status", $value);
+     }
+
+     echo $value;
 }
 
 
