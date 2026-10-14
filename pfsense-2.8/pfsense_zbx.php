@@ -1,14 +1,15 @@
 <?php
+
 /*** 
 pfsense_zbx.php - pfSense Zabbix Interface
 Version 0.24.7 - 2024-04-27
 
 Written by Riccardo Bicelli <r.bicelli@gmail.com>
 This program is licensed under Apache 2.0 License
-*/
+ */
 
 //Some Useful defines
-define ('SCRIPT_VERSION','0.24.7');
+define('SCRIPT_VERSION', '0.24.7');
 
 define('SPEEDTEST_INTERVAL', 8); //Speedtest Interval (in hours)
 define('CRON_TIME_LIMIT', 300); // Time limit in seconds of speedtest and sysinfo 
@@ -29,629 +30,647 @@ require_once('openvpn.inc');
 require_once("service-utils.inc");
 
 //For System
-require_once('pkg-utils.inc'); 
+require_once('pkg-utils.inc');
 
 //For DHCP
 
 //Backporting php 8 functions
-if (!function_exists('str_contains')){
+if (!function_exists('str_contains')) {
 
-	function str_contains($haystack,$needle){
+	function str_contains($haystack, $needle)
+	{
 
-		return strstr($haystack,$needle);
+		return strstr($haystack, $needle);
 	}
-
 }
 
 //Testing function, for template creating purpose
-function pfz_test(){
-        $line = "-------------------\n";
-        
-        $ovpn_servers = pfz_openvpn_get_all_servers();
-        echo "OPENVPN Servers:\n";
-        print_r($ovpn_servers);
-        echo $line;
+function pfz_test()
+{
+	$line = "-------------------\n";
 
-        $ovpn_clients = openvpn_get_active_clients();
-        echo "OPENVPN Clients:\n";
-        print_r($ovpn_clients);
-        echo $line;
+	$ovpn_servers = pfz_openvpn_get_all_servers();
+	echo "OPENVPN Servers:\n";
+	print_r($ovpn_servers);
+	echo $line;
 
-        $ifdescrs = get_configured_interface_with_descr(true);
-        $ifaces=array();
-        foreach ($ifdescrs as $ifdescr => $ifname){	     
-          $ifinfo = get_interface_info($ifdescr);
-          $ifaces[$ifname] = $ifinfo;
-        }
-        echo "Network Interfaces:\n";        
-        print_r($ifaces);
-        print_r(get_interface_arr());
-        print_r(get_configured_interface_list());
-        echo $line;
+	$ovpn_clients = openvpn_get_active_clients();
+	echo "OPENVPN Clients:\n";
+	print_r($ovpn_clients);
+	echo $line;
 
-        $services = get_services();
-        echo "Services: \n";
-        print_r($services);
-        echo $line;
-        
-        echo "IPsec: \n";
-	
-		require_once("ipsec.inc");
-		global $config;
-		init_config_arr(array('ipsec', 'phase1'));
-		init_config_arr(array('ipsec', 'phase2'));
-		$a_phase2 = &$config['ipsec']['phase2'];
-    $status = ipsec_list_sa();
-		echo "IPsec Status: \n";
-		print_r($status);		
-		
-		$a_phase1 = &$config['ipsec']['phase1'];
-		$a_phase2 = &$config['ipsec']['phase2'];
-	
-		echo "IPsec Config Phase 1: \n";
-		print_r($a_phase1);
-		
-		echo "IPsec Config Phase 2: \n";
-		print_r($a_phase2);
-		
-		echo $line;
-		
-		//Packages
-		echo "Packages: \n";
-		require_once("pkg-utils.inc");
-		$installed_packages = get_pkg_info('all', false, true);
-		print_r($installed_packages);
+	$ifdescrs = get_configured_interface_with_descr(true);
+	$ifaces = array();
+	foreach ($ifdescrs as $ifdescr => $ifname) {
+		$ifinfo = get_interface_info($ifdescr);
+		$ifaces[$ifname] = $ifinfo;
+	}
+	echo "Network Interfaces:\n";
+	print_r($ifaces);
+	print_r(get_interface_arr());
+	print_r(get_configured_interface_list());
+	echo $line;
+
+	$services = get_services();
+	echo "Services: \n";
+	print_r($services);
+	echo $line;
+
+	echo "IPsec: \n";
+
+	require_once("ipsec.inc");
+	global $config;
+	init_config_arr(array('ipsec', 'phase1'));
+	init_config_arr(array('ipsec', 'phase2'));
+	$a_phase2 = &$config['ipsec']['phase2'];
+	$status = ipsec_list_sa();
+	echo "IPsec Status: \n";
+	print_r($status);
+
+	$a_phase1 = &$config['ipsec']['phase1'];
+	$a_phase2 = &$config['ipsec']['phase2'];
+
+	echo "IPsec Config Phase 1: \n";
+	print_r($a_phase1);
+
+	echo "IPsec Config Phase 2: \n";
+	print_r($a_phase2);
+
+	echo $line;
+
+	//Packages
+	echo "Packages: \n";
+	require_once("pkg-utils.inc");
+	$installed_packages = get_pkg_info('all', false, true);
+	print_r($installed_packages);
 }
 
 
 // Interface Discovery
 // Improved performance
-function pfz_interface_discovery($is_wan=false,$is_cron=false) {
-    $ifdescrs = get_configured_interface_with_descr(true);
-    $ifaces = get_interface_arr();
-    $ifcs=array();
-    $if_ret=array();
- 
-    $json_string = '{"data":[';
-                   
-    foreach ($ifdescrs as $ifname => $ifdescr){
-          $ifinfo = get_interface_info($ifname);
-          $ifinfo["description"] = $ifdescr;
-	      $ifcs[$ifname] = $ifinfo;	      
-    }    
+function pfz_interface_discovery($is_wan = false, $is_cron = false)
+{
+	$ifdescrs = get_configured_interface_with_descr(true);
+	$ifaces = get_interface_arr();
+	$ifcs = array();
+	$if_ret = array();
 
-    foreach ($ifaces as $hwif) {
-        
-        $ifdescr = $hwif;
-        $has_gw = false;
-        $is_vpn = false;
-        $has_public_ip = false;
-        
-        foreach($ifcs as $ifc=>$ifinfo){
-                if ($ifinfo["hwif"] == $hwif){
-                        $ifdescr = $ifinfo["description"];
-                        if (array_key_exists("gateway",$ifinfo)) $has_gw=true;
-                        //	Issue #81 - https://stackoverflow.com/a/13818647/15093007
-                        if (filter_var($ifinfo["ipaddr"], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) $has_public_ip=true;
-                        if (strpos($ifinfo["if"],"ovpn")!==false) $is_vpn=true;
-                        break;
-                }
-        }
-		
-		if ( ($is_wan==false) ||  (($is_wan==true) && (($has_gw==true) || ($has_public_ip==true)) && ($is_vpn==false)) ) { 
-		    $if_ret[]=$hwif;
-		    $json_string .= '{"{#IFNAME}":"' . $hwif . '"';
-		    $json_string .= ',"{#IFDESCR}":"' . $ifdescr . '"';
-		    $json_string .= '},';
-        }
-    
-    }
-    $json_string = rtrim($json_string,",");
-    $json_string .= "]}";
+	$json_string = '{"data":[';
+
+	foreach ($ifdescrs as $ifname => $ifdescr) {
+		$ifinfo = get_interface_info($ifname);
+		$ifinfo["description"] = $ifdescr;
+		$ifcs[$ifname] = $ifinfo;
+	}
+
+	foreach ($ifaces as $hwif) {
+
+		$ifdescr = $hwif;
+		$has_gw = false;
+		$is_vpn = false;
+		$has_public_ip = false;
+
+		foreach ($ifcs as $ifc => $ifinfo) {
+			if ($ifinfo["hwif"] == $hwif) {
+				$ifdescr = $ifinfo["description"];
+				if (array_key_exists("gateway", $ifinfo)) $has_gw = true;
+				//	Issue #81 - https://stackoverflow.com/a/13818647/15093007
+				if (filter_var($ifinfo["ipaddr"], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) $has_public_ip = true;
+				if (strpos($ifinfo["if"], "ovpn") !== false) $is_vpn = true;
+				break;
+			}
+		}
+
+		if (($is_wan == false) ||  (($is_wan == true) && (($has_gw == true) || ($has_public_ip == true)) && ($is_vpn == false))) {
+			$if_ret[] = $hwif;
+			$json_string .= '{"{#IFNAME}":"' . $hwif . '"';
+			$json_string .= ',"{#IFDESCR}":"' . $ifdescr . '"';
+			$json_string .= '},';
+		}
+	}
+	$json_string = rtrim($json_string, ",");
+	$json_string .= "]}";
 
 	if ($is_cron) return $if_ret;
-	
-    echo $json_string;
+
+	echo $json_string;
 }
 
 
 //Interface Speedtest
-function pfz_interface_speedtest_value($ifname, $value){	
-    $tvalue = explode(".", $value);    
-    
-    if (count($tvalue)>1) {
-    	$value = $tvalue[0];
-    	$subvalue = $tvalue[1];
-    }        
-    
+function pfz_interface_speedtest_value($ifname, $value)
+{
+	$tvalue = explode(".", $value);
+
+	if (count($tvalue) > 1) {
+		$value = $tvalue[0];
+		$subvalue = $tvalue[1];
+	}
+
 	//If the interface has a gateway is considered WAN, so let's do the speedtest
 	$filename = "/tmp/speedtest-$ifname";
-	
+
 	if (file_exists($filename)) {
 		$speedtest_data = json_decode(file_get_contents($filename), true) ?? [];
-		
+
 		if (array_key_exists($value, $speedtest_data)) {
-			if ($subvalue == false) 
+			if ($subvalue == false)
 				echo $speedtest_data[$value];
 			else
 				echo $speedtest_data[$value][$subvalue];
-		}	
+		}
 	}
-			
 }
 
 // This is supposed to run via cron job
-function pfz_speedtest_cron(){
+function pfz_speedtest_cron()
+{
 	require_once("services.inc");
 	$ifdescrs = get_configured_interface_with_descr(true);
-    $ifaces = get_interface_arr();
-    $pf_interface_name='';
-    $subvalue=false;    
-		                       
-    $ifcs = pfz_interface_discovery(true, true);    
-    
-    foreach ($ifcs as $ifname) {
-          foreach ($ifdescrs as $ifn => $ifd){
-		      $ifinfo = get_interface_info($ifn);
-		      if($ifinfo['hwif']==$ifname) {
-		      	$pf_interface_name = $ifn;
-		      	break;
-		      }
-    	  }	
-		  pfz_speedtest_exec($ifname, $ifinfo['ipaddr']);
-    }
+	$ifaces = get_interface_arr();
+	$pf_interface_name = '';
+	$subvalue = false;
+
+	$ifcs = pfz_interface_discovery(true, true);
+
+	foreach ($ifcs as $ifname) {
+		foreach ($ifdescrs as $ifn => $ifd) {
+			$ifinfo = get_interface_info($ifn);
+			if ($ifinfo['hwif'] == $ifname) {
+				$pf_interface_name = $ifn;
+				break;
+			}
+		}
+		pfz_speedtest_exec($ifname, $ifinfo['ipaddr']);
+	}
 }
 
 //installs a cron job for speedtests
-function pfz_speedtest_cron_install($enable=true){
+function pfz_speedtest_cron_install($enable = true)
+{
 	//Install Cron Job
 	$command = "/usr/local/bin/php " . __FILE__ . " speedtest_cron";
 	install_cron_job($command, $enable, $minute = "*/15", "*", "*", "*", "*", "root", true);
-}        	
+}
 
 
 // 2023-02-26:
 // Fixed issue #127
-function pfz_speedtest_exec ($ifname, $ipaddr){
-	
+function pfz_speedtest_exec($ifname, $ipaddr)
+{
+
 	$filename = "/tmp/speedtest-$ifname";
 	$filetemp = "$filename.tmp";
-	$filerun = "/tmp/speedtest-run"; 
-	
+	$filerun = "/tmp/speedtest-run";
+
 	// Issue #82
 	// Sleep random delay in order to avoid problem when 2 pfSense on the same Internet line
-	sleep (rand ( 1, 90));
-	
-	if ( (time()-filemtime($filename) > SPEEDTEST_INTERVAL * 3600) || (file_exists($filename)==false) ) {
-	  	// file is older than SPEEDTEST_INTERVAL
-	  	if ( (time()-filemtime($filerun) > 180 ) ) @unlink($filerun);
+	sleep(rand(1, 90));
 
-		if (file_exists($filerun)==false) {	  			  		
-	  		touch($filerun);
-	  		$st_command = "/usr/local/bin/speedtest --secure --source $ipaddr --json > $filetemp";
-			exec ($st_command);
-			rename($filetemp,$filename);
+	if ((time() - filemtime($filename) > SPEEDTEST_INTERVAL * 3600) || (file_exists($filename) == false)) {
+		// file is older than SPEEDTEST_INTERVAL
+		if ((time() - filemtime($filerun) > 180)) @unlink($filerun);
+
+		if (file_exists($filerun) == false) {
+			touch($filerun);
+			$st_command = "/usr/local/bin/speedtest --secure --source $ipaddr --json > $filetemp";
+			exec($st_command);
+			rename($filetemp, $filename);
 			@unlink($filerun);
 		}
-	}	
-	
+	}
+
 	return true;
 }
 
 
 // OpenVPN Server Discovery
-function pfz_openvpn_get_all_servers(){
-     $servers = openvpn_get_active_servers();
-     $sk_servers = openvpn_get_active_servers("p2p");
-     $servers = array_merge($servers,$sk_servers);
-     return ($servers);
+function pfz_openvpn_get_all_servers()
+{
+	$servers = openvpn_get_active_servers();
+	$sk_servers = openvpn_get_active_servers("p2p");
+	$servers = array_merge($servers, $sk_servers);
+	return ($servers);
 }
 
 
-function pfz_openvpn_serverdiscovery() {
-     $servers = pfz_openvpn_get_all_servers();
+function pfz_openvpn_serverdiscovery()
+{
+	$servers = pfz_openvpn_get_all_servers();
 
-     $json_string = '{"data":[';
+	$json_string = '{"data":[';
 
-     foreach ($servers as $server){
-          $name = trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $server['name']));
-          $json_string .= '{"{#SERVER}":"' . $server['vpnid'] . '"';
-          $json_string .= ',"{#NAME}":"' . $name . '"';  
-          $json_string .= '},';
-     }
+	foreach ($servers as $server) {
+		$name = trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $server['name']));
+		$json_string .= '{"{#SERVER}":"' . $server['vpnid'] . '"';
+		$json_string .= ',"{#NAME}":"' . $name . '"';
+		$json_string .= '},';
+	}
 
-     $json_string = rtrim($json_string,",");
-     $json_string .= "]}";
+	$json_string = rtrim($json_string, ",");
+	$json_string .= "]}";
 
-     echo $json_string;
+	echo $json_string;
 }
 
 
 // Get OpenVPN Server Value
 
-function pfz_openvpn_servervalue($server_id, $valuekey) {
-    $servers = pfz_openvpn_get_all_servers();
-    $value = null;
+function pfz_openvpn_servervalue($server_id, $valuekey)
+{
+	$servers = pfz_openvpn_get_all_servers();
+	$value = null;
 
-    foreach ($servers as $server) {
-        if (($server['vpnid'] ?? null) == $server_id) {
-            $value = $server[$valuekey] ?? null;
+	foreach ($servers as $server) {
+		if (($server['vpnid'] ?? null) == $server_id) {
+			$value = $server[$valuekey] ?? null;
 
-            if ($valuekey == "status") {
-                if (
-                    ($server['mode'] == "server_user") ||
-                    ($server['mode'] == "server_tls_user") ||
-                    ($server['mode'] == "server_tls")
-                ) {
-                    if ($value == "") {
-                        $value = "server_user_listening";
-                    }
-                } else if ($server['mode'] == "p2p_tls") {
-                    if ($value == "") {
-                        $value = (
-                            is_array($server["conns"] ?? null) &&
-                            count($server["conns"]) > 0
-                        ) ? "up" : "down";
-                    }
-                }
-            }
+			if ($valuekey == "status") {
+				if (
+					($server['mode'] == "server_user") ||
+					($server['mode'] == "server_tls_user") ||
+					($server['mode'] == "server_tls")
+				) {
+					if ($value == "") {
+						$value = "server_user_listening";
+					}
+				} else if ($server['mode'] == "p2p_tls") {
+					if ($value == "") {
+						$value = (
+							is_array($server["conns"] ?? null) &&
+							count($server["conns"]) > 0
+						) ? "up" : "down";
+					}
+				}
+			}
 
-            break;
-        }
-    }
+			break;
+		}
+	}
 
-    switch ($valuekey) {
-        case "conns":
-            $value = is_array($value) ? count($value) : 0;
-            break;
+	switch ($valuekey) {
+		case "conns":
+			$value = is_array($value) ? count($value) : 0;
+			break;
 
-        case "status":
-            $value = pfz_valuemap("openvpn.server.status", $value);
-            break;
+		case "status":
+			$value = pfz_valuemap("openvpn.server.status", $value);
+			break;
 
-        case "mode":
-            $value = pfz_valuemap("openvpn.server.mode", $value);
-            break;
+		case "mode":
+			$value = pfz_valuemap("openvpn.server.mode", $value);
+			break;
 
-        case "bytes_recv":
-        case "bytes_sent":
-            $value = is_numeric($value) ? $value : 0;
-            break;
-    }
+		case "bytes_recv":
+		case "bytes_sent":
+			$value = is_numeric($value) ? $value : 0;
+			break;
+	}
 
-    echo $value;
+	echo $value;
 }
 
 //OpenVPN Server/User-Auth Discovery
-function pfz_openvpn_server_userdiscovery(){
-     $servers = pfz_openvpn_get_all_servers();
+function pfz_openvpn_server_userdiscovery()
+{
+	$servers = pfz_openvpn_get_all_servers();
 
-     $json_string = '{"data":[';
+	$json_string = '{"data":[';
 
-     foreach ($servers as $server){
-          if ( ($server['mode']=='server_user') || ($server['mode']=='server_tls_user') || ($server['mode']=='server_tls') ) {
-               if (is_array($server['conns'])) {               
-                    $name = trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $server['name']));
-                    
-                    foreach($server['conns'] as $conn) {
-                    	
-                    	$common_name = pfz_replacespecialchars($conn['common_name']);
-                    	               
-                        $json_string .= '{"{#SERVERID}":"' . $server['vpnid'] . '"';
-                        $json_string .= ',"{#SERVERNAME}":"' . $name . '"';
-                        $json_string .= ',"{#UNIQUEID}":"' . $server['vpnid'] . '+' . $common_name . '"';                         
-                        $json_string .= ',"{#USERID}":"' . $conn['common_name'] . '"';    
-                        $json_string .= '},';
-                    }
-               }
-          }
-     }
+	foreach ($servers as $server) {
+		if (($server['mode'] == 'server_user') || ($server['mode'] == 'server_tls_user') || ($server['mode'] == 'server_tls')) {
+			if (is_array($server['conns'])) {
+				$name = trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $server['name']));
 
-     $json_string = rtrim($json_string,",");
-     $json_string .= "]}";
+				foreach ($server['conns'] as $conn) {
 
-     echo $json_string;
+					$common_name = pfz_replacespecialchars($conn['common_name']);
+
+					$json_string .= '{"{#SERVERID}":"' . $server['vpnid'] . '"';
+					$json_string .= ',"{#SERVERNAME}":"' . $name . '"';
+					$json_string .= ',"{#UNIQUEID}":"' . $server['vpnid'] . '+' . $common_name . '"';
+					$json_string .= ',"{#USERID}":"' . $conn['common_name'] . '"';
+					$json_string .= '},';
+				}
+			}
+		}
+	}
+
+	$json_string = rtrim($json_string, ",");
+	$json_string .= "]}";
+
+	echo $json_string;
 }
 
 // Get OpenVPN User Connected Value
-function pfz_openvpn_server_uservalue($unique_id, $valuekey, $default=""){
+function pfz_openvpn_server_uservalue($unique_id, $valuekey, $default = "")
+{
 
-	 $unique_id = pfz_replacespecialchars($unique_id,true);
-     $atpos=strpos($unique_id,'+');
-     $server_id = substr($unique_id,0,$atpos);
-     $user_id = substr($unique_id,$atpos+1);
-     
-     $servers = pfz_openvpn_get_all_servers();
-     foreach($servers as $server) {
-          if($server['vpnid']==$server_id) {
-               foreach($server['conns'] as $conn) {               
-                    if ($conn['common_name']==$user_id){
-                         $value = $conn[$valuekey];
-                    }
-               }               
-          }
-     }
-     if ($value=="") $value = $default;
-     echo $value;
+	$unique_id = pfz_replacespecialchars($unique_id, true);
+	$atpos = strpos($unique_id, '+');
+	$server_id = substr($unique_id, 0, $atpos);
+	$user_id = substr($unique_id, $atpos + 1);
+
+	$servers = pfz_openvpn_get_all_servers();
+	foreach ($servers as $server) {
+		if ($server['vpnid'] == $server_id) {
+			foreach ($server['conns'] as $conn) {
+				if ($conn['common_name'] == $user_id) {
+					$value = $conn[$valuekey];
+				}
+			}
+		}
+	}
+	if ($value == "") $value = $default;
+	echo $value;
 }
 // OpenVPN Client Discovery
-function pfz_openvpn_clientdiscovery() {
-     $clients = openvpn_get_active_clients();
+function pfz_openvpn_clientdiscovery()
+{
+	$clients = openvpn_get_active_clients();
 
-     $json_string = '{"data":[';
+	$json_string = '{"data":[';
 
-     foreach ($clients as $client){
-          $name = trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $client['name']));
-          $json_string .= '{"{#CLIENT}":"' . $client['vpnid'] . '"';
-          $json_string .= ',"{#NAME}":"' . $name . '"';
-          $json_string .= '},';
-     }
+	foreach ($clients as $client) {
+		$name = trim(preg_replace('/\w{3}(\d)?\:\d{4,5}/i', '', $client['name']));
+		$json_string .= '{"{#CLIENT}":"' . $client['vpnid'] . '"';
+		$json_string .= ',"{#NAME}":"' . $name . '"';
+		$json_string .= '},';
+	}
 
-     $json_string = rtrim($json_string,",");
-     $json_string .= "]}";
+	$json_string = rtrim($json_string, ",");
+	$json_string .= "]}";
 
-     echo $json_string;
+	echo $json_string;
 }
 
-function pfz_replacespecialchars($inputstr,$reverse=false){
-	 $specialchars = ",',\",`,*,?,[,],{,},~,$,!,&,;,(,),<,>,|,#,@,0x0a";
-	 $specialchars = explode(",",$specialchars);	 
-	 $resultstr = $inputstr;
-	 
-	 for ($n=0;$n<count($specialchars);$n++){
-	 	if ($reverse==false)
-	 		$resultstr = str_replace($specialchars[$n],'%%' . $n . '%',$resultstr);
-	 	else
-	 		$resultstr = str_replace('%%' . $n . '%',$specialchars[$n],$resultstr);
-	 }	 
-	 
-	 return ($resultstr);
+function pfz_replacespecialchars($inputstr, $reverse = false)
+{
+	$specialchars = ",',\",`,*,?,[,],{,},~,$,!,&,;,(,),<,>,|,#,@,0x0a";
+	$specialchars = explode(",", $specialchars);
+	$resultstr = $inputstr;
+
+	for ($n = 0; $n < count($specialchars); $n++) {
+		if ($reverse == false)
+			$resultstr = str_replace($specialchars[$n], '%%' . $n . '%', $resultstr);
+		else
+			$resultstr = str_replace('%%' . $n . '%', $specialchars[$n], $resultstr);
+	}
+
+	return ($resultstr);
 }
 
 
-function pfz_openvpn_clientvalue($client_id, $valuekey, $default="none") {
-    $clients = openvpn_get_active_clients();
-    $value = null;
+function pfz_openvpn_clientvalue($client_id, $valuekey, $default = "none")
+{
+	$clients = openvpn_get_active_clients();
+	$value = null;
 
-    foreach ($clients as $client) {
-        if (($client['vpnid'] ?? null) == $client_id) {
-            $value = $client[$valuekey] ?? null;
-            break;
-        }
-    }
+	foreach ($clients as $client) {
+		if (($client['vpnid'] ?? null) == $client_id) {
+			$value = $client[$valuekey] ?? null;
+			break;
+		}
+	}
 
-    switch ($valuekey) {
-        case "status":
-            $value = pfz_valuemap("openvpn.client.status", $value);
-            break;
+	switch ($valuekey) {
+		case "status":
+			$value = pfz_valuemap("openvpn.client.status", $value);
+			break;
 
-        case "bytes_recv":
-        case "bytes_sent":
-            $value = is_numeric($value) ? $value : 0;
-            break;
-    }
+		case "bytes_recv":
+		case "bytes_sent":
+			$value = is_numeric($value) ? $value : 0;
+			break;
+	}
 
-    if ($value === null || $value === "") {
-        $value = $default;
-    }
+	if ($value === null || $value === "") {
+		$value = $default;
+	}
 
-    echo $value;
+	echo $value;
 }
 
 
 // Services Discovery
 // 2020-03-27: Added space replace with __ for issue #12
-function pfz_services_discovery(){
-     $services = get_services();
+function pfz_services_discovery()
+{
+	$services = get_services();
 
-     $json_string = '{"data":[';
+	$json_string = '{"data":[';
 
-     foreach ($services as $service){
-          if (!empty($service['name'])) {
-               
-               $status = get_service_status($service);
-               if ($status="") $status = 0;
+	foreach ($services as $service) {
+		if (!empty($service['name'])) {
 
-               $id="";               
-               //id for OpenVPN               
-               if (!empty($service['id'])) $id = "." . $service["id"];
-               //zone for Captive Portal
-               if (!empty($service['zone'])) $id = "." . $service["zone"];
-                              
-               $json_string .= '{"{#SERVICE}":"' . str_replace(" ", "__", $service['name']) . $id . '"';          
-               $json_string .= ',"{#DESCRIPTION}":"' . $service['description'] . '"';
-               $json_string .= '},';
-          }
-     }     
-     $json_string = rtrim($json_string,",");
-     $json_string .= "]}";
-     
-     echo $json_string;
+			$status = get_service_status($service);
+			if ($status = "") $status = 0;
 
+			$id = "";
+			//id for OpenVPN               
+			if (!empty($service['id'])) $id = "." . $service["id"];
+			//zone for Captive Portal
+			if (!empty($service['zone'])) $id = "." . $service["zone"];
+
+			$json_string .= '{"{#SERVICE}":"' . str_replace(" ", "__", $service['name']) . $id . '"';
+			$json_string .= ',"{#DESCRIPTION}":"' . $service['description'] . '"';
+			$json_string .= '},';
+		}
+	}
+	$json_string = rtrim($json_string, ",");
+	$json_string .= "]}";
+
+	echo $json_string;
 }
 
 // Get service value
 // 2020-03-27: Added space replace in service name for issue #12
 // 2020-09-28: Corrected Space Replace
-function pfz_service_value($name,$value){
-     $services = get_services();     
-     $name = str_replace("__"," ",$name);
-           
-     //List of service which are stopped on CARP Slave.
-     //For now this is the best way i found for filtering out the triggers
-     //Waiting for a way in Zabbix to use Global Regexp in triggers with items discovery
-     $stopped_on_carp_slave = array("haproxy","radvd","openvpn.","openvpn","avahi");
-     
-     foreach ($services as $service){
-          $namecfr = $service["name"];
-          $carpcfr = $service["name"];          
+function pfz_service_value($name, $value)
+{
+	$services = get_services();
+	$name = str_replace("__", " ", $name);
 
-          //OpenVPN          
-          if (!empty($service['id'])) {                           
-               $namecfr = $service['name'] . "." . $service["id"];
-               $carpcfr = $service['name'] . ".";          
-          }
+	//List of service which are stopped on CARP Slave.
+	//For now this is the best way i found for filtering out the triggers
+	//Waiting for a way in Zabbix to use Global Regexp in triggers with items discovery
+	$stopped_on_carp_slave = array("haproxy", "radvd", "openvpn.", "openvpn", "avahi");
 
-          //Captive Portal
-          if (!empty($service['zone'])) {                           
-               $namecfr = $service['name'] . "." . $service["zone"];
-               $carpcfr = $service['name'] . ".";          
-          }          
+	foreach ($services as $service) {
+		$namecfr = $service["name"];
+		$carpcfr = $service["name"];
 
-          if ($namecfr == $name){
-               switch ($value) {
-               
-                    case "status":
-                         $status = get_service_status($service);
-                         if ($status=="") $status = 0;
-                         echo $status;
-                         return;
+		//OpenVPN          
+		if (!empty($service['id'])) {
+			$namecfr = $service['name'] . "." . $service["id"];
+			$carpcfr = $service['name'] . ".";
+		}
 
-                    case "name":
-                         echo $namecfr;
-                         return;
+		//Captive Portal
+		if (!empty($service['zone'])) {
+			$namecfr = $service['name'] . "." . $service["zone"];
+			$carpcfr = $service['name'] . ".";
+		}
 
-                    case "enabled":
-                         if (is_service_enabled($service['name']))
-                              echo 1;
-                         else
-                              echo 0;
-                         return;
+		if ($namecfr == $name) {
+			switch ($value) {
 
-                    case "run_on_carp_slave":
-                         if (in_array($carpcfr,$stopped_on_carp_slave))
-                              echo 0;
-                         else
-                              echo 1;
-                         return;
-										default:
-												if (array_key_exists($value, $service)) {
-															echo $service[$value];
-												}
-												return;
-               }
-          }                                              
-    }
+				case "status":
+					$status = get_service_status($service);
+					if ($status == "") $status = 0;
+					echo $status;
+					return;
 
-    echo 0;
+				case "name":
+					echo $namecfr;
+					return;
+
+				case "enabled":
+					if (is_service_enabled($service['name']))
+						echo 1;
+					else
+						echo 0;
+					return;
+
+				case "run_on_carp_slave":
+					if (in_array($carpcfr, $stopped_on_carp_slave))
+						echo 0;
+					else
+						echo 1;
+					return;
+				default:
+					if (array_key_exists($value, $service)) {
+						echo $service[$value];
+					}
+					return;
+			}
+		}
+	}
+
+	echo 0;
 }
 
 
 //Gateway Discovery
-function pfz_gw_rawstatus() {
-     // Return a Raw Gateway Status, useful for action Scripts (e.g. Update Cloudflare DNS config)
-     $gws = return_gateways_status(true);
-     $gw_string="";
-     foreach ($gws as $gw){
-          $gw_string .= ($gw['name'] . '.' . $gw['status'] .",");
-     }
-     echo rtrim($gw_string,",");
+function pfz_gw_rawstatus()
+{
+	// Return a Raw Gateway Status, useful for action Scripts (e.g. Update Cloudflare DNS config)
+	$gws = return_gateways_status(true);
+	$gw_string = "";
+	foreach ($gws as $gw) {
+		$gw_string .= ($gw['name'] . '.' . $gw['status'] . ",");
+	}
+	echo rtrim($gw_string, ",");
 }
 
 
-function pfz_gw_discovery() {
-     $gws = return_gateways_status(true);
+function pfz_gw_discovery()
+{
+	$gws = return_gateways_status(true);
 
-     $json_string = '{"data":[';
-     foreach ($gws as $gw){          
-          $json_string .= '{"{#GATEWAY}":"' . $gw['name'] . '"';          
-          $json_string .= '},';
-     }     
-     $json_string = rtrim($json_string,",");
-     $json_string .= "]}";
-     
-     echo $json_string;
+	$json_string = '{"data":[';
+	foreach ($gws as $gw) {
+		$json_string .= '{"{#GATEWAY}":"' . $gw['name'] . '"';
+		$json_string .= '},';
+	}
+	$json_string = rtrim($json_string, ",");
+	$json_string .= "]}";
+
+	echo $json_string;
 }
 
 
 
-function pfz_gw_value($gw, $valuekey) {
-     $gws = return_gateways_status(true);
+function pfz_gw_value($gw, $valuekey)
+{
+	$gws = return_gateways_status(true);
 
-     if (!isset($gws[$gw]) || !array_key_exists($valuekey, $gws[$gw])) {
-          return;
-     }
+	if (!isset($gws[$gw]) || !array_key_exists($valuekey, $gws[$gw])) {
+		return;
+	}
 
-     $value = $gws[$gw][$valuekey];
+	$value = $gws[$gw][$valuekey];
 
-     if ($valuekey == "status") {
-          // Issue #70: Gateway Forced Down
-          if (($gws[$gw]["substatus"] ?? "none") != "none") {
-               $value = $gws[$gw]["substatus"];
-          }
+	if ($valuekey == "status") {
+		// Issue #70: Gateway Forced Down
+		if (($gws[$gw]["substatus"] ?? "none") != "none") {
+			$value = $gws[$gw]["substatus"];
+		}
 
-          $value = pfz_valuemap("gateway.status", $value);
-     }
+		$value = pfz_valuemap("gateway.status", $value);
+	}
 
-     echo $value;
+	echo $value;
 }
 
 
 // IPSEC Discovery
-function pfz_ipsec_discovery_ph1(){
-	
-	require_once("ipsec.inc");	
+function pfz_ipsec_discovery_ph1()
+{
+
+	require_once("ipsec.inc");
 	global $config;
 	init_config_arr(array('ipsec', 'phase1'));
 	$a_phase1 = &$config['ipsec']['phase1'];
-	
+
 	$json_string = '{"data":[';
-	
+
 	foreach ($a_phase1 as $data) {
 		$json_string .= '{"{#IKEID}":"' . $data['ikeid'] . '"';
 		$json_string .= ',"{#NAME}":"' . $data['descr'] . '"';
 		$json_string .= '},';
-	}	
+	}
 
-	$json_string = rtrim($json_string,",");
-    $json_string .= "]}";     	
-    
-    echo $json_string;
-	
+	$json_string = rtrim($json_string, ",");
+	$json_string .= "]}";
+
+	echo $json_string;
 }
 
-function pfz_ipsec_ph1($ikeid,$valuekey){	
+function pfz_ipsec_ph1($ikeid, $valuekey)
+{
 	// Get Value from IPsec Phase 1 Configuration
 	// If Getting "disabled" value only check item presence in config array
 
 	require_once("ipsec.inc");
 	global $config;
 	init_config_arr(array('ipsec', 'phase1'));
-	$a_phase1 = &$config['ipsec']['phase1'];	
+	$a_phase1 = &$config['ipsec']['phase1'];
 
-	$value = "";	
+	$value = "";
 	switch ($valuekey) {
 		case 'status':
 			$value = pfz_ipsec_status($ikeid);
 			break;
 		case 'disabled':
-			$value = "0";		
+			$value = "0";
 		default:
 			foreach ($a_phase1 as $data) {
 				if ($data['ikeid'] == $ikeid) {
-					if(array_key_exists($valuekey,$data)) {
-					if ($valuekey=='disabled')
-						$value = "1";
-					else
-						$value = pfz_valuemap("ipsec." . $valuekey, $data[$valuekey], $data[$valuekey]);
-					break;
+					if (array_key_exists($valuekey, $data)) {
+						if ($valuekey == 'disabled')
+							$value = "1";
+						else
+							$value = pfz_valuemap("ipsec." . $valuekey, $data[$valuekey], $data[$valuekey]);
+						break;
 					}
 				}
-			}		
+			}
 	}
 	echo $value;
 }
 
-function pfz_ipsec_discovery_ph2(){
-	
+function pfz_ipsec_discovery_ph2()
+{
+
 	require_once("ipsec.inc");
-	
+
 	global $config;
 	init_config_arr(array('ipsec', 'phase2'));
 	$a_phase2 = &$config['ipsec']['phase2'];
-	
+
 	$json_string = '{"data":[';
-	
+
 	foreach ($a_phase2 as $data) {
 		$json_string .= '{"{#IKEID}":"' . $data['ikeid'] . '"';
 		$json_string .= ',"{#NAME}":"' .  $data['descr'] . '"';
@@ -659,82 +678,83 @@ function pfz_ipsec_discovery_ph2(){
 		$json_string .= ',"{#REQID}":"' .  $data['reqid'] . '"';
 		$json_string .= ',"{#EXTID}":"' .  $data['ikeid'] . '.' . $data['reqid'] . '"';
 		$json_string .= '},';
-	}	
+	}
 
-	$json_string = rtrim($json_string,",");
-    $json_string .= "]}";     	
-    
-    echo $json_string;
-	
+	$json_string = rtrim($json_string, ",");
+	$json_string .= "]}";
+
+	echo $json_string;
 }
 
-function pfz_ipsec_ph2($uniqid, $valuekey){
+function pfz_ipsec_ph2($uniqid, $valuekey)
+{
 	require_once("ipsec.inc");
 	global $config;
 	init_config_arr(array('ipsec', 'phase2'));
-	$a_phase2 = &$config['ipsec']['phase2'];	
-	
-	$valuecfr = explode(".",$valuekey);
-		
+	$a_phase2 = &$config['ipsec']['phase2'];
+
+	$valuecfr = explode(".", $valuekey);
+
 	switch ($valuecfr[0]) {
 		case 'status':
 			$idarr = explode(".", $uniqid);
 			$statuskey = "state";
-			if (isset($valuecfr[1])) $statuskey = $valuecfr[1]; 
-			$value = pfz_ipsec_status($idarr[0],$idarr[1],$statuskey);
+			if (isset($valuecfr[1])) $statuskey = $valuecfr[1];
+			$value = pfz_ipsec_status($idarr[0], $idarr[1], $statuskey);
 			break;
 		case 'disabled':
 			$value = "0";
-	}							
-	
+	}
+
 	foreach ($a_phase2 as $data) {
 		if ($data['uniqid'] == $uniqid) {
-			if(array_key_exists($valuekey,$data)) {
-			if ($valuekey=='disabled')
-				$value = "1";
-			else
-				$value = pfz_valuemap("ipsec_ph2." . $valuekey, $data[$valuekey], $data[$valuekey]);
-			break;
+			if (array_key_exists($valuekey, $data)) {
+				if ($valuekey == 'disabled')
+					$value = "1";
+				else
+					$value = pfz_valuemap("ipsec_ph2." . $valuekey, $data[$valuekey], $data[$valuekey]);
+				break;
 			}
 		}
 	}
 	echo $value;
 }
 
-function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
-		
+function pfz_ipsec_status($ikeid, $reqid = -1, $valuekey = 'state')
+{
+
 	require_once("ipsec.inc");
 	global $config;
 	init_config_arr(array('ipsec', 'phase1'));
-	
+
 	$a_phase1 = &$config['ipsec']['phase1'];
 	$conmap = array();
 	foreach ($a_phase1 as $ph1ent) {
-	    if (function_exists('get_ipsecifnum')) {
-            if (get_ipsecifnum($ph1ent['ikeid'], 0)) {
-                $cname = "con" . get_ipsecifnum($ph1ent['ikeid'], 0);
-            } else {
-                $cname = "con{$ph1ent['ikeid']}00000";
-            }
-        } else{
-            $cname = ipsec_conid($ph1ent);
-        }
-        
-        $conmap[$cname] = $ph1ent['ikeid'];
-    }
+		if (function_exists('get_ipsecifnum')) {
+			if (get_ipsecifnum($ph1ent['ikeid'], 0)) {
+				$cname = "con" . get_ipsecifnum($ph1ent['ikeid'], 0);
+			} else {
+				$cname = "con{$ph1ent['ikeid']}00000";
+			}
+		} else {
+			$cname = ipsec_conid($ph1ent);
+		}
+
+		$conmap[$cname] = $ph1ent['ikeid'];
+	}
 
 	$status = ipsec_list_sa();
 	$ipsecconnected = array();
 
 	// Default state when no matching IPsec SA exists
 	$tmp_value = null;
-	
+
 	$carp_status = pfz_carp_status(false);
-	
+
 	//Phase-Status match borrowed from status_ipsec.php	
-	if (is_array($status)) {		
-		foreach ($status as $l_ikeid=>$ikesa) {
-			
+	if (is_array($status)) {
+		foreach ($status as $l_ikeid => $ikesa) {
+
 			if (isset($ikesa['con-id'])) {
 				$con_id = substr($ikesa['con-id'], 3);
 			} else {
@@ -753,11 +773,11 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 					$ipsecconnected[$con_id] = $ph1idx = $con_id;
 				}
 			}
-			if ($ph1idx == $ikeid){
-				if ($reqid!=-1) {
+			if ($ph1idx == $ikeid) {
+				if ($reqid != -1) {
 					// Asking for Phase2 Status Value
 					foreach ($ikesa['child-sas'] as $childsas) {
-						if ($childsas['reqid']==$reqid) {
+						if ($childsas['reqid'] == $reqid) {
 							if (strtolower($childsas['state']) == 'rekeyed') {
 								//if state is rekeyed go on
 								$tmp_value = $childsas[$valuekey];
@@ -765,119 +785,120 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 								$tmp_value = $childsas[$valuekey];
 								break;
 							}
-						}						
+						}
 					}
 				} else {
 					$tmp_value = $ikesa[$valuekey];
 				}
-								
+
 				break;
-			}			
-		}	
+			}
+		}
 	}
-	
-	switch($valuekey) {
-					case 'state':
-						$value = pfz_valuemap('ipsec.state', strtolower((string) ($tmp_value ?? '')));
-						if ($carp_status!=0) $value = $value + (10 * ($carp_status-1));						
-						break;
-					default:
-						$value = $tmp_value;
-						break;
+
+	switch ($valuekey) {
+		case 'state':
+			$value = pfz_valuemap('ipsec.state', strtolower((string) ($tmp_value ?? '')));
+			if ($carp_status != 0) $value = $value + (10 * ($carp_status - 1));
+			break;
+		default:
+			$value = $tmp_value;
+			break;
 	}
-	
+
 	return $value;
 }
 
 // Temperature sensors Discovery
-function pfz_temperature_sensors_discovery(){
+function pfz_temperature_sensors_discovery()
+{
 
 
 	$json_string = '{"data":[';
 	$sensors = [];
 	exec("sysctl -a | grep temperature | cut -d ':' -f 1", $sensors, $code);
 	if ($code != 0) {
-	    echo "";
-	    return;
+		echo "";
+		return;
 	} else {
-        foreach ($sensors as $sensor) {
-            $json_string .= '{"{#SENSORID}":"' . $sensor . '"';
-            $json_string .= '},';
-        }
-    }
+		foreach ($sensors as $sensor) {
+			$json_string .= '{"{#SENSORID}":"' . $sensor . '"';
+			$json_string .= '},';
+		}
+	}
 
-	$json_string = rtrim($json_string,",");
-    $json_string .= "]}";
+	$json_string = rtrim($json_string, ",");
+	$json_string .= "]}";
 
-    echo $json_string;
-
+	echo $json_string;
 }
 
 // Temperature sensor get value
-function pfz_get_temperature($sensorid){
+function pfz_get_temperature($sensorid)
+{
 
 	exec("sysctl '$sensorid' | cut -d ':' -f 2", $value, $code);
-	if ($code != 0 or count($value)!=1) {
-	    echo "";
-	    return;
+	if ($code != 0 or count($value) != 1) {
+		echo "";
+		return;
 	} else {
-	    echo trim($value[0]);
-    }
-
+		echo trim($value[0]);
+	}
 }
 
 
-function pfz_carp_status($echo = true){
-     //Detect CARP Status
-     global $config;
-     $status_return = 0;
-     $status = get_carp_status();
-     $carp_detected_problems = get_single_sysctl("net.inet.carp.demotion");
+function pfz_carp_status($echo = true)
+{
+	//Detect CARP Status
+	global $config;
+	$status_return = 0;
+	$status = get_carp_status();
+	$carp_detected_problems = get_single_sysctl("net.inet.carp.demotion");
 
-	 //CARP is disabled
-	 $ret = 0;
-	 
-     if ($status != 0) { //CARP is enabled
+	//CARP is disabled
+	$ret = 0;
 
-          if ($carp_detected_problems != 0) {                              
-			   //There's some Major Problems with CARP
-               $ret = 4;
-               if ($echo == true) echo $ret;   
-               return $ret;
-          }
-                    
-          $status_changed = false;
-          $prev_status = "";
-          foreach ($config['virtualip']['vip'] as $carp) {
-		     if ($carp['mode'] != "carp") {
-			     continue;
-		     }
-               $if_status = get_carp_interface_status("_vip{$carp['uniqid']}");
+	if ($status != 0) { //CARP is enabled
 
-               if ( ($prev_status != $if_status) && (empty($if_status)==false) ) { //Some glitches with GUI
-                    if ($prev_status!="") $status_changed = true;
-                    $prev_status = $if_status;
-               }
-          }          
-          if ($status_changed) {
-               //CARP Status is inconsistent across interfaces
-               $ret=3;
-               echo 3;          
-          } else {
-               if ($prev_status=="MASTER")
-                    $ret = 1;                    
-               else
-					$ret = 2;
-          }      
-     }
-     
-     if ($echo == true) echo $ret;   
-     return $ret;
-     
+		if ($carp_detected_problems != 0) {
+			//There's some Major Problems with CARP
+			$ret = 4;
+			if ($echo == true) echo $ret;
+			return $ret;
+		}
+
+		$status_changed = false;
+		$prev_status = "";
+		foreach ($config['virtualip']['vip'] as $carp) {
+			if ($carp['mode'] != "carp") {
+				continue;
+			}
+			$if_status = get_carp_interface_status("_vip{$carp['uniqid']}");
+
+			if (($prev_status != $if_status) && (empty($if_status) == false)) { //Some glitches with GUI
+				if ($prev_status != "") $status_changed = true;
+				$prev_status = $if_status;
+			}
+		}
+		if ($status_changed) {
+			//CARP Status is inconsistent across interfaces
+			$ret = 3;
+			echo 3;
+		} else {
+			if ($prev_status == "MASTER")
+				$ret = 1;
+			else
+				$ret = 2;
+		}
+	}
+
+	if ($echo == true) echo $ret;
+	return $ret;
 }
 
 // DHCP Checks (copy of status_dhcp_leases.php, waiting for pfsense 2.5)
-function pfz_remove_duplicate($array, $field) {
+function pfz_remove_duplicate($array, $field)
+{
 	foreach ($array as $sub) {
 		$cmp[] = $sub[$field];
 	}
@@ -889,10 +910,12 @@ function pfz_remove_duplicate($array, $field) {
 }
 
 // Get DHCP Arrays (copied from status_dhcp_leases.php, waiting for pfsense 2.5, in order to use system_get_dhcpleases();)
-function pfz_dhcp_get($valuekey) {
+function pfz_dhcp_get($valuekey)
+{
+	global $g;
 
 	require_once("config.inc");
-	
+
 	$leasesfile = "{$g['dhcpd_chroot_path']}/var/db/dhcpd.leases";
 
 	$awk = "/usr/bin/awk";
@@ -906,9 +929,27 @@ function pfz_dhcp_get($valuekey) {
 	$leases_count = count($leases_content);
 	@exec("/usr/sbin/arp -an", $rawdata);
 
+
 	$leases = [];
 	$pools = [];
-	
+
+	// Lease labels used by the original parser.
+	$dynamic_string = "dynamic";
+	$active_string = "active";
+	$expired_string = "free";
+	$reserved_string = "backup";
+	$online_string = "online";
+	$offline_string = "offline";
+
+	// Build the list of IP addresses found in the ARP table.
+	$arpdata_ip = [];
+
+	foreach ($rawdata as $arp_line) {
+		if (preg_match('/\((\d{1,3}(?:\.\d{1,3}){3})\)/', $arp_line, $matches)) {
+			$arpdata_ip[] = $matches[1];
+		}
+	}
+
 	$i = 0;
 	$l = 0;
 	$p = 0;
@@ -927,53 +968,53 @@ function pfz_dhcp_get($valuekey) {
 		while ($f < $fcount) {
 			switch ($data[$f]) {
 				case "failover":
-					$pools[$p]['name'] = trim($data[$f+2], '"');
+					$pools[$p]['name'] = trim($data[$f + 2], '"');
 					$pools[$p]['name'] = "{$pools[$p]['name']} (" . convert_friendly_interface_to_friendly_descr(substr($pools[$p]['name'], 5)) . ")";
-					$pools[$p]['mystate'] = $data[$f+7];
-					$pools[$p]['peerstate'] = $data[$f+14];
-					$pools[$p]['mydate'] = $data[$f+10];
-					$pools[$p]['mydate'] .= " " . $data[$f+11];
-					$pools[$p]['peerdate'] = $data[$f+17];
-					$pools[$p]['peerdate'] .= " " . $data[$f+18];
+					$pools[$p]['mystate'] = $data[$f + 7];
+					$pools[$p]['peerstate'] = $data[$f + 14];
+					$pools[$p]['mydate'] = $data[$f + 10];
+					$pools[$p]['mydate'] .= " " . $data[$f + 11];
+					$pools[$p]['peerdate'] = $data[$f + 17];
+					$pools[$p]['peerdate'] .= " " . $data[$f + 18];
 					$p++;
 					$i++;
 					continue 3;
 				case "lease":
-					$leases[$l]['ip'] = $data[$f+1];
+					$leases[$l]['ip'] = $data[$f + 1];
 					$leases[$l]['type'] = $dynamic_string;
-					$f = $f+2;
+					$f = $f + 2;
 					break;
 				case "starts":
-					$leases[$l]['start'] = $data[$f+2];
-					$leases[$l]['start'] .= " " . $data[$f+3];
-					$f = $f+3;
+					$leases[$l]['start'] = $data[$f + 2];
+					$leases[$l]['start'] .= " " . $data[$f + 3];
+					$f = $f + 3;
 					break;
 				case "ends":
-					if ($data[$f+1] == "never") {
+					if ($data[$f + 1] == "never") {
 						// Quote from dhcpd.leases(5) man page:
 						// If a lease will never expire, date is never instead of an actual date.
 						$leases[$l]['end'] = gettext("Never");
-						$f = $f+1;
+						$f = $f + 1;
 					} else {
-						$leases[$l]['end'] = $data[$f+2];
-						$leases[$l]['end'] .= " " . $data[$f+3];
-						$f = $f+3;
+						$leases[$l]['end'] = $data[$f + 2];
+						$leases[$l]['end'] .= " " . $data[$f + 3];
+						$f = $f + 3;
 					}
 					break;
 				case "tstp":
-					$f = $f+3;
+					$f = $f + 3;
 					break;
 				case "tsfp":
-					$f = $f+3;
+					$f = $f + 3;
 					break;
 				case "atsfp":
-					$f = $f+3;
+					$f = $f + 3;
 					break;
 				case "cltt":
-					$f = $f+3;
+					$f = $f + 3;
 					break;
 				case "binding":
-					switch ($data[$f+2]) {
+					switch ($data[$f + 2]) {
 						case "active":
 							$leases[$l]['act'] = $active_string;
 							break;
@@ -986,39 +1027,39 @@ function pfz_dhcp_get($valuekey) {
 							$leases[$l]['online'] = $offline_string;
 							break;
 					}
-					$f = $f+1;
+					$f = $f + 1;
 					break;
 				case "next":
 					/* skip the next binding statement */
-					$f = $f+3;
+					$f = $f + 3;
 					break;
 				case "rewind":
 					/* skip the rewind binding statement */
-					$f = $f+3;
+					$f = $f + 3;
 					break;
 				case "hardware":
-					$leases[$l]['mac'] = $data[$f+2];
+					$leases[$l]['mac'] = $data[$f + 2];
 					/* check if it's online and the lease is active */
 					if (in_array($leases[$l]['ip'], $arpdata_ip)) {
 						$leases[$l]['online'] = $online_string;
 					} else {
 						$leases[$l]['online'] = $offline_string;
 					}
-					$f = $f+2;
+					$f = $f + 2;
 					break;
 				case "client-hostname":
-					if ($data[$f+1] <> "") {
-						$leases[$l]['hostname'] = preg_replace('/"/', '', $data[$f+1]);
+					if ($data[$f + 1] <> "") {
+						$leases[$l]['hostname'] = preg_replace('/"/', '', $data[$f + 1]);
 					} else {
 						$hostname = gethostbyaddr($leases[$l]['ip']);
 						if ($hostname <> "") {
 							$leases[$l]['hostname'] = $hostname;
 						}
 					}
-					$f = $f+1;
+					$f = $f + 1;
 					break;
 				case "uid":
-					$f = $f+1;
+					$f = $f + 1;
 					break;
 			}
 			$f++;
@@ -1038,82 +1079,86 @@ function pfz_dhcp_get($valuekey) {
 		asort($pools);
 	}
 
-	switch ($valuekey){
+	switch ($valuekey) {
 		case "pools":
 			return $pools;
 			break;
 		case "failover":
-			return $failover;
+			return $pools;
 			break;
 		case "leases":
 		default:
-			return $leases;		
+			return $leases;
 	}
-
 }
 
 
 
-function pfz_dhcpfailover_discovery(){
+function pfz_dhcpfailover_discovery()
+{
 	//System functions regarding DHCP Leases will be available in the upcoming release of pfSense, so let's wait
 	require_once("system.inc");
 	$leases = system_get_dhcpleases();
-	
+
 	$json_string = '{"data":[';
-	
-	if (count($leases['failover']) > 0){
-		foreach ($leases['failover'] as $data){
-			   $json_string .= '{"{#FAILOVER_GROUP}":"' . str_replace(" ", "__", $data['name']) . '"';          
+
+	if (count($leases['failover']) > 0) {
+		foreach ($leases['failover'] as $data) {
+			$json_string .= '{"{#FAILOVER_GROUP}":"' . str_replace(" ", "__", $data['name']) . '"';
 		}
 	}
 
-	$json_string = rtrim($json_string,",");
-    $json_string .= "]}";     	
-    
-    echo $json_string;
+	$json_string = rtrim($json_string, ",");
+	$json_string .= "]}";
+
+	echo $json_string;
 }
 
-function pfz_dhcp_check_failover(){
+function pfz_dhcp_check_failover()
+{
 	// Check DHCP Failover Status
 	// Returns number of failover pools which state is not normal or
 	// different than peer state
-	$failover = pfz_dhcp_get("failover");
+	$failover = pfz_dhcp_get("failover") ?? [];
 	$ret = 0;
-	foreach ($failover as $f){
-		if ( ($f["mystate"]!="normal") || ($f["mystate"]!=$f["peerstate"])) {
+	foreach ($failover as $f) {
+		if (($f["mystate"] != "normal") || ($f["mystate"] != $f["peerstate"])) {
 			$ret++;
 		}
-	}		
-	return $ret;	
+	}
+	return $ret;
 }
 
-function pfz_dhcp($section, $valuekey=""){
-	switch ($section){
+function pfz_dhcp($section, $valuekey = "")
+{
+	switch ($section) {
 		case "failover":
 			echo pfz_dhcp_check_failover();
 			break;
-		default:		
+		default:
 	}
 }
 
 //Packages
-function pfz_packages_uptodate(){
+function pfz_packages_uptodate()
+{
 	require_once("pkg-utils.inc");
 	$installed_packages = get_pkg_info('all', false, true);
-		
+
 	$ret = 0;
 
-	foreach ($installed_packages as $package){
-		if ($package['version']!=$package['installed_version']){
-			$ret ++;
+	foreach ($installed_packages as $package) {
+		if ($package['version'] != $package['installed_version']) {
+			$ret++;
 		}
 	}
-	
+
 	return $ret;
 }
 
 
-function pfz_syscheck_cron_install($enable=true){
+function pfz_syscheck_cron_install($enable = true)
+{
 	//Install Cron Job
 	$command = "/usr/local/bin/php " . __FILE__ . " syscheck_cron";
 	install_cron_job($command, $enable, $minute = "0", "*/8", "*", "*", "*", "root", true);
@@ -1121,62 +1166,64 @@ function pfz_syscheck_cron_install($enable=true){
 	// FIX previous, wrong-coded install command
 	$command = "/usr/local/bin/php " . __FILE__ . " systemcheck_cron";
 	install_cron_job($command, false, $minute = "0", "9,21", "*", "*", "*", "root", true);
-}    
+}
 
 // System information takes a long time to get on slower systems. 
 // So it is saved via a cronjob.
-function pfz_syscheck_cron (){	
-	$filename = "/tmp/sysversion.json";	
+function pfz_syscheck_cron()
+{
+	$filename = "/tmp/sysversion.json";
 	$upToDate = pfz_packages_uptodate();
 	$sysVersion = get_system_pkg_version();
 	$sysVersion["packages_update"] = $upToDate;
 	$sysVersionJson = json_encode($sysVersion);
 	if (file_exists($filename)) {
-		if ((time()-filemtime($filename) > CRON_TIME_LIMIT ) ) {
+		if ((time() - filemtime($filename) > CRON_TIME_LIMIT)) {
 			@unlink($filename);
 		}
 	}
-	if (file_exists($filename)==false) {	  
+	if (file_exists($filename) == false) {
 		touch($filename);
 		file_put_contents($filename, $sysVersionJson);
-	}	
+	}
 	return true;
-} 
+}
 
 //System Information
-function pfz_get_system_value($section){
-	$filename = "/tmp/sysversion.json";	
-	if(file_exists($filename)) {
+function pfz_get_system_value($section)
+{
+	$filename = "/tmp/sysversion.json";
+	if (file_exists($filename)) {
 		$sysVersion = json_decode(file_get_contents($filename), true);
 	} else {
 		// Install the cron script
 		pfz_syscheck_cron_install();
-		if($section == "new_version_available") {
+		if ($section == "new_version_available") {
 			echo "0";
 		} else {
 			echo "";
 		}
 	}
-	switch ($section){
-        case "script_version":
+	switch ($section) {
+		case "script_version":
 			echo SCRIPT_VERSION;
 			break;
 		case "version":
-            echo( $sysVersion['version']);
-            break;
-        case "installed_version":
-            echo($sysVersion['installed_version']);
-            break;
-        case "new_version_available":
-            if ($sysVersion['version']==$sysVersion['installed_version'])
-                echo "0";
-            else
-                echo "1";
-            break;
-        case "packages_update":
-          	echo $sysVersion["packages_update"];
-          	break;
-     }
+			echo ($sysVersion['version']);
+			break;
+		case "installed_version":
+			echo ($sysVersion['installed_version']);
+			break;
+		case "new_version_available":
+			if ($sysVersion['version'] == $sysVersion['installed_version'])
+				echo "0";
+			else
+				echo "1";
+			break;
+		case "packages_update":
+			echo $sysVersion["packages_update"];
+			break;
+	}
 }
 
 
@@ -1190,176 +1237,179 @@ function pfz_get_system_value($section){
  *   1 = Failed
  *   2 = Unknown
  */
-function pfz_get_smart_status() {
-    $smartctl = '/usr/local/sbin/smartctl';
-    $devices = [];
+function pfz_get_smart_status()
+{
+	$smartctl = '/usr/local/sbin/smartctl';
+	$devices = [];
 
-    // Register supported devices and eliminate duplicates.
-    // NVMe health is queried through nvmeN, not ndaN/nvdN.
-    $add_device = static function ($name, $type = null) use (&$devices) {
-        if (!is_string($name)) {
-            return;
-        }
+	// Register supported devices and eliminate duplicates.
+	// NVMe health is queried through nvmeN, not ndaN/nvdN.
+	$add_device = static function ($name, $type = null) use (&$devices) {
+		if (!is_string($name)) {
+			return;
+		}
 
-        $name = basename(trim($name));
+		$name = basename(trim($name));
 
-        if (!preg_match('/^(ada|da|ad|nvme)[0-9]+$/', $name)) {
-            return;
-        }
+		if (!preg_match('/^(ada|da|ad|nvme)[0-9]+$/', $name)) {
+			return;
+		}
 
-        if ($type === null && strpos($name, 'nvme') === 0) {
-            $type = 'nvme';
-        }
+		if ($type === null && strpos($name, 'nvme') === 0) {
+			$type = 'nvme';
+		}
 
-        // Prefer protocol information from smartctl discovery.
-        if (!isset($devices[$name]) || $type !== null) {
-            $devices[$name] = $type;
-        }
-    };
+		// Prefer protocol information from smartctl discovery.
+		if (!isset($devices[$name]) || $type !== null) {
+			$devices[$name] = $type;
+		}
+	};
 
-    // Native pfSense disk discovery.
-    if (function_exists('get_smart_drive_list')) {
-        $native = get_smart_drive_list();
+	// Native pfSense disk discovery.
+	if (function_exists('get_smart_drive_list')) {
+		$native = get_smart_drive_list();
 
-        if (is_array($native)) {
-            foreach ($native as $device) {
-                $add_device($device);
-            }
-        }
-    }
+		if (is_array($native)) {
+			foreach ($native as $device) {
+				$add_device($device);
+			}
+		}
+	}
 
-    // Merge disks discovered through FreeBSD.
-    $disk_list = trim((string) get_single_sysctl('kern.disks'));
+	// Merge disks discovered through FreeBSD.
+	$disk_list = trim((string) get_single_sysctl('kern.disks'));
 
-    foreach (preg_split('/\s+/', $disk_list) as $device) {
-        $add_device($device);
-    }
+	foreach (preg_split('/\s+/', $disk_list) as $device) {
+		$add_device($device);
+	}
 
-    // Discover NVMe controllers.
-    foreach (glob('/dev/nvme[0-9]*') ?: [] as $path) {
-        $add_device($path, 'nvme');
-    }
+	// Discover NVMe controllers.
+	foreach (glob('/dev/nvme[0-9]*') ?: [] as $path) {
+		$add_device($path, 'nvme');
+	}
 
-    // Additional discovery using smartctl.
-    // Ignore commented entries and devices that failed probing.
-    if (is_executable($smartctl)) {
-        $scan_lines = [];
-        $scan_code = 0;
+	// Additional discovery using smartctl.
+	// Ignore commented entries and devices that failed probing.
+	if (is_executable($smartctl)) {
+		$scan_lines = [];
+		$scan_code = 0;
 
-        exec(
-            escapeshellarg($smartctl) . ' --scan-open 2>/dev/null',
-            $scan_lines,
-            $scan_code
-        );
+		exec(
+			escapeshellarg($smartctl) . ' --scan-open 2>/dev/null',
+			$scan_lines,
+			$scan_code
+		);
 
-        foreach ($scan_lines as $line) {
-            if (preg_match(
-                '~^(/dev/(?:ada|da|ad|nvme)[0-9]+)\s+-d\s+(atacam|scsi|nvme)\b~',
-                $line,
-                $match
-            )) {
-                $add_device($match[1], $match[2]);
-            }
-        }
-    }
+		foreach ($scan_lines as $line) {
+			if (preg_match(
+				'~^(/dev/(?:ada|da|ad|nvme)[0-9]+)\s+-d\s+(atacam|scsi|nvme)\b~',
+				$line,
+				$match
+			)) {
+				$add_device($match[1], $match[2]);
+			}
+		}
+	}
 
-    // No supported disks or smartctl unavailable.
-    if (empty($devices) || !is_executable($smartctl)) {
-        echo 2;
-        return;
-    }
+	// No supported disks or smartctl unavailable.
+	if (empty($devices) || !is_executable($smartctl)) {
+		echo 2;
+		return;
+	}
 
-    $unknown = false;
+	$unknown = false;
 
-    foreach ($devices as $device => $type) {
-        $command = escapeshellarg($smartctl) . ' -H';
+	foreach ($devices as $device => $type) {
+		$command = escapeshellarg($smartctl) . ' -H';
 
-        if ($type !== null) {
-            $command .= ' -d ' . escapeshellarg($type);
-        }
+		if ($type !== null) {
+			$command .= ' -d ' . escapeshellarg($type);
+		}
 
-        $command .= ' '
-                 . escapeshellarg('/dev/' . $device)
-                 . ' 2>&1';
+		$command .= ' '
+			. escapeshellarg('/dev/' . $device)
+			. ' 2>&1';
 
-        $lines = [];
-        $exit_code = 0;
+		$lines = [];
+		$exit_code = 0;
 
-        exec($command, $lines, $exit_code);
+		exec($command, $lines, $exit_code);
 
-        $result = implode("\n", $lines);
+		$result = implode("\n", $lines);
 
-        // Health failure takes precedence over unknown states.
-        // Bits 3, 4 and 5 indicate SMART health/attribute failures.
-        if (
-            preg_match(
-                '/SMART overall-health self-assessment test result:\s*FAILED\b/i',
-                $result
-            )
-            || preg_match(
-                '/SMART Health Status:\s*(?:FAILED|BAD)\b/i',
-                $result
-            )
-            || ($exit_code & 0x38)
-        ) {
-            echo 1;
-            return;
-        }
+		// Health failure takes precedence over unknown states.
+		// Bits 3, 4 and 5 indicate SMART health/attribute failures.
+		if (
+			preg_match(
+				'/SMART overall-health self-assessment test result:\s*FAILED\b/i',
+				$result
+			)
+			|| preg_match(
+				'/SMART Health Status:\s*(?:FAILED|BAD)\b/i',
+				$result
+			)
+			|| ($exit_code & 0x38)
+		) {
+			echo 1;
+			return;
+		}
 
-        // Recognize healthy ATA, SCSI and NVMe responses.
-        $passed = preg_match(
-            '/SMART overall-health self-assessment test result:\s*PASSED\b/i',
-            $result
-        ) || preg_match(
-            '/SMART Health Status:\s*(?:OK|PASSED)\b/i',
-            $result
-        );
+		// Recognize healthy ATA, SCSI and NVMe responses.
+		$passed = preg_match(
+			'/SMART overall-health self-assessment test result:\s*PASSED\b/i',
+			$result
+		) || preg_match(
+			'/SMART Health Status:\s*(?:OK|PASSED)\b/i',
+			$result
+		);
 
-        // Bits 0-2 indicate command/device errors.
-        // Bits 6-7 indicate errors recorded in SMART logs.
-        if (
-            !$passed
-            || $exit_code < 0
-            || ($exit_code & 0xC7)
-        ) {
-            $unknown = true;
-        }
-    }
+		// Bits 0-2 indicate command/device errors.
+		// Bits 6-7 indicate errors recorded in SMART logs.
+		if (
+			!$passed
+			|| $exit_code < 0
+			|| ($exit_code & 0xC7)
+		) {
+			$unknown = true;
+		}
+	}
 
-    // All disks healthy = 0
-    // Any failure = 1
-    // Any unknown without failure = 2
-    echo $unknown ? 2 : 0;
+	// All disks healthy = 0
+	// Any failure = 1
+	// Any unknown without failure = 2
+	echo $unknown ? 2 : 0;
 }
 
-function pfz_get_revoked_cert_refs() {
-    global $config;    
-    $revoked_cert_refs = [];
-    foreach ($config["crl"] as $crl) {
-        foreach ($crl["cert"] as $revoked_cert) {
-            $revoked_cert_refs[] = $revoked_cert["refid"];
-        }
-    }
+function pfz_get_revoked_cert_refs()
+{
+	global $config;
+	$revoked_cert_refs = [];
+	foreach ($config["crl"] as $crl) {
+		foreach ($crl["cert"] as $revoked_cert) {
+			$revoked_cert_refs[] = $revoked_cert["refid"];
+		}
+	}
 	return $revoked_cert_refs;
 }
 
 // Certificate discovery
-function pfz_cert_discovery(){
-    global $config;
-    // Contains a list of refs that were revoked and should not be considered
-    $revoked_cert_refs = pfz_get_revoked_cert_refs();
+function pfz_cert_discovery()
+{
+	global $config;
+	// Contains a list of refs that were revoked and should not be considered
+	$revoked_cert_refs = pfz_get_revoked_cert_refs();
 	$dataObject = new \stdClass();
 	$dataObject->data = [];
-    foreach (array("cert", "ca") as $cert_type) {
+	foreach (array("cert", "ca") as $cert_type) {
 		foreach ($config[$cert_type] as $i => $cert) {
-			if ( ! in_array($cert['refid'], $revoked_cert_refs) ) {
+			if (! in_array($cert['refid'], $revoked_cert_refs)) {
 				$certObject = new \stdClass();
 				// Trick to keep using only 3 parameters. 
 				$certObject->{'{#CERT_INDEX}'} = $cert_type == "cert" ? $i : $i + 0x10000;
 				$certObject->{'{#CERT_REFID}'} = $cert['refid'];
 				$certObject->{'{#CERT_NAME}'} = $cert['descr'];
 				$certObject->{'{#CERT_TYPE}'} = strtoupper($cert_type);
-				$dataObject->data[]= $certObject;
+				$dataObject->data[] = $certObject;
 			}
 		}
 	}
@@ -1367,86 +1417,90 @@ function pfz_cert_discovery(){
 	echo $json_string;
 }
 
-function pfz_get_cert_info($index) {
+function pfz_get_cert_info($index)
+{
 	// Use a cache file to speed up multiple requests for certificate things. 
 	$cacheFile = "/root/.ssl/certinfo_{$index}.json";
-	if(file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
-		return json_decode(file_get_contents($cacheFile), true);		
+	if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
+		return json_decode(file_get_contents($cacheFile), true);
 	}
-    global $config;    
-	if($index >= 0x10000) {
+	global $config;
+	if ($index >= 0x10000) {
 		$index -= 0x10000;
 		$certType = "ca";
 	} else {
 		$certType = "cert";
 	}
-	$certinfo = openssl_x509_parse(base64_decode($config[$certType][$index]["crt"]));	
+	$certinfo = openssl_x509_parse(base64_decode($config[$certType][$index]["crt"]));
 	# Don't allow other users access to private keys. 
-	if(file_exists($cacheFile)) {
+	if (file_exists($cacheFile)) {
 		unlink($cacheFile);
 	}
 	touch($cacheFile);
-	chmod($cacheFile, 0600); 
+	chmod($cacheFile, 0600);
 	if (!is_dir('/root/.ssl')) {
 		mkdir('/root/.ssl');
 	}
-	if(!file_put_contents($cacheFile, json_encode($certinfo))) {
+	if (!file_put_contents($cacheFile, json_encode($certinfo))) {
 		unlink($cacheFile);
-	}	
-	return $certinfo;	
+	}
+	return $certinfo;
 }
 
-function pfz_get_cert_pkey_info($index) {
+function pfz_get_cert_pkey_info($index)
+{
 	$details = array();
-	
+
 	$cacheFile = "/root/.ssl/certinfo_pk_{$index}.json";
-	if(file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
-		return json_decode(file_get_contents($cacheFile), true);		
+	if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
+		return json_decode(file_get_contents($cacheFile), true);
 	}
-    global $config;    
-	if($index >= 0x10000) {
+	global $config;
+	if ($index >= 0x10000) {
 		$index -= 0x10000;
 		$certType = "ca";
 	} else {
 		$certType = "cert";
 	}
 	$cert_key = $config[$certType][$index]["crt"];
-	if ($cert_key!=false) {
+	if ($cert_key != false) {
 		$publicKey = openssl_pkey_get_public(base64_decode($cert_key));
-		$details = openssl_pkey_get_details($publicKey);	
+		$details = openssl_pkey_get_details($publicKey);
 		# Don't allow other users access to private keys. 
-		if(file_exists($cacheFile)) {
+		if (file_exists($cacheFile)) {
 			unlink($cacheFile);
 		}
 		touch($cacheFile);
-		chmod($cacheFile, 0600); 
+		chmod($cacheFile, 0600);
 		if (!is_dir('/root/.ssl')) {
 			mkdir('/root/.ssl');
 		}
-		if(!file_put_contents($cacheFile, json_encode($details))) {
+		if (!file_put_contents($cacheFile, json_encode($details))) {
 			unlink($cacheFile);
 		}
-	}	
+	}
 	return $details;
 }
 
-function pfz_get_ref_cert_algo_len($index){
+function pfz_get_ref_cert_algo_len($index)
+{
 	$pkInfo = pfz_get_cert_pkey_info($index);
 	echo $pkInfo["bits"];
 }
 
 # Get the number of bits of security in a cryptographic key. 
-function pfz_get_ref_cert_algo_bits($index){
+function pfz_get_ref_cert_algo_bits($index)
+{
 	$pkInfo = pfz_get_cert_pkey_info($index);
 	$keyLength = $pkInfo["bits"];
-	switch($pkInfo["type"]) {
-		case(OPENSSL_KEYTYPE_RSA): 
-		case(OPENSSL_KEYTYPE_DSA): 
-		case(OPENSSL_KEYTYPE_DH): 
+	switch ($pkInfo["type"]) {
+		case (OPENSSL_KEYTYPE_RSA):
+		case (OPENSSL_KEYTYPE_DSA):
+		case (OPENSSL_KEYTYPE_DH):
 			## See articles on the General Number Field Sieve L-notation complexity.
-			$bits = floor( 1 / log(2) * pow(64/9, 1/3) * pow($keyLength * log(2) , 1/3) * pow( log(2048 * log(2)) , 2/3) );
+			$bits = floor(1 / log(2) * pow(64 / 9, 1 / 3) * pow($keyLength * log(2), 1 / 3) * pow(log(2048 * log(2)), 2 / 3));
 			break;
-		case (OPENSSL_KEYTYPE_EC): 
+		case (OPENSSL_KEYTYPE_EC):
 			## Divide by two, floor, via right-shift.
 			$bits = $keyLength >> 1;
 			break;
@@ -1454,107 +1508,111 @@ function pfz_get_ref_cert_algo_bits($index){
 	echo $bits;
 }
 
-function pfz_get_ref_cert_algo($index){
+function pfz_get_ref_cert_algo($index)
+{
 	$pkInfo = pfz_get_cert_pkey_info($index);
-	switch($pkInfo["type"]) {
-		case(OPENSSL_KEYTYPE_RSA): 
+	switch ($pkInfo["type"]) {
+		case (OPENSSL_KEYTYPE_RSA):
 			echo "RSA";
 			break;
-		case(OPENSSL_KEYTYPE_DSA): 
+		case (OPENSSL_KEYTYPE_DSA):
 			echo "DSA";
 			break;
-		case(OPENSSL_KEYTYPE_DH): 
+		case (OPENSSL_KEYTYPE_DH):
 			echo "DH";
 			break;
-		case(OPENSSL_KEYTYPE_EC): 
+		case (OPENSSL_KEYTYPE_EC):
 			echo "EC";
 			break;
 	}
 }
 
-function pfz_get_ref_cert_hash_bits($index){
+function pfz_get_ref_cert_hash_bits($index)
+{
 	// Get the number of bits of security in the hash algorithm.
 	$certinfo = pfz_get_cert_info($index);
 	$sigType = $certinfo["signatureTypeSN"];
 	$upperSigType = strtoupper($sigType);
-	if(str_contains($upperSigType, "MD2")) {
-		echo 63; 
-		return;		
+	if (str_contains($upperSigType, "MD2")) {
+		echo 63;
+		return;
 	}
-	if(str_contains($upperSigType, "MD4")) {
-		echo 2; 
-		return;		
+	if (str_contains($upperSigType, "MD4")) {
+		echo 2;
+		return;
 	}
-	if(str_contains($upperSigType, "MD5")) {
+	if (str_contains($upperSigType, "MD5")) {
 		echo 18;
 		return;
 	}
-	if(str_contains($upperSigType, "SHA1")) {
+	if (str_contains($upperSigType, "SHA1")) {
 		echo 61;
-		return;		
+		return;
 	}
-	if(str_contains($upperSigType, "SHA224")) {
+	if (str_contains($upperSigType, "SHA224")) {
 		echo 112;
-		return;		
+		return;
 	}
-	if(str_contains($upperSigType, "SHA3-224")) {
+	if (str_contains($upperSigType, "SHA3-224")) {
 		echo 112;
-		return;		
+		return;
 	}
-	if(str_contains($upperSigType, "SHA256")) {
+	if (str_contains($upperSigType, "SHA256")) {
 		echo 128;
-		return;		
+		return;
 	}
-	if(str_contains($upperSigType, "SHA3-256")) {
+	if (str_contains($upperSigType, "SHA3-256")) {
 		echo 128;
-		return;		
+		return;
 	}
-	if(str_contains($upperSigType, "SHAKE128")) {
+	if (str_contains($upperSigType, "SHAKE128")) {
 		echo 128;
-		return;		
+		return;
 	}
-	if(str_contains($upperSigType, "SHA384")) {
+	if (str_contains($upperSigType, "SHA384")) {
 		echo 192;
-		return;		
+		return;
 	}
-	if(str_contains($upperSigType, "SHA3-384")) {
+	if (str_contains($upperSigType, "SHA3-384")) {
 		echo 192;
-		return;		
+		return;
 	}
-	if(str_contains($upperSigType, "SHA512")) {
+	if (str_contains($upperSigType, "SHA512")) {
 		echo 256;
-		return;		
+		return;
 	}
-	if(str_contains($upperSigType, "SHA3-512")) {
+	if (str_contains($upperSigType, "SHA3-512")) {
 		echo 256;
-		return;		
+		return;
 	}
-	if(str_contains($upperSigType, "SHAKE256")) {
+	if (str_contains($upperSigType, "SHAKE256")) {
 		echo 256;
-		return;		
+		return;
 	}
-	if(str_contains($upperSigType, "WHIRLPOOL")) {
+	if (str_contains($upperSigType, "WHIRLPOOL")) {
 		echo 256;
-		return;		
+		return;
 	}
-	if(str_contains($upperSigType, "SHA")) {
+	if (str_contains($upperSigType, "SHA")) {
 		# Assuming 'SHA1' (worst case scenario) for other 'sha' things.
 		echo 61;
-		return;		
+		return;
 	}
 	echo 0;
-	return;	
+	return;
 }
 
-function pfz_get_ref_cert_hash($index){
+function pfz_get_ref_cert_hash($index)
+{
 	$certinfo = pfz_get_cert_info($index);
 	echo $certinfo["signatureTypeSN"];
 }
 
 // Certificate validity for a specific certificate
-function pfz_get_ref_cert_date($valuekey, $index){
+function pfz_get_ref_cert_date($valuekey, $index)
+{
 	$certinfo = pfz_get_cert_info($index);
-    switch ($valuekey){
+	switch ($valuekey) {
 		case "validFrom":
 			$value = $certinfo['validFrom_time_t'];
 			break;
@@ -1562,40 +1620,42 @@ function pfz_get_ref_cert_date($valuekey, $index){
 			$value = $certinfo['validTo_time_t'];
 			break;
 	}
-	echo $value;	
+	echo $value;
 }
 
 // Certificats validity date
-function pfz_get_cert_date($valuekey){
-    global $config;    
-    // Contains a list of refs that were revoked and should not be considered
-    $revoked_cert_refs = pfz_get_revoked_cert_refs();    
-    $value = 0;
-        foreach (array("cert", "ca") as $cert_type) {
-                switch ($valuekey){
-                case "validFrom.max":
-                        foreach ($config[$cert_type] as $cert) {
-                                if ( ! in_array($cert['refid'], $revoked_cert_refs) ) {
-                                        $certinfo = openssl_x509_parse(base64_decode($cert["crt"]));
-                                        if ($value == 0 or $value < $certinfo['validFrom_time_t']) $value = $certinfo['validFrom_time_t'];
-                                }
-            		}
-                        break;
-                case "validTo.min":
-                        foreach ($config[$cert_type] as $cert) {
-                                if ( ! in_array($cert['refid'], $revoked_cert_refs) ) {
-                                        $certinfo = openssl_x509_parse(base64_decode($cert["crt"]));
-                                        if ($value == 0 or $value > $certinfo['validTo_time_t']) $value = $certinfo['validTo_time_t'];
-                                }
-                        }
-                        break;
-                }
-        }
-        echo $value;
+function pfz_get_cert_date($valuekey)
+{
+	global $config;
+	// Contains a list of refs that were revoked and should not be considered
+	$revoked_cert_refs = pfz_get_revoked_cert_refs();
+	$value = 0;
+	foreach (array("cert", "ca") as $cert_type) {
+		switch ($valuekey) {
+			case "validFrom.max":
+				foreach ($config[$cert_type] as $cert) {
+					if (! in_array($cert['refid'], $revoked_cert_refs)) {
+						$certinfo = openssl_x509_parse(base64_decode($cert["crt"]));
+						if ($value == 0 or $value < $certinfo['validFrom_time_t']) $value = $certinfo['validFrom_time_t'];
+					}
+				}
+				break;
+			case "validTo.min":
+				foreach ($config[$cert_type] as $cert) {
+					if (! in_array($cert['refid'], $revoked_cert_refs)) {
+						$certinfo = openssl_x509_parse(base64_decode($cert["crt"]));
+						if ($value == 0 or $value > $certinfo['validTo_time_t']) $value = $certinfo['validTo_time_t'];
+					}
+				}
+				break;
+		}
+	}
+	echo $value;
 }
 
 // File is present
-function pfz_file_exists($filename) {
+function pfz_file_exists($filename)
+{
 	if (file_exists($filename))
 		echo "1";
 	else
@@ -1605,245 +1665,256 @@ function pfz_file_exists($filename) {
 
 // Value mappings
 // Each value map is represented by an associative array
-function pfz_valuemap($valuename, $value, $default="0"){
-     switch ($valuename){     
+function pfz_valuemap($valuename, $value, $default = "0")
+{
+	switch ($valuename) {
 
-          case "openvpn.server.status":          
-                    $valuemap = array(
-                         "down" => "0",
-                         "up" => "1",
-                         "connected (success)" => "1",
-                         "none" => "2",
-                         "reconnecting; ping-restart" => "3",
-                         "waiting" => "4",
-                         "server_user_listening" => "5");          
-          break;
-          
-          case "openvpn.client.status":          
-                    $valuemap = array(
-                         "up" => "1",
-                         "connected (success)" => "1",
-                         "down" => "0",
-                         "none" => "0",
-                         "reconnecting; ping-restart" => "2");          
-          break;
+		case "openvpn.server.status":
+			$valuemap = array(
+				"down" => "0",
+				"up" => "1",
+				"connected (success)" => "1",
+				"none" => "2",
+				"reconnecting; ping-restart" => "3",
+				"waiting" => "4",
+				"server_user_listening" => "5"
+			);
+			break;
 
-          case "openvpn.server.mode":
-                    $valuemap = array(
-                         "p2p_tls" => "1",
-                         "p2p_shared_key" => "2",
-                         "server_tls" => "3",
-                         "server_user" => "4",
-                         "server_tls_user" => "5");          
-          break;
-          
-          case "gateway.status":
-                    $valuemap = array(
-                         "online" => "0",
-                         "none" => "0",
-                         "loss" => "1",
-                         "highdelay" => "2",
-                         "highloss" => "3",
-                         "force_down" => "4",
-                         "down" => "5");          
-          break;    
-          
-          case "ipsec.iketype":
-          			$valuemap = array (
-          				"auto" => 0,
-          				"ikev1" => 1,
-          				"ikev2" => 2);
-          break;
-          
-          case "ipsec.mode":
-          			$valuemap = array (
-          				"main" => 0,
-          				"aggressive" => 1);
-          break;
-          
-          case "ipsec.protocol":
-          			$valuemap = array (
-          				"both" => 0,
-          				"inet" => 1,
-          				"inet6" => 2);
-          break;
-          
-          case "ipsec_ph2.mode":
-          			$valuemap = array (
-          				"transport" => 0,
-          				"tunnel" => 1,
-          				"tunnel6" => 2);
-          break;
-          
-          case "ipsec_ph2.protocol":
-          			$valuemap = array (
-          				"esp" => 1,
-          				"ah" => 2);
-          break;
+		case "openvpn.client.status":
+			$valuemap = array(
+				"up" => "1",
+				"connected (success)" => "1",
+				"down" => "0",
+				"none" => "0",
+				"reconnecting; ping-restart" => "2"
+			);
+			break;
 
-		  case "ipsec.state":
-          			$valuemap = array (
-          				"established" => 1,
-          				"connecting" => 2,
-          				"installed" => 1,
-          				"rekeyed" => 2);
-          break;
+		case "openvpn.server.mode":
+			$valuemap = array(
+				"p2p_tls" => "1",
+				"p2p_shared_key" => "2",
+				"server_tls" => "3",
+				"server_user" => "4",
+				"server_tls_user" => "5"
+			);
+			break;
 
-     }
+		case "gateway.status":
+			$valuemap = array(
+				"online" => "0",
+				"none" => "0",
+				"loss" => "1",
+				"highdelay" => "2",
+				"highloss" => "3",
+				"force_down" => "4",
+				"down" => "5"
+			);
+			break;
 
-     if (is_array($valuemap)) {
-     	$value = strtolower($value);
-     	if (array_key_exists($value, $valuemap))
-          	return $valuemap[$value];
-     }
-     return $default;
+		case "ipsec.iketype":
+			$valuemap = array(
+				"auto" => 0,
+				"ikev1" => 1,
+				"ikev2" => 2
+			);
+			break;
+
+		case "ipsec.mode":
+			$valuemap = array(
+				"main" => 0,
+				"aggressive" => 1
+			);
+			break;
+
+		case "ipsec.protocol":
+			$valuemap = array(
+				"both" => 0,
+				"inet" => 1,
+				"inet6" => 2
+			);
+			break;
+
+		case "ipsec_ph2.mode":
+			$valuemap = array(
+				"transport" => 0,
+				"tunnel" => 1,
+				"tunnel6" => 2
+			);
+			break;
+
+		case "ipsec_ph2.protocol":
+			$valuemap = array(
+				"esp" => 1,
+				"ah" => 2
+			);
+			break;
+
+		case "ipsec.state":
+			$valuemap = array(
+				"established" => 1,
+				"connecting" => 2,
+				"installed" => 1,
+				"rekeyed" => 2
+			);
+			break;
+	}
+
+	if (is_array($valuemap)) {
+		$value = strtolower($value);
+		if (array_key_exists($value, $valuemap))
+			return $valuemap[$value];
+	}
+	return $default;
 }
 
 //Argument parsers for Discovery
-function pfz_discovery($section){
-     switch (strtolower($section)){ 
-          case "certificates":
-               pfz_cert_discovery();
-               break;    
-          case "gw":
-               pfz_gw_discovery();
-               break;
-          case "wan":
-          	   pfz_interface_discovery(true);
-               break;
-          case "openvpn_server":
-               pfz_openvpn_serverdiscovery();
-               break;
-          case "openvpn_server_user":
-               pfz_openvpn_server_userdiscovery();
-               break;
-          case "openvpn_client":
-               pfz_openvpn_clientdiscovery();
-               break;
-          case "services":
-               pfz_services_discovery();
-               break;
-          case "interfaces":
-               pfz_interface_discovery();
-               break;
-          case "ipsec_ph1":
-          	   pfz_ipsec_discovery_ph1();
-               break;
-          case "ipsec_ph2":
-          	   pfz_ipsec_discovery_ph2();
-               break;
-          case "dhcpfailover":
-          	   pfz_dhcpfailover_discovery();
-               break;
-          case "temperature_sensors":
-               pfz_temperature_sensors_discovery();
-               break;
-     }         
+function pfz_discovery($section)
+{
+	switch (strtolower($section)) {
+		case "certificates":
+			pfz_cert_discovery();
+			break;
+		case "gw":
+			pfz_gw_discovery();
+			break;
+		case "wan":
+			pfz_interface_discovery(true);
+			break;
+		case "openvpn_server":
+			pfz_openvpn_serverdiscovery();
+			break;
+		case "openvpn_server_user":
+			pfz_openvpn_server_userdiscovery();
+			break;
+		case "openvpn_client":
+			pfz_openvpn_clientdiscovery();
+			break;
+		case "services":
+			pfz_services_discovery();
+			break;
+		case "interfaces":
+			pfz_interface_discovery();
+			break;
+		case "ipsec_ph1":
+			pfz_ipsec_discovery_ph1();
+			break;
+		case "ipsec_ph2":
+			pfz_ipsec_discovery_ph2();
+			break;
+		case "dhcpfailover":
+			pfz_dhcpfailover_discovery();
+			break;
+		case "temperature_sensors":
+			pfz_temperature_sensors_discovery();
+			break;
+	}
 }
 
 //Main Code
 $mainArgument = strtolower($argv[1]);
-if(substr($mainArgument, -4, 4) == "cron") {
+if (substr($mainArgument, -4, 4) == "cron") {
 	// A longer time limit for cron tasks.
 	set_time_limit(CRON_TIME_LIMIT);
 } else {
 	// Set a timeout to prevent a blocked call from stopping all future calls.
-    set_time_limit(DEFAULT_TIME_LIMIT);
+	set_time_limit(DEFAULT_TIME_LIMIT);
 }
 
-switch ($mainArgument){     
-     case "discovery":
-          pfz_discovery($argv[2]);
-          break;
-     case "gw_value":
-          pfz_gw_value($argv[2],$argv[3]);
-          break;     
-     case "gw_status":
-          pfz_gw_rawstatus();
-          break;
-	 case "if_speedtest_value":
-	      pfz_speedtest_cron_install();
-	 	  pfz_interface_speedtest_value($argv[2],$argv[3]);
-	 	  break;
-     case "openvpn_servervalue":
-          pfz_openvpn_servervalue($argv[2],$argv[3]);
-          break;
-     case "openvpn_server_uservalue":
-          pfz_openvpn_server_uservalue($argv[2],$argv[3]);
-          break;
-     case "openvpn_server_uservalue_numeric":
-          pfz_openvpn_server_uservalue($argv[2],$argv[3],"0");
-          break;
-     case "openvpn_clientvalue":
-          pfz_openvpn_clientvalue($argv[2],$argv[3]);
-          break;
-     case "service_value":
-          pfz_service_value($argv[2],$argv[3]);
-          break;
-     case "carp_status":
-          pfz_carp_status();
-          break;
-     case "if_name":
-          pfz_get_if_name($argv[2]);
-          break;
-     case "syscheck_cron":
-          pfz_syscheck_cron_install();
-          pfz_syscheck_cron();
-          break;
-     case "system":
-          pfz_get_system_value($argv[2]);
-          break;
-     case "ipsec_ph1":
-          pfz_ipsec_ph1($argv[2],$argv[3]);
-          break;
-     case "ipsec_ph2":
-          pfz_ipsec_ph2($argv[2],$argv[3]);
-          break;
-     case "dhcp":
-     	  pfz_dhcp($argv[2],$argv[3]);
-          break;
-     case "file_exists":
-     	  pfz_file_exists($argv[2]);
-     	  break;
-     case "speedtest_cron":
-     	  pfz_speedtest_cron_install();
-     	  pfz_speedtest_cron();
-     	  break;
-	 case "syscheck_cron":
-		   pfz_syscheck_cron_install();
-		   pfz_syscheck_cron();
-		   break;
-     case "cron_cleanup":
-     	  pfz_speedtest_cron_install(false);
-     	  pfz_syscheck_cron_install(false);
-     	  break;
-     case "smart_status":
-          pfz_get_smart_status();
-          break;     
-     case "cert_ref_date":
-          pfz_get_ref_cert_date($argv[2], $argv[3]);
-          break;	  
-     case "cert_date":
-          pfz_get_cert_date($argv[2]);
-          break;   
-     case "cert_algo":
-          pfz_get_ref_cert_algo($argv[2]);
-          break;	
-     case "cert_algo_bits":
-          pfz_get_ref_cert_algo_len($argv[2]);
-          break;	
-     case "cert_algo_secbits":
-          pfz_get_ref_cert_algo_bits($argv[2]);
-          break;	
-     case "cert_hash":
-          pfz_get_ref_cert_hash($argv[2]);
-          break;	
-     case "cert_hash_secbits":
-          pfz_get_ref_cert_hash_bits($argv[2]);
-          break;			  
-     case "temperature":
-          pfz_get_temperature($argv[2]);
-          break;
-     default:
-          pfz_test();
+switch ($mainArgument) {
+	case "discovery":
+		pfz_discovery($argv[2]);
+		break;
+	case "gw_value":
+		pfz_gw_value($argv[2], $argv[3]);
+		break;
+	case "gw_status":
+		pfz_gw_rawstatus();
+		break;
+	case "if_speedtest_value":
+		pfz_speedtest_cron_install();
+		pfz_interface_speedtest_value($argv[2], $argv[3]);
+		break;
+	case "openvpn_servervalue":
+		pfz_openvpn_servervalue($argv[2], $argv[3]);
+		break;
+	case "openvpn_server_uservalue":
+		pfz_openvpn_server_uservalue($argv[2], $argv[3]);
+		break;
+	case "openvpn_server_uservalue_numeric":
+		pfz_openvpn_server_uservalue($argv[2], $argv[3], "0");
+		break;
+	case "openvpn_clientvalue":
+		pfz_openvpn_clientvalue($argv[2], $argv[3]);
+		break;
+	case "service_value":
+		pfz_service_value($argv[2], $argv[3]);
+		break;
+	case "carp_status":
+		pfz_carp_status();
+		break;
+	case "if_name":
+		pfz_get_if_name($argv[2]);
+		break;
+	case "syscheck_cron":
+		pfz_syscheck_cron_install();
+		pfz_syscheck_cron();
+		break;
+	case "system":
+		pfz_get_system_value($argv[2]);
+		break;
+	case "ipsec_ph1":
+		pfz_ipsec_ph1($argv[2], $argv[3]);
+		break;
+	case "ipsec_ph2":
+		pfz_ipsec_ph2($argv[2], $argv[3]);
+		break;
+	case "dhcp":
+		pfz_dhcp($argv[2] ?? "", $argv[3] ?? "");
+		break;
+	case "file_exists":
+		pfz_file_exists($argv[2]);
+		break;
+	case "speedtest_cron":
+		pfz_speedtest_cron_install();
+		pfz_speedtest_cron();
+		break;
+	case "syscheck_cron":
+		pfz_syscheck_cron_install();
+		pfz_syscheck_cron();
+		break;
+	case "cron_cleanup":
+		pfz_speedtest_cron_install(false);
+		pfz_syscheck_cron_install(false);
+		break;
+	case "smart_status":
+		pfz_get_smart_status();
+		break;
+	case "cert_ref_date":
+		pfz_get_ref_cert_date($argv[2], $argv[3]);
+		break;
+	case "cert_date":
+		pfz_get_cert_date($argv[2]);
+		break;
+	case "cert_algo":
+		pfz_get_ref_cert_algo($argv[2]);
+		break;
+	case "cert_algo_bits":
+		pfz_get_ref_cert_algo_len($argv[2]);
+		break;
+	case "cert_algo_secbits":
+		pfz_get_ref_cert_algo_bits($argv[2]);
+		break;
+	case "cert_hash":
+		pfz_get_ref_cert_hash($argv[2]);
+		break;
+	case "cert_hash_secbits":
+		pfz_get_ref_cert_hash_bits($argv[2]);
+		break;
+	case "temperature":
+		pfz_get_temperature($argv[2]);
+		break;
+	default:
+		pfz_test();
 }
