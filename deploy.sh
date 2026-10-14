@@ -49,7 +49,7 @@ echoerr() { printf "\033[0;31m%s\n\033[0m" "$*" >&2; }
 SCRIPT_DIR=$(dirname "$0")
 
 if (( $VERBOSE == 1 )); then echo "create script dir..."; fi
-ssh -T -i $KEY -p $PORT $USER@$HOST 'mkdir -p ~/scripts'
+ssh -n -T -i $KEY -p $PORT $USER@$HOST 'mkdir -p ~/scripts'
 if [ $? -ne 0 ]; then
     # Can't connect 
     echoerr "Can't connect to $HOST"
@@ -77,7 +77,7 @@ if [ $? -ne 0 ]; then
     exit
 fi 
 # Restart zabbix service.
-ssh -T -i $KEY -p $PORT $USER@$HOST '/usr/local/sbin/pfSsh.php playback svc restart zabbix_agentd'
+ssh -n -T -i $KEY -p $PORT $USER@$HOST '/usr/local/sbin/pfSsh.php playback svc restart zabbix_agentd'
 if [ $? -ne 0 ]; then
     # Can't connect 
     echoerr "Failed or timed out restarting zabbix service on $HOST. Do so manually."
