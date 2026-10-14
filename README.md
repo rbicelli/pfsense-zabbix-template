@@ -4,7 +4,7 @@
 
 This is a pfSense active template for Zabbix, based on Standard Agent and a php script using pfSense functions library for monitoring specific data.
 
-Tested with pfSense 2.7.x, Zabbix 6.0.
+Tested with pfSense 2.9.x , Zabbix 6.0.
 
 I'm actively maintaning template only for the current Zabbix LTS Release. Newest features will be explicitily added on current LTS.
 
@@ -55,28 +55,14 @@ In Advanced Features-> User Parameters
 
 ```bash
 AllowRoot=1
-UserParameter=pfsense.states.max,grep "limit states" /tmp/rules.limits | cut -f4 -d ' '
-UserParameter=pfsense.states.current,grep "current entries" /tmp/pfctl_ss_out | tr -s ' ' | cut -f4 -d ' '
+UserParameter=pfsense.states.max,pfctl -sm | grep "states" | tr -s ' ' | cut -f4 -d ' '
+UserParameter=pfsense.states.current,pfctl -si | grep "current entries" | tr -s ' ' | cut -f4 -d ' '
 UserParameter=pfsense.mbuf.current,netstat -m | grep "mbuf clusters" | cut -f1 -d ' ' | cut -d '/' -f1
 UserParameter=pfsense.mbuf.cache,netstat -m | grep "mbuf clusters" | cut -f1 -d ' ' | cut -d '/' -f2
 UserParameter=pfsense.mbuf.max,netstat -m | grep "mbuf clusters" | cut -f1 -d ' ' | cut -d '/' -f4
 UserParameter=pfsense.discovery[*],/usr/local/bin/php /root/scripts/pfsense_zbx.php discovery $1
 UserParameter=pfsense.value[*],/usr/local/bin/php /root/scripts/pfsense_zbx.php $1 $2 $3
 ```
-
-On older versions, use: 
-
-```bash
-AllowRoot=1
-UserParameter=pfsense.states.max,grep "limit states" /tmp/rules.limits | cut -f4 -d ' '
-UserParameter=pfsense.states.current,grep "current entries" /tmp/pfctl_si_out | tr -s ' ' | cut -f4 -d ' '
-UserParameter=pfsense.mbuf.current,netstat -m | grep "mbuf clusters" | cut -f1 -d ' ' | cut -d '/' -f1
-UserParameter=pfsense.mbuf.cache,netstat -m | grep "mbuf clusters" | cut -f1 -d ' ' | cut -d '/' -f2
-UserParameter=pfsense.mbuf.max,netstat -m | grep "mbuf clusters" | cut -f1 -d ' ' | cut -d '/' -f4
-UserParameter=pfsense.discovery[*],/usr/local/bin/php /root/scripts/pfsense_zbx.php discovery $1
-UserParameter=pfsense.value[*],/usr/local/bin/php /root/scripts/pfsense_zbx.php $1 $2 $3
-```
-
 
 _Please note that **AllowRoot=1** option is required in order to correctly execute OpenVPN checks and others._
 
@@ -93,6 +79,28 @@ Possible values are:
  - 2: Backup
 
 This is useful when monitoring services which could stay stopped on CARP Backup Member.
+
+## Mass deployment 
+
+Configure an SSH key to each pfSense for mass script updates.
+Copy and edit the example csv: 
+
+```
+cp firewalls.csv.example firewalls.csv 
+nano firewalls.csv
+```
+
+Add the following single line to the custom part of zabbix settings (has to be done manually once on each firewall). Replace the '7' with your major zabbix agent version: 
+ 
+```
+Include=/usr/local/etc/zabbix7/zabbix_agentd.conf.d/*.conf
+```
+
+Add the target IP, port, and set the public key in ~/.ssh/authorized_keys for the admin user on each pfSense. Then run: 
+
+```
+./deploy_all.sh -f firewalls.csv -k ~/.ssh/pfsense.key.priv 
+```
 
 ## Setup Speedtest
 
@@ -140,6 +148,9 @@ Speedtest template creates a cron job and check for entry everytime Zabbix reque
 ```bash
 /usr/local/bin/php /root/scripts/pfsense_zbx.php cron_cleanup
 ```
+
+
+
 
 ## Credits
 
