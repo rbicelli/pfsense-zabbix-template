@@ -268,46 +268,58 @@ function pfz_openvpn_serverdiscovery() {
 
 
 // Get OpenVPN Server Value
-function pfz_openvpn_servervalue($server_id,$valuekey){
-     $servers = pfz_openvpn_get_all_servers();     
-     
-     foreach($servers as $server) {
-          if($server['vpnid']==$server_id){
-               $value = $server[$valuekey];
-               if ($valuekey=="status") {
-                    if ( ($server['mode']=="server_user") || ($server['mode']=="server_tls_user") || ($server['mode']=="server_tls") ){
-                         if ($value=="") $value="server_user_listening";                    
-                    } else if ($server['mode']=="p2p_tls"){
-                        // For p2p_tls, ensure we have one client, and return up if it's the case
-                        if ($value=="")
-                            $value=(is_array($server["conns"]) && count($server["conns"]) > 0) ? "up" : "down";
-                    }                  
-               }
-          }
-     }
-     
-     switch ($valuekey){     
-          
-          case "conns":
-               //Client Connections: is an array so it is sufficient to count elements                    
-               if (is_array($value))
-                    $value = count($value);
-               else
-                    $value = "0";
-               break;     
-               
-          case "status":
-               
-               $value = pfz_valuemap("openvpn.server.status", $value);
-               break;
 
-          case "mode":
-               $value = pfz_valuemap("openvpn.server.mode", $value);
-               break;
-     }
-     
-     //if ($value=="") $value="none";
-     echo $value;
+function pfz_openvpn_servervalue($server_id, $valuekey) {
+    $servers = pfz_openvpn_get_all_servers();
+    $value = null;
+
+    foreach ($servers as $server) {
+        if (($server['vpnid'] ?? null) == $server_id) {
+            $value = $server[$valuekey] ?? null;
+
+            if ($valuekey == "status") {
+                if (
+                    ($server['mode'] == "server_user") ||
+                    ($server['mode'] == "server_tls_user") ||
+                    ($server['mode'] == "server_tls")
+                ) {
+                    if ($value == "") {
+                        $value = "server_user_listening";
+                    }
+                } else if ($server['mode'] == "p2p_tls") {
+                    if ($value == "") {
+                        $value = (
+                            is_array($server["conns"] ?? null) &&
+                            count($server["conns"]) > 0
+                        ) ? "up" : "down";
+                    }
+                }
+            }
+
+            break;
+        }
+    }
+
+    switch ($valuekey) {
+        case "conns":
+            $value = is_array($value) ? count($value) : 0;
+            break;
+
+        case "status":
+            $value = pfz_valuemap("openvpn.server.status", $value);
+            break;
+
+        case "mode":
+            $value = pfz_valuemap("openvpn.server.mode", $value);
+            break;
+
+        case "bytes_recv":
+        case "bytes_sent":
+            $value = is_numeric($value) ? $value : 0;
+            break;
+    }
+
+    echo $value;
 }
 
 //OpenVPN Server/User-Auth Discovery
@@ -396,23 +408,34 @@ function pfz_replacespecialchars($inputstr,$reverse=false){
 	 return ($resultstr);
 }
 
-function pfz_openvpn_clientvalue($client_id, $valuekey, $default="none"){
-     $clients = openvpn_get_active_clients();     
-     foreach($clients as $client) {
-          if($client['vpnid']==$client_id)
-               $value = $client[$valuekey];
-     }
 
-     switch ($valuekey){        
-               
-          case "status":
-               $value = pfz_valuemap("openvpn.client.status", $value);
-               break;
+function pfz_openvpn_clientvalue($client_id, $valuekey, $default="none") {
+    $clients = openvpn_get_active_clients();
+    $value = null;
 
-     }
+    foreach ($clients as $client) {
+        if (($client['vpnid'] ?? null) == $client_id) {
+            $value = $client[$valuekey] ?? null;
+            break;
+        }
+    }
 
-     if ($value=="") $value=$default;
-     echo $value;
+    switch ($valuekey) {
+        case "status":
+            $value = pfz_valuemap("openvpn.client.status", $value);
+            break;
+
+        case "bytes_recv":
+        case "bytes_sent":
+            $value = is_numeric($value) ? $value : 0;
+            break;
+    }
+
+    if ($value === null || $value === "") {
+        $value = $default;
+    }
+
+    echo $value;
 }
 
 
