@@ -524,9 +524,11 @@ function pfz_service_value($name,$value){
                          else
                               echo 1;
                          return;
-                    default:               
-                         echo $service[$value];
-                         return;
+										default:
+												if (array_key_exists($value, $service)) {
+															echo $service[$value];
+												}
+												return;
                }
           }                                              
     }
