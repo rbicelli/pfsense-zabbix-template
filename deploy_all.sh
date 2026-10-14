@@ -36,13 +36,14 @@ while true; do
   esac
 done
 echoerr() { printf "\033[0;31m%s\n\033[0m" "$*" >&2; }
+SCRIPT_DIR=$(dirname "$0")
 while IFS=',' read -r PFNAME HOSTNAME PORT VER
 do
     echo "Deploying ${PFNAME} @ ${HOSTNAME}..."; 
     if (( $VERBOSE == 1 )); then  
-        ./deploy.sh -v -k $KEY -p $PORT -u admin -s $HOSTNAME -z $VER
+        $SCRIPT_DIR/deploy.sh -v -k $KEY -p $PORT -u admin -s $HOSTNAME -z $VER
     else 
-        ./deploy.sh -k $KEY -p $PORT -u admin -s $HOSTNAME -z $VER
+        $SCRIPT_DIR/deploy.sh -k $KEY -p $PORT -u admin -s $HOSTNAME -z $VER
     fi
     if [ $? -ne 0 ]; then
         echoerr "Error updating script and settings for ${PFNAME} @ ${HOSTNAME}"

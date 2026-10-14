@@ -85,4 +85,3 @@ if [ $? -ne 0 ]; then
     exit
 fi 
 echo 0;
-exit
