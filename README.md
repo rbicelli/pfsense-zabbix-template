@@ -51,7 +51,7 @@ curl --create-dirs -o /root/scripts/pfsense_zbx.php https://raw.githubuserconten
 
 Then install package "Zabbix Agent 6" (or "Zabbix Agent 5") on your pfSense Box
 
-In Advanced Features-> User Parameters
+In Advanced Features-> User Parameters, add: 
 
 ```bash
 AllowRoot=1
@@ -90,9 +90,9 @@ cp firewalls.csv.example firewalls.csv
 nano firewalls.csv
 ```
 
-Add the following single line to the custom part of zabbix settings (has to be done manually once on each firewall). Replace the '7' with your major zabbix agent version: 
+Add the following single line to the Advanced Features-> User Parameters instead of the standard settings (has to be done manually once on each firewall). Replace the '7' with your major zabbix agent version: 
  
-```
+```bash
 Include=/usr/local/etc/zabbix7/zabbix_agentd.conf.d/*.conf
 ```
 
