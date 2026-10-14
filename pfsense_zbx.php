@@ -1136,11 +1136,13 @@ function pfz_get_system_value($section){
 	} else {
 		// Install the cron script
 		pfz_syscheck_cron_install();
-		if($section == "new_version_available") {
-			echo "0";
-		} else {
-			echo "";
-		}
+        // Run it 
+        pfz_syscheck_cron();
+        if(file_exists($filename)) {
+            $sysVersion = json_decode(file_get_contents($filename), true);
+        } else {
+            echo "Error";
+        }
 	}
 	switch ($section){
         case "script_version":
