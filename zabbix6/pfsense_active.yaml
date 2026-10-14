@@ -1,7 +1,6 @@
 zabbix_export:
-  version: '6.0'
-  date: '2025-11-18T11:00:00Z'
-  groups:
+  version: '7.0'
+  template_groups:
     - uuid: 4918b88734c54bd094cff7585b5d71fc
       name: 'Templates/Network Devices'
   templates:
@@ -62,6 +61,7 @@ zabbix_export:
           type: CALCULATED
           key: pfsense.expected_carp_status
           delay: 600s
+          history: 90d
           params: '{$EXPECTED_CARP_STATUS}'
           description: 'Expected CARP Status'
           valuemap:
@@ -161,6 +161,7 @@ zabbix_export:
           type: ZABBIX_ACTIVE
           key: 'pfsense.value[carp_status]'
           delay: '60'
+          history: 90d
           description: 'pfSense CARP Status'
           valuemap:
             name: 'pfSense CARP Status'
@@ -184,6 +185,7 @@ zabbix_export:
           type: ZABBIX_ACTIVE
           key: 'pfsense.value[cert_date,validFrom.max]'
           delay: 1d
+          history: 90d
           units: unixtime
           description: 'This item will return will return the latest date "validFrom" from all the certificates (including CA). This is used to find new/renewed certificates.'
           preprocessing:
@@ -202,6 +204,7 @@ zabbix_export:
           type: ZABBIX_ACTIVE
           key: 'pfsense.value[cert_date,validTo.min]'
           delay: 1d
+          history: 90d
           units: unixtime
           description: 'his item will return will return the earliest date "validTo" from all the certificates (including CA). This is used to find expiring certificates.'
           preprocessing:
@@ -232,6 +235,7 @@ zabbix_export:
           type: ZABBIX_ACTIVE
           key: 'pfsense.value[dhcp,failover]'
           delay: 120s
+          history: 90d
           description: 'This value indicates, in a HA scenario, if DHCP failover pool partners are out of sync.'
           tags:
             - tag: Application
@@ -241,8 +245,9 @@ zabbix_export:
           type: ZABBIX_ACTIVE
           key: 'pfsense.value[gw_status]'
           delay: 60s
-          trends: '0'
+          history: 90d
           value_type: TEXT
+          trends: '0'
           description: 'Gateway Status Raw'
           tags:
             - tag: Application
@@ -261,6 +266,7 @@ zabbix_export:
           type: ZABBIX_ACTIVE
           key: 'pfsense.value[smart_status]'
           delay: 1800s
+          history: 90d
           description: 'pfSense SMART Status'
           tags:
             - tag: Application
@@ -271,21 +277,12 @@ zabbix_export:
               name: 'SMART Errors on {HOST.NAME}'
               priority: HIGH
               description: 'pfSense has detected SMART Problems on one or more drives.'
-        - uuid: 5820137593604e63869cd3bf009a3dbf
-          name: 'pfSense Installed Version'
-          type: ZABBIX_ACTIVE
-          key: 'pfsense.value[system,installed_version]'
-          delay: 1d
-          trends: '0'
-          value_type: TEXT
-          tags:
-            - tag: Application
-              value: System
         - uuid: 36a0a399f1ad4ca3aea3e52c1dfe0de1
           name: 'New Version of pfSense Available'
           type: ZABBIX_ACTIVE
           key: 'pfsense.value[system,new_version_available]'
           delay: 1d
+          history: 90d
           valuemap:
             name: 'Generic YesNo'
           tags:
@@ -303,6 +300,7 @@ zabbix_export:
           type: ZABBIX_ACTIVE
           key: 'pfsense.value[system,packages_update]'
           delay: 1d
+          history: 90d
           description: 'Number of packages needing update.'
           tags:
             - tag: Application
@@ -318,8 +316,9 @@ zabbix_export:
           type: ZABBIX_ACTIVE
           key: 'pfsense.value[system,script_version]'
           delay: 8h
-          trends: '0'
+          history: 90d
           value_type: TEXT
+          trends: '0'
           description: 'pFsense Agent Script Version'
           triggers:
             - uuid: c41c033f27d84ce480da25391677e0ff
@@ -335,8 +334,9 @@ zabbix_export:
           type: ZABBIX_ACTIVE
           key: 'pfsense.value[system,version]'
           delay: 1d
-          trends: '0'
+          history: 90d
           value_type: TEXT
+          trends: '0'
           tags:
             - tag: Application
               value: System
@@ -512,8 +512,8 @@ zabbix_export:
           key: system.hostname
           delay: '3600'
           history: 27d
-          trends: '0'
           value_type: CHAR
+          trends: '0'
           description: 'System host name.'
           inventory_link: NAME
           tags:
@@ -587,8 +587,8 @@ zabbix_export:
           key: system.uname
           delay: '3600'
           history: 27d
-          trends: '0'
           value_type: CHAR
+          trends: '0'
           description: 'The information as normally returned by ''uname -a''.'
           inventory_link: OS
           tags:
@@ -638,6 +638,17 @@ zabbix_export:
               expression: '(last(/Template pfSense Active/vfs.file.cksum[/etc/passwd],#1)<>last(/Template pfSense Active/vfs.file.cksum[/etc/passwd],#2))>0'
               name: '/etc/passwd has been changed on {HOST.NAME}'
               priority: WARNING
+        - uuid: 5820137593604e63869cd3bf009a3dbf
+          name: 'pfSense Installed Version'
+          type: ZABBIX_ACTIVE
+          key: 'vfs.file.contents[/etc/version]'
+          delay: 1h
+          history: 90d
+          value_type: TEXT
+          trends: '0'
+          tags:
+            - tag: Application
+              value: System
         - uuid: a6d63cd84a314056bd638e25c5f0308b
           name: 'Active memory'
           type: ZABBIX_ACTIVE
@@ -781,6 +792,8 @@ zabbix_export:
           type: ZABBIX_ACTIVE
           key: 'pfsense.discovery[certificates]'
           delay: 3600s
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
           description: 'Certificates Discovery'
           item_prototypes:
             - uuid: a3521a3bb0be4525be1462ac7f1ab56e
@@ -788,8 +801,8 @@ zabbix_export:
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[cert_algo, {#CERT_INDEX}]'
               delay: 900s
-              trends: '0'
               value_type: TEXT
+              trends: '0'
             - uuid: 266a387f14d6486d918fa6d831d75f23
               name: '{#CERT_TYPE} "{#CERT_NAME}": key length'
               type: ZABBIX_ACTIVE
@@ -805,8 +818,8 @@ zabbix_export:
               type: ZABBIX_ACTIVE
               key: 'pfsense.value[cert_hash, {#CERT_INDEX}]'
               delay: 900s
-              trends: '0'
               value_type: TEXT
+              trends: '0'
             - uuid: 7043dab3a32e49a7b1128747fbaab7be
               name: '{#CERT_TYPE} "{#CERT_NAME}": hash security bits'
               type: ZABBIX_ACTIVE
@@ -845,6 +858,8 @@ zabbix_export:
           type: ZABBIX_ACTIVE
           key: 'pfsense.discovery[gw]'
           delay: 300s
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
           description: 'Gateway Discovery'
           item_prototypes:
             - uuid: db89e0dd738148e19c52f08bbc7723f7
@@ -961,7 +976,7 @@ zabbix_export:
               - macro: '{#IFNAME}'
                 value: '@Network interfaces for discovery'
                 formulaid: A
-          lifetime: 7d
+          enabled_lifetime_type: DISABLE_NEVER
           description: 'Discovery of network interfaces as defined in global regular expression "Network interfaces for discovery".'
           item_prototypes:
             - uuid: 71301cd82a0749b4abed0feb58061a37
@@ -1047,6 +1062,8 @@ zabbix_export:
           type: ZABBIX_ACTIVE
           key: 'pfsense.discovery[openvpn_client]'
           delay: 300s
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
           description: 'OpenVPN Client Discovery'
           item_prototypes:
             - uuid: 15e5067016824fc7963ae22df7a675ea
@@ -1070,6 +1087,8 @@ zabbix_export:
           type: ZABBIX_ACTIVE
           key: 'pfsense.discovery[openvpn_server]'
           delay: 300s
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
           item_prototypes:
             - uuid: 0a6ee94cefe8457eb56ef832d8734790
               name: 'OpenVPN Server {#NAME} Clients Connected'
@@ -1118,6 +1137,8 @@ zabbix_export:
           type: ZABBIX_ACTIVE
           key: 'pfsense.discovery[services]'
           delay: 300s
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
           item_prototypes:
             - uuid: 072e3f3d659c4414adb7054e268383e9
               name: 'Service {#DESCRIPTION}  enabled on CARP Slave'
@@ -1168,7 +1189,7 @@ zabbix_export:
               - macro: '{#FSTYPE}'
                 value: '@File systems for discovery'
                 formulaid: A
-          lifetime: 7d
+          enabled_lifetime_type: DISABLE_NEVER
           description: 'Discovery of file systems of different types as defined in global regular expression "File systems for discovery".'
           item_prototypes:
             - uuid: 96acea60f88b42cb8fbc9c7d47881d26
@@ -1281,8 +1302,8 @@ zabbix_export:
           name: 'System performance'
           pages:
             - widgets:
-                - type: GRAPH_CLASSIC
-                  width: '12'
+                - type: graph
+                  width: '36'
                   height: '7'
                   fields:
                     - type: GRAPH
@@ -1290,9 +1311,12 @@ zabbix_export:
                       value:
                         host: 'Template pfSense Active'
                         name: 'Active Connections (pie)'
-                - type: GRAPH_CLASSIC
+                    - type: STRING
+                      name: reference
+                      value: AAAAA
+                - type: graph
                   'y': '7'
-                  width: '12'
+                  width: '36'
                   height: '7'
                   fields:
                     - type: GRAPH
@@ -1300,9 +1324,12 @@ zabbix_export:
                       value:
                         host: 'Template pfSense Active'
                         name: 'CPU load'
-                - type: GRAPH_CLASSIC
-                  x: '12'
-                  width: '12'
+                    - type: STRING
+                      name: reference
+                      value: AAAAB
+                - type: graph
+                  x: '36'
+                  width: '36'
                   height: '7'
                   fields:
                     - type: GRAPH
@@ -1310,10 +1337,13 @@ zabbix_export:
                       value:
                         host: 'Template pfSense Active'
                         name: 'Network Memory Buffer (pie)'
-                - type: GRAPH_CLASSIC
-                  x: '12'
+                    - type: STRING
+                      name: reference
+                      value: AAAAC
+                - type: graph
+                  x: '36'
                   'y': '7'
-                  width: '12'
+                  width: '36'
                   height: '7'
                   fields:
                     - type: GRAPH
@@ -1321,6 +1351,9 @@ zabbix_export:
                       value:
                         host: 'Template pfSense Active'
                         name: 'Memory Usage simple (pie)'
+                    - type: STRING
+                      name: reference
+                      value: AAAAD
       valuemaps:
         - uuid: c1dcf6e418b94f07bf15ca15844d3eb3
           name: 'Generic YesNo'
