@@ -1,93 +1,31 @@
 zabbix_export:
   version: '7.4'
-
   template_groups:
   - uuid: 4918b88734c54bd094cff7585b5d71fc
     name: 'Templates/Network Devices'
-
   templates:
   - uuid: 1c7cba22540d4c10a5ee14c2b25223ca
     template: 'pfSense Active Speedtest'
     name: 'pfSense Active: Speedtest'
-
     description: |
-      Speedtest monitoring extension for pfSense Active.
-
-      Compatible with:
-      - Zabbix 7.4
-      - pfSense CE 2.7.x / 2.8.x
-      - Updated pfsense_zbx.php
-      - Python speedtest-cli 2.1.3
-
-      Features:
-      - Automatic WAN interface discovery
-      - Download throughput monitoring
-      - Upload throughput monitoring
-      - Speedtest latency monitoring
-      - Public IP address information
-      - Internet service provider identification
-
-      Execution:
-      Speedtest measurements are executed independently
-      by the pfSense cron integration.
-
-      Cron checks the configured WAN interfaces every
-      15 minutes.
-
-      SPEEDTEST_INTERVAL controls the minimum interval
-      between valid measurements (default: 8 hours).
-
-      Zabbix only reads cached measurements and does
-      not initiate bandwidth tests.
-
-      Measurement units:
-      download: bits per second (bps)
-      upload: bits per second (bps)
-      ping: milliseconds (ms)
-
-      Important:
-      client.ip is the public address detected by the
-      Speedtest service, which may be different from
-      the WAN interface address when NAT is present.
-
-      Requires:
-      /usr/local/bin/speedtest
-      /root/scripts/pfsense_zbx.php
+      Speedtest monitoring extension for pfSense Active and Zabbix 7.4.
+      Requires the updated pfsense_zbx.php and Python speedtest-cli.
+      WAN measurements run via the pfSense cron integration, independently
+      from Zabbix, and are exposed to Zabbix through cached JSON results.
+      Download and upload are in bits per second; ping is in milliseconds.
+      client.ip is the public address seen by Speedtest and may reflect NAT.
 
       https://github.com/rbicelli/pfsense-zabbix-template
-
     groups:
     - name: 'Templates/Network Devices'
-
     discovery_rules:
-
-    # =====================================================
-    # WAN interface discovery
-    # =====================================================
     - uuid: 40288914aa9742adb93120c367263690
       name: 'WAN Interfaces'
       type: ZABBIX_ACTIVE
       key: 'pfsense.discovery[wan]'
       delay: 1h
-
-      description: |
-        Discover WAN interfaces eligible for Speedtest.
-
-        PHP function:
-        pfz_interface_discovery(true)
-
-        LLD macros:
-        {#IFNAME}  - Physical interface name
-        {#IFDESCR} - Configured interface description
-
-        Each discovered WAN interface generates five
-        monitoring items.
-
+      description: 'Discover WAN interfaces available for cached Speedtest monitoring.'
       item_prototypes:
-
-      # -------------------------------------------------
-      # Public IP address
-      # -------------------------------------------------
       - uuid: 07312f1cfd424a0eb65b5b45c2c2582d
         name: 'Speedtest public IP address on {#IFDESCR}'
         type: ZABBIX_ACTIVE
@@ -96,40 +34,18 @@ zabbix_export:
         history: 30d
         trends: '0'
         value_type: TEXT
-
-        description: |
-          Public IP address detected by the Speedtest
-          service for the selected WAN interface.
-
-          Source:
-          speedtest JSON field client.ip
-
-          The reported address may represent an
-          upstream NAT public address.
-
-          This item reads cached data only.
-
+        description: 'Public IP detected by Speedtest; may be the upstream NAT public address.'
         tags:
         - tag: Application
           value: Speedtest
         - tag: Component
           value: 'WAN information'
-
         trigger_prototypes:
         - uuid: d7f05a232f004f0b8c2a974666a31c55
           expression: 'last(/pfSense Active Speedtest/pfsense.value[if_speedtest_value,{#IFNAME},client.ip],#1)<>last(/pfSense Active Speedtest/pfsense.value[if_speedtest_value,{#IFNAME},client.ip],#2)'
           name: 'Public IP address on {#IFDESCR} has changed'
           priority: INFO
-          description: |
-            The public IP address detected by
-            Speedtest has changed.
-
-            Verify WAN connectivity, upstream NAT
-            and expected public address allocation.
-
-      # -------------------------------------------------
-      # Internet service provider
-      # -------------------------------------------------
+          description: 'The Speedtest-observed public address changed between cached measurements.'
       - uuid: b1bef62fecb840c2bf9eb081da8fa3f7
         name: 'Speedtest ISP name on {#IFDESCR}'
         type: ZABBIX_ACTIVE
@@ -138,23 +54,12 @@ zabbix_export:
         history: 30d
         trends: '0'
         value_type: TEXT
-
-        description: |
-          Internet service provider identified
-          by the Speedtest service.
-
-          Source:
-          speedtest JSON field client.isp
-
+        description: 'ISP name reported by the cached Speedtest result.'
         tags:
         - tag: Application
           value: Speedtest
         - tag: Component
           value: 'WAN information'
-
-      # -------------------------------------------------
-      # Download throughput
-      # -------------------------------------------------
       - uuid: a79d28cf3f3b4981b59f571117e64d24
         name: 'Speedtest Download on {#IFDESCR}'
         type: ZABBIX_ACTIVE
@@ -164,31 +69,12 @@ zabbix_export:
         trends: 365d
         value_type: FLOAT
         units: bps
-
-        description: |
-          Download throughput measured by Python
-          speedtest-cli.
-
-          Source:
-          speedtest JSON field download
-
-          The value is returned in bits per second.
-
-          Zabbix queries the cached result every
-          15 minutes.
-
-          A new bandwidth measurement is performed
-          only when the cache needs refreshing.
-
+        description: 'Cached download speed in bits per second, measured with Python speedtest-cli.'
         tags:
         - tag: Application
           value: Speedtest
         - tag: Component
           value: Download
-
-      # -------------------------------------------------
-      # Ping latency
-      # -------------------------------------------------
       - uuid: 52b640fcdf484b538f85bf32d2afbcf3
         name: 'Speedtest Ping on {#IFDESCR}'
         type: ZABBIX_ACTIVE
@@ -198,27 +84,12 @@ zabbix_export:
         trends: 365d
         value_type: FLOAT
         units: ms
-
-        description: |
-          Latency measured during the Speedtest.
-
-          Source:
-          speedtest JSON field ping
-
-          Unit: milliseconds.
-
-          This measurement is distinct from the
-          continuous gateway RTT provided by dpinger.
-
+        description: 'Cached Speedtest ping latency in milliseconds; distinct from dpinger gateway RTT.'
         tags:
         - tag: Application
           value: Speedtest
         - tag: Component
           value: Latency
-
-      # -------------------------------------------------
-      # Upload throughput
-      # -------------------------------------------------
       - uuid: 4bd063f24e554832b59bfa2231d53bf1
         name: 'Speedtest Upload on {#IFDESCR}'
         type: ZABBIX_ACTIVE
@@ -228,31 +99,13 @@ zabbix_export:
         trends: 365d
         value_type: FLOAT
         units: bps
-
-        description: |
-          Upload throughput measured by Python
-          speedtest-cli.
-
-          Source:
-          speedtest JSON field upload
-
-          The value is returned in bits per second.
-
-          Zabbix reads the cached result without
-          initiating another speed measurement.
-
+        description: 'Cached upload speed in bits per second, measured with Python speedtest-cli.'
         tags:
         - tag: Application
           value: Speedtest
         - tag: Component
           value: Upload
-
-      # ===================================================
-      # Graph prototypes
-      # ===================================================
       graph_prototypes:
-
-      # Throughput graph: download and upload only.
       - uuid: 74cdea0b8136495496bb90593bd78a59
         name: 'Speedtest Throughput on {#IFDESCR}'
         graph_items:
@@ -262,15 +115,12 @@ zabbix_export:
           item:
             host: 'pfSense Active Speedtest'
             key: 'pfsense.value[if_speedtest_value,{#IFNAME},download]'
-
         - sortorder: '1'
           color: 0040FF
           calc_fnc: ALL
           item:
             host: 'pfSense Active Speedtest'
             key: 'pfsense.value[if_speedtest_value,{#IFNAME},upload]'
-
-      # Latency graph: milliseconds.
       - uuid: 0d56a9d30bf14a15a36c15ea20fbd834
         name: 'Speedtest Latency on {#IFDESCR}'
         graph_items:

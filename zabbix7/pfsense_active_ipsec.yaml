@@ -1,281 +1,159 @@
 zabbix_export:
   version: '7.4'
-
   template_groups:
   - uuid: 4918b88734c54bd094cff7585b5d71fc
     name: 'Templates/Network Devices'
-
   templates:
   - uuid: 7b956a3e6aa1464781b38a854872a1c6
     template: 'Template pfSense Active IPsec'
     name: 'pfSense Active: IPsec'
     description: |
-      IPsec monitoring extension for pfSense.
-
-      Compatible with the updated pfsense_zbx.php.
-      Intended for Zabbix 7.4.
-
-      Monitors:
-      - IPsec Phase 1 configuration and operational status
-      - IPsec Phase 2 configuration and operational status
-      - Disabled/enabled tunnel configuration
-      - Tunnel reconnection and availability
-
-      Phase 2 operational status uses IKEID.REQID ({#EXTID}).
-      Phase 2 configuration items use {#UNIQID}.
-
-      Important:
-      Do not link this extension alongside another template
-      that defines the same IPsec discovery rules or item keys.
-
+      IPsec monitoring extension for pfSense using pfsense_zbx.php.
+      Supports discovery and monitoring of IPsec Phase 1 and Phase 2.
+      Zabbix 7.4 export format.
+      Do not link together with another template containing the same
+      pfsense.discovery[ipsec_ph1] or pfsense.discovery[ipsec_ph2] keys.
       https://github.com/rbicelli/pfsense-zabbix-template
-
     groups:
     - name: 'Templates/Network Devices'
-
     discovery_rules:
-
-    # =====================================================
-    # IPsec Phase 1 discovery
-    # =====================================================
     - uuid: e7526169245d49a6aa6afbcacaa02b18
       name: 'IPsec Phase 1 Discovery'
       type: ZABBIX_ACTIVE
       key: 'pfsense.discovery[ipsec_ph1]'
       delay: 300s
-      description: |
-        Discovers configured IPsec Phase 1 tunnels.
-
-        Available LLD macros:
-        {#IKEID} - Phase 1 identifier
-        {#NAME}  - Tunnel description
-
+      description: 'Configured IPsec Phase 1 tunnels.'
       item_prototypes:
-
-      # Configuration state: 0 enabled, 1 disabled.
       - uuid: 04d6b1d0a32949bfa96cf503f60b6c53
         name: 'IPsec Phase 1 {#NAME}: Enabled'
         type: ZABBIX_ACTIVE
         key: 'pfsense.value[ipsec_ph1,{#IKEID},disabled]'
         delay: 120s
-        description: |
-          Administrative configuration state.
-          0 = Enabled
-          1 = Disabled
+        description: 'Administrative setting: 0 = enabled, 1 = disabled.'
         valuemap:
           name: 'pfSense IPsec Enabled'
         tags:
         - tag: Application
           value: IPsec
-
-      # IKE version configured for Phase 1.
       - uuid: 810da7b475df4d738c702f373771092e
         name: 'IPsec Phase 1 {#NAME}: IKE Type'
         type: ZABBIX_ACTIVE
         key: 'pfsense.value[ipsec_ph1,{#IKEID},iketype]'
         delay: 600s
-        description: 'Configured IKE type.'
         valuemap:
           name: 'pfSense IPsec IKE Type'
         tags:
         - tag: Application
           value: IPsec
-
-      # Phase 1 negotiation mode.
       - uuid: 47b54bc4a08e464b839bcfd5106ec5a9
         name: 'IPsec Phase 1 {#NAME}: Tunnel Mode'
         type: ZABBIX_ACTIVE
         key: 'pfsense.value[ipsec_ph1,{#IKEID},mode]'
         delay: 600s
-        description: 'Configured Phase 1 negotiation mode.'
         valuemap:
           name: 'pfSense IPsec Tunnel Mode'
         tags:
         - tag: Application
           value: IPsec
-
-      # Address-family configuration.
       - uuid: a404f5d20988445d8777758b95b02076
         name: 'IPsec Phase 1 {#NAME}: Protocol'
         type: ZABBIX_ACTIVE
         key: 'pfsense.value[ipsec_ph1,{#IKEID},protocol]'
         delay: 600s
-        description: 'Configured IPsec protocol/address family.'
         valuemap:
           name: 'pfSense IPsec Protocol'
         tags:
         - tag: Application
           value: IPsec
-
-      # Remote peer address.
       - uuid: ce0d2464361e41018fdd1831db1ec4b3
         name: 'IPsec Phase 1 {#NAME}: Remote Gateway'
         type: ZABBIX_ACTIVE
         key: 'pfsense.value[ipsec_ph1,{#IKEID},remote-gateway]'
         delay: 600s
-        history: 30d
         trends: '0'
         value_type: TEXT
-        description: 'Configured remote IPsec gateway.'
         tags:
         - tag: Application
           value: IPsec
-
-      # Operational state derived from the IPsec SA.
       - uuid: 34d7e2395d8b43ec9c0267664be27881
         name: 'IPsec Phase 1 {#NAME}: Status'
         type: ZABBIX_ACTIVE
         key: 'pfsense.value[ipsec_ph1,{#IKEID},status]'
         delay: 60s
         history: 30d
-        description: |
-          Operational Phase 1 status obtained from IPsec SAs.
-
-          0 = Down
-          1 = Established
-          2 = Connecting
-          10 = Down on CARP secondary
-
-          Other HA-adjusted values may be returned.
         valuemap:
           name: 'pfSense IPsec Phase 1 Status'
         tags:
         - tag: Application
           value: IPsec
-
       trigger_prototypes:
-
-      # Three consecutive down samples.
-      # Suppress alerts when administratively disabled.
       - uuid: d675635e19aa4cd7a7202e983cbe4ce6
         expression: 'last(/Template pfSense Active IPsec/pfsense.value[ipsec_ph1,{#IKEID},disabled])=0 and max(/Template pfSense Active IPsec/pfsense.value[ipsec_ph1,{#IKEID},status],#3)=0'
         name: 'IPsec Phase 1 {#NAME} ({#IKEID}) is down'
         priority: HIGH
-        description: |
-          Phase 1 reported status 0 for three consecutive
-          samples while administratively enabled.
-
-          Intended primarily for always-on tunnels.
-          Demand-based tunnels may require a different policy.
-
-    # =====================================================
-    # IPsec Phase 2 discovery
-    # =====================================================
+        description: 'Alarm after three consecutive down samples on an administratively enabled Phase 1; review demand-based tunnels.'
     - uuid: fa934077cae64a049e68e2130e5e1e84
       name: 'IPsec Phase 2 Discovery'
       type: ZABBIX_ACTIVE
       key: 'pfsense.discovery[ipsec_ph2]'
       delay: 300s
-      description: |
-        Discovers configured IPsec Phase 2 tunnels.
-
-        Available LLD macros:
-        {#IKEID}  - Parent Phase 1 identifier
-        {#REQID}  - Child SA request identifier
-        {#EXTID}  - IKEID.REQID
-        {#UNIQID} - Configuration identifier
-        {#NAME}   - Phase 2 description
-
-        Use EXTID for operational status.
-        Use UNIQID for configuration values.
-
+      description: 'Configured Phase 2 tunnels. EXTID = IKEID.REQID; UNIQID identifies configuration entries.'
       item_prototypes:
-
-      # Configuration state.
       - uuid: 1857b124103c4f08b5ed962259fcbe06
         name: 'IPsec Phase 2 {#NAME} ({#EXTID}): Enabled'
         type: ZABBIX_ACTIVE
         key: 'pfsense.value[ipsec_ph2,{#UNIQID},disabled]'
         delay: 120s
-        description: |
-          Administrative configuration state.
-          0 = Enabled
-          1 = Disabled
         valuemap:
           name: 'pfSense IPsec Enabled'
         tags:
         - tag: Application
           value: IPsec
-
-      # Configured Child SA lifetime.
       - uuid: 3ac7d6d1be034a3db8afad18791b43aa
         name: 'IPsec Phase 2 {#NAME} ({#EXTID}): Lifetime'
         type: ZABBIX_ACTIVE
         key: 'pfsense.value[ipsec_ph2,{#UNIQID},lifetime]'
         delay: 600s
         units: s
-        description: 'Configured Phase 2 lifetime.'
         tags:
         - tag: Application
           value: IPsec
-
-      # Configured Phase 2 mode.
       - uuid: dfbae3fe2bcd45f3ac38c6ea0df5d250
         name: 'IPsec Phase 2 {#NAME} ({#EXTID}): Mode'
         type: ZABBIX_ACTIVE
         key: 'pfsense.value[ipsec_ph2,{#UNIQID},mode]'
         delay: 600s
-        description: 'Configured Phase 2 mode.'
         tags:
         - tag: Application
           value: IPsec
-
-      # Configured ESP/AH protocol.
       - uuid: 794565a046ff447ca8ad3a7597ee52f5
         name: 'IPsec Phase 2 {#NAME} ({#EXTID}): Protocol'
         type: ZABBIX_ACTIVE
         key: 'pfsense.value[ipsec_ph2,{#UNIQID},protocol]'
         delay: 600s
-        description: 'Configured Phase 2 protocol.'
         valuemap:
           name: 'pfSense IPsec Phase 2 Protocol'
         tags:
         - tag: Application
           value: IPsec
-
-      # NEW: Real-time Child SA status.
       - uuid: 7e1a57d52b15445f9ef12d018a653abc
         name: 'IPsec Phase 2 {#NAME} ({#EXTID}): Status'
         type: ZABBIX_ACTIVE
         key: 'pfsense.value[ipsec_ph2,{#EXTID},status]'
         delay: 60s
         history: 30d
-        description: |
-          Operational Phase 2 status from the IPsec Child SA.
-
-          0 = Down
-          1 = Established
-          2 = Connecting
-          HA/CARP offsets may apply.
-
-          The query uses EXTID instead of UNIQID.
         valuemap:
           name: 'pfSense IPsec Phase 1 Status'
         tags:
         - tag: Application
           value: IPsec
-
       trigger_prototypes:
-
-      # NEW: Phase 2 down alert.
-      # Check the configuration flag using UNIQID.
-      # Check operational state using EXTID.
       - uuid: 03b21646e3f04b55be6dc610b2768bc1
         expression: 'last(/Template pfSense Active IPsec/pfsense.value[ipsec_ph2,{#UNIQID},disabled])=0 and max(/Template pfSense Active IPsec/pfsense.value[ipsec_ph2,{#EXTID},status],#3)=0'
         name: 'IPsec Phase 2 {#NAME} ({#EXTID}) is down'
         priority: HIGH
-        description: |
-          Phase 2 reported status 0 for three consecutive
-          samples while administratively enabled.
-
-          Demand-based VPN policies should be reviewed
-          before enabling this alert.
-
-    # =======================================================
-    # IPsec value mappings
-    # =======================================================
+        description: 'Alarm after three consecutive down samples on an administratively enabled Phase 2; review demand-based tunnels.'
     valuemaps:
-
     - uuid: fb66440f3f454b36ae5c5d7b015529a1
       name: 'pfSense IPsec Enabled'
       mappings:
@@ -283,7 +161,6 @@ zabbix_export:
         newvalue: 'Yes'
       - value: '1'
         newvalue: 'No'
-
     - uuid: 7077365285f14733a55edd9ade5fdfcb
       name: 'pfSense IPsec IKE Type'
       mappings:
@@ -293,7 +170,6 @@ zabbix_export:
         newvalue: 'IKE v1'
       - value: '2'
         newvalue: 'IKE v2'
-
     - uuid: a7a80f8152804c6f882898ca7378c403
       name: 'pfSense IPsec Phase 1 Status'
       mappings:
@@ -305,7 +181,6 @@ zabbix_export:
         newvalue: Connecting
       - value: '10'
         newvalue: 'Down on CARP Secondary'
-
     - uuid: 55e4705203cf4b5996dcd6e10cd508b9
       name: 'pfSense IPsec Phase 2 Protocol'
       mappings:
@@ -313,7 +188,6 @@ zabbix_export:
         newvalue: ESP
       - value: '2'
         newvalue: AH
-
     - uuid: b72cdb06faec4f9492913ba820677370
       name: 'pfSense IPsec Protocol'
       mappings:
@@ -323,7 +197,6 @@ zabbix_export:
         newvalue: IPv4
       - value: '2'
         newvalue: IPv6
-
     - uuid: 864f6d2be4c544cf8fe38b9a619363b5
       name: 'pfSense IPsec Tunnel Mode'
       mappings:
