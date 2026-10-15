@@ -8,6 +8,18 @@ Written by Riccardo Bicelli <r.bicelli@gmail.com>
 This program is licensed under Apache 2.0 License
  */
 
+/**
+ * Notas de manutencao e homologacao (2026-10-15):
+ * - Compatibilidade exercitada em pfSense CE 2.7.2 e CE 2.8.1.
+ * - O numero SCRIPT_VERSION permanece o da versao upstream; este arquivo
+ *   contem correcoes locais ainda sujeitas a homologacao integral.
+ * - Comandos de leitura nao devem criar tarefas de cron.
+ * - Speedtest: cliente Python speedtest-cli 2.1.3, cache de 8 horas;
+ *   agendamento a cada 15 minutos instalado explicitamente.
+ * - Os comentarios identificam responsabilidades e limites do teste;
+ *   nao implicam suporte validado para todas as configuracoes do pfSense.
+ */
+
 //Some Useful defines
 define('SCRIPT_VERSION', '0.24.7');
 
@@ -45,6 +57,7 @@ if (!function_exists('str_contains')) {
 }
 
 //Testing function, for template creating purpose
+/** Diagnostico detalhado para manutencao. Pode imprimir dados de configuracao; nao utilizar como item Zabbix. */
 function pfz_test()
 {
 	$line = "-------------------\n";
@@ -108,6 +121,7 @@ function pfz_test()
 
 // Interface Discovery
 // Improved performance
+/** Descobre interfaces e, opcionalmente, filtra WAN. No modo cron retorna nomes fisicos em array. */
 function pfz_interface_discovery($is_wan = false, $is_cron = false)
 {
 	$ifdescrs = get_configured_interface_with_descr(true);
@@ -158,54 +172,77 @@ function pfz_interface_discovery($is_wan = false, $is_cron = false)
 
 
 //Interface Speedtest
+
+/** Le apenas metricas escalares do cache JSON. Nao instala agendamentos e nao gera trafego. */
 function pfz_interface_speedtest_value($ifname, $value)
 {
-	$tvalue = explode(".", $value);
+    $parts = explode(".", $value, 2);
+    $key = $parts[0];
+    $subvalue = $parts[1] ?? null;
 
-	if (count($tvalue) > 1) {
-		$value = $tvalue[0];
-		$subvalue = $tvalue[1];
-	}
+    $filename = "/tmp/speedtest-$ifname";
 
-	//If the interface has a gateway is considered WAN, so let's do the speedtest
-	$filename = "/tmp/speedtest-$ifname";
+    if (!is_file($filename)) {
+        return;
+    }
 
-	if (file_exists($filename)) {
-		$speedtest_data = json_decode(file_get_contents($filename), true) ?? [];
+    $speedtest_data = json_decode(
+        file_get_contents($filename),
+        true
+    );
 
-		if (array_key_exists($value, $speedtest_data)) {
-			if ($subvalue == false)
-				echo $speedtest_data[$value];
-			else
-				echo $speedtest_data[$value][$subvalue];
-		}
-	}
+    if (!is_array($speedtest_data) ||
+        !array_key_exists($key, $speedtest_data)) {
+        return;
+    }
+
+    $result = $speedtest_data[$key];
+
+    if ($subvalue !== null) {
+        if (!is_array($result) ||
+            !array_key_exists($subvalue, $result)) {
+            return;
+        }
+
+        $result = $result[$subvalue];
+    }
+
+    if (is_scalar($result)) {
+        echo $result;
+    }
 }
 
 // This is supposed to run via cron job
+/** Percorre WANs configuradas e encaminha cada IPv4 a rotina de coleta. Nao instala cron. */
 function pfz_speedtest_cron()
 {
-	require_once("services.inc");
-	$ifdescrs = get_configured_interface_with_descr(true);
-	$ifaces = get_interface_arr();
-	$pf_interface_name = '';
-	$subvalue = false;
+    $ifdescrs = get_configured_interface_with_descr(true);
+    $wanInterfaces = pfz_interface_discovery(true, true);
 
-	$ifcs = pfz_interface_discovery(true, true);
+    foreach ($wanInterfaces as $ifname) {
+        $ipaddr = null;
 
-	foreach ($ifcs as $ifname) {
-		foreach ($ifdescrs as $ifn => $ifd) {
-			$ifinfo = get_interface_info($ifn);
-			if ($ifinfo['hwif'] == $ifname) {
-				$pf_interface_name = $ifn;
-				break;
-			}
-		}
-		pfz_speedtest_exec($ifname, $ifinfo['ipaddr']);
-	}
+        foreach ($ifdescrs as $ifn => $ifdescr) {
+            $ifinfo = get_interface_info($ifn);
+
+            if (($ifinfo['hwif'] ?? null) !== $ifname) {
+                continue;
+            }
+
+            $ipaddr = $ifinfo['ipaddr'] ?? null;
+            break;
+        }
+
+        if (!filter_var($ipaddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            continue;
+        }
+
+        pfz_speedtest_exec($ifname, $ipaddr);
+    }
 }
 
-//installs a cron job for speedtests
+// Agendamento explicito: a rotina de coleta nao deve alterar o proprio cron.
+/** Instala ou remove explicitamente a entrada do Speedtest em /etc/crontab a cada 15 minutos. */
 function pfz_speedtest_cron_install($enable = true)
 {
 	//Install Cron Job
@@ -214,37 +251,113 @@ function pfz_speedtest_cron_install($enable = true)
 }
 
 
-// 2023-02-26:
-// Fixed issue #127
+
+/** Executa Speedtest Python se cache ausente, invalido ou expirado; publica JSON validado via rename. */
 function pfz_speedtest_exec($ifname, $ipaddr)
 {
+    $speedtest = '/usr/local/bin/speedtest';
 
-	$filename = "/tmp/speedtest-$ifname";
-	$filetemp = "$filename.tmp";
-	$filerun = "/tmp/speedtest-run";
+    $filename = "/tmp/speedtest-$ifname";
+    $filerun = '/tmp/speedtest-run';
 
-	// Issue #82
-	// Sleep random delay in order to avoid problem when 2 pfSense on the same Internet line
-	sleep(rand(1, 90));
+    if (!is_executable($speedtest)) {
+        return false;
+    }
 
-	if ((time() - filemtime($filename) > SPEEDTEST_INTERVAL * 3600) || (file_exists($filename) == false)) {
-		// file is older than SPEEDTEST_INTERVAL
-		if ((time() - filemtime($filerun) > 180)) @unlink($filerun);
+    if (!filter_var($ipaddr, FILTER_VALIDATE_IP)) {
+        return false;
+    }
 
-		if (file_exists($filerun) == false) {
-			touch($filerun);
-			$st_command = "/usr/local/bin/speedtest --secure --source $ipaddr --json > $filetemp";
-			exec($st_command);
-			rename($filetemp, $filename);
-			@unlink($filerun);
-		}
-	}
+    $cacheValid = false;
 
-	return true;
+    if (is_file($filename)) {
+        $cached = json_decode(
+            (string) @file_get_contents($filename),
+            true
+        );
+
+        $cacheValid = is_array($cached)
+            && isset($cached['download'], $cached['upload'], $cached['ping'])
+            && is_numeric($cached['download'])
+            && is_numeric($cached['upload'])
+            && is_numeric($cached['ping']);
+    }
+
+    if (
+        $cacheValid &&
+        (time() - filemtime($filename)) < SPEEDTEST_INTERVAL * 3600
+    ) {
+        return true;
+    }
+
+    // Bloqueio local por firewall; o arquivo de lock pode persistir apos a execucao.
+    $lock = @fopen($filerun, 'c');
+
+    if ($lock === false) {
+        return false;
+    }
+
+    if (!flock($lock, LOCK_EX | LOCK_NB)) {
+        fclose($lock);
+        return false;
+    }
+
+    try {
+        // Atraso aleatorio entre firewalls; nao substitui coordenacao global.
+        sleep(rand(1, 90));
+
+        // Arquivo temporario exclusivo; cache antigo so e substituido por JSON valido.
+        $filetemp = tempnam('/tmp', "speedtest-");
+
+        if ($filetemp === false) {
+            return false;
+        }
+
+        $command = escapeshellarg($speedtest)
+            . ' --secure'
+            . ' --source ' . escapeshellarg($ipaddr)
+            . ' --json'
+            . ' > ' . escapeshellarg($filetemp)
+            . ' 2>/dev/null';
+
+        $output = [];
+        $exitCode = 0;
+
+        exec($command, $output, $exitCode);
+
+        $raw = @file_get_contents($filetemp);
+        $data = json_decode((string) $raw, true);
+
+        if (
+            $exitCode !== 0 ||
+            !is_array($data) ||
+            !isset($data['download'], $data['upload'], $data['ping']) ||
+            !is_numeric($data['download']) ||
+            !is_numeric($data['upload']) ||
+            !is_numeric($data['ping'])
+        ) {
+            @unlink($filetemp);
+            return false;
+        }
+
+        @chmod($filetemp, 0600);
+
+        if (!@rename($filetemp, $filename)) {
+            @unlink($filetemp);
+            return false;
+        }
+
+        return true;
+
+    } finally {
+        flock($lock, LOCK_UN);
+        fclose($lock);
+    }
 }
 
 
 // OpenVPN Server Discovery
+/** Reune servidores OpenVPN convencionais e point-to-point para consulta e descoberta. */
 function pfz_openvpn_get_all_servers()
 {
 	$servers = openvpn_get_active_servers();
@@ -254,6 +367,7 @@ function pfz_openvpn_get_all_servers()
 }
 
 
+/** Gera macros LLD dos servidores OpenVPN. */
 function pfz_openvpn_serverdiscovery()
 {
 	$servers = pfz_openvpn_get_all_servers();
@@ -276,6 +390,7 @@ function pfz_openvpn_serverdiscovery()
 
 // Get OpenVPN Server Value
 
+/** Consulta propriedades dos servidores OpenVPN, com mapeamento de estados para Zabbix. */
 function pfz_openvpn_servervalue($server_id, $valuekey)
 {
 	$servers = pfz_openvpn_get_all_servers();
@@ -331,6 +446,7 @@ function pfz_openvpn_servervalue($server_id, $valuekey)
 }
 
 //OpenVPN Server/User-Auth Discovery
+/** Descobre usuarios conectados aos servidores OpenVPN que disponibilizam conexoes. */
 function pfz_openvpn_server_userdiscovery()
 {
 	$servers = pfz_openvpn_get_all_servers();
@@ -362,29 +478,76 @@ function pfz_openvpn_server_userdiscovery()
 	echo $json_string;
 }
 
-// Get OpenVPN User Connected Value
-function pfz_openvpn_server_uservalue($unique_id, $valuekey, $default = "")
-{
 
-	$unique_id = pfz_replacespecialchars($unique_id, true);
-	$atpos = strpos($unique_id, '+');
-	$server_id = substr($unique_id, 0, $atpos);
-	$user_id = substr($unique_id, $atpos + 1);
+/**
+ * Returns a field from an authenticated OpenVPN client session.
+ *
+ * The unique identifier contains:
+ * SERVER_ID + encoded COMMON_NAME.
+ *
+ * $default defines the fallback value when the client
+ * is disconnected or a field is unavailable.
+ *
+ * Used by:
+ * - openvpn_server_uservalue
+ * - openvpn_server_uservalue_numeric
+ */
+function pfz_openvpn_server_uservalue(
+    $unique_id,
+    $valuekey,
+    $default = ""
+) {
+    $value = $default;
 
-	$servers = pfz_openvpn_get_all_servers();
-	foreach ($servers as $server) {
-		if ($server['vpnid'] == $server_id) {
-			foreach ($server['conns'] as $conn) {
-				if ($conn['common_name'] == $user_id) {
-					$value = $conn[$valuekey];
-				}
-			}
-		}
-	}
-	if ($value == "") $value = $default;
-	echo $value;
+    $unique_id = pfz_replacespecialchars(
+        $unique_id,
+        true
+    );
+
+    $atpos = strpos($unique_id, '+');
+
+    if ($atpos === false) {
+        echo $default;
+        return;
+    }
+
+    $server_id = substr($unique_id, 0, $atpos);
+    $user_id = substr($unique_id, $atpos + 1);
+
+    $servers = pfz_openvpn_get_all_servers();
+
+    foreach ($servers as $server) {
+        if (($server['vpnid'] ?? null) != $server_id) {
+            continue;
+        }
+
+        $connections = $server['conns'] ?? [];
+
+        if (!is_array($connections)) {
+            continue;
+        }
+
+        foreach ($connections as $conn) {
+            if (($conn['common_name'] ?? null) != $user_id) {
+                continue;
+            }
+
+            $value = $conn[$valuekey] ?? $default;
+            break 2;
+        }
+    }
+
+    if ($value === null || $value === "") {
+        $value = $default;
+    }
+
+    if (is_scalar($value)) {
+        echo $value;
+    }
 }
+
 // OpenVPN Client Discovery
+/** Gera macros LLD de clientes OpenVPN configurados. */
 function pfz_openvpn_clientdiscovery()
 {
 	$clients = openvpn_get_active_clients();
@@ -404,6 +567,7 @@ function pfz_openvpn_clientdiscovery()
 	echo $json_string;
 }
 
+/** Codifica ou restaura caracteres especiais usados em identificadores de descoberta. */
 function pfz_replacespecialchars($inputstr, $reverse = false)
 {
 	$specialchars = ",',\",`,*,?,[,],{,},~,$,!,&,;,(,),<,>,|,#,@,0x0a";
@@ -421,6 +585,7 @@ function pfz_replacespecialchars($inputstr, $reverse = false)
 }
 
 
+/** Consulta status e demais campos de cliente OpenVPN, com valores padrao. */
 function pfz_openvpn_clientvalue($client_id, $valuekey, $default = "none")
 {
 	$clients = openvpn_get_active_clients();
@@ -454,6 +619,7 @@ function pfz_openvpn_clientvalue($client_id, $valuekey, $default = "none")
 
 // Services Discovery
 // 2020-03-27: Added space replace with __ for issue #12
+/** Descobre servicos monitoraveis sem consultar status durante a descoberta. */
 function pfz_services_discovery()
 {
 	$services = get_services();
@@ -463,8 +629,6 @@ function pfz_services_discovery()
 	foreach ($services as $service) {
 		if (!empty($service['name'])) {
 
-			$status = get_service_status($service);
-			if ($status = "") $status = 0;
 
 			$id = "";
 			//id for OpenVPN               
@@ -486,6 +650,7 @@ function pfz_services_discovery()
 // Get service value
 // 2020-03-27: Added space replace in service name for issue #12
 // 2020-09-28: Corrected Space Replace
+/** Retorna status ou metadados de um servico; inclui regra de CARP secundario. */
 function pfz_service_value($name, $value)
 {
 	$services = get_services();
@@ -552,6 +717,7 @@ function pfz_service_value($name, $value)
 
 
 //Gateway Discovery
+/** Retorna estado textual nativo dos gateways (ex.: WAN_DHCP.down). */
 function pfz_gw_rawstatus()
 {
 	// Return a Raw Gateway Status, useful for action Scripts (e.g. Update Cloudflare DNS config)
@@ -564,6 +730,7 @@ function pfz_gw_rawstatus()
 }
 
 
+/** Gera descoberta LLD de gateways. */
 function pfz_gw_discovery()
 {
 	$gws = return_gateways_status(true);
@@ -581,6 +748,7 @@ function pfz_gw_discovery()
 
 
 
+/** Consulta metrica de gateway; para status, substatus valido tem precedencia. */
 function pfz_gw_value($gw, $valuekey)
 {
 	$gws = return_gateways_status(true);
@@ -605,6 +773,7 @@ function pfz_gw_value($gw, $valuekey)
 
 
 // IPSEC Discovery
+/** Descobre tunel IPsec Phase 1 por IKEID. */
 function pfz_ipsec_discovery_ph1()
 {
 
@@ -627,6 +796,7 @@ function pfz_ipsec_discovery_ph1()
 	echo $json_string;
 }
 
+/** Consulta status e parametros configurados da Phase 1. */
 function pfz_ipsec_ph1($ikeid, $valuekey)
 {
 	// Get Value from IPsec Phase 1 Configuration
@@ -660,6 +830,7 @@ function pfz_ipsec_ph1($ikeid, $valuekey)
 	echo $value;
 }
 
+/** Descobre Phase 2, incluindo EXTID composto por IKEID.REQID. */
 function pfz_ipsec_discovery_ph2()
 {
 
@@ -686,6 +857,7 @@ function pfz_ipsec_discovery_ph2()
 	echo $json_string;
 }
 
+/** Consulta Phase 2 pelo identificador usado no template Zabbix. */
 function pfz_ipsec_ph2($uniqid, $valuekey)
 {
 	require_once("ipsec.inc");
@@ -720,6 +892,7 @@ function pfz_ipsec_ph2($uniqid, $valuekey)
 	echo $value;
 }
 
+/** Converte estado de SAs IPsec em valores para Zabbix; sem SA, aplica o mapeamento de estado vazio. */
 function pfz_ipsec_status($ikeid, $reqid = -1, $valuekey = 'state')
 {
 
@@ -810,6 +983,7 @@ function pfz_ipsec_status($ikeid, $reqid = -1, $valuekey = 'state')
 }
 
 // Temperature sensors Discovery
+/** Descobre sensores de temperatura publicados em sysctl. */
 function pfz_temperature_sensors_discovery()
 {
 
@@ -834,6 +1008,7 @@ function pfz_temperature_sensors_discovery()
 }
 
 // Temperature sensor get value
+/** Consulta o valor textual de um sensor por identificador sysctl. */
 function pfz_get_temperature($sensorid)
 {
 
@@ -847,6 +1022,7 @@ function pfz_get_temperature($sensorid)
 }
 
 
+/** Retorna estado CARP; quando echo=false, deve apenas retornar o valor. */
 function pfz_carp_status($echo = true)
 {
 	//Detect CARP Status
@@ -897,6 +1073,7 @@ function pfz_carp_status($echo = true)
 }
 
 // DHCP Checks (copy of status_dhcp_leases.php, waiting for pfsense 2.5)
+/** Remove registros duplicados conservando os indices definidos pelo algoritmo original. */
 function pfz_remove_duplicate($array, $field)
 {
 	foreach ($array as $sub) {
@@ -910,6 +1087,7 @@ function pfz_remove_duplicate($array, $field)
 }
 
 // Get DHCP Arrays (copied from status_dhcp_leases.php, waiting for pfsense 2.5, in order to use system_get_dhcpleases();)
+/** Analisa leases do ISC DHCP e pools de failover; nao implementa interpretacao do Kea. */
 function pfz_dhcp_get($valuekey)
 {
 	global $g;
@@ -1094,26 +1272,21 @@ function pfz_dhcp_get($valuekey)
 
 
 
+/** Gera LLD valida dos pools DHCP failover, inclusive quando a lista esta vazia. */
 function pfz_dhcpfailover_discovery()
 {
-	//System functions regarding DHCP Leases will be available in the upcoming release of pfSense, so let's wait
-	require_once("system.inc");
-	$leases = system_get_dhcpleases();
-
-	$json_string = '{"data":[';
-
-	if (count($leases['failover']) > 0) {
-		foreach ($leases['failover'] as $data) {
-			$json_string .= '{"{#FAILOVER_GROUP}":"' . str_replace(" ", "__", $data['name']) . '"';
-		}
-	}
-
-	$json_string = rtrim($json_string, ",");
-	$json_string .= "]}";
-
-	echo $json_string;
+    require_once('system.inc');
+    $leases = system_get_dhcpleases();
+    $groups = is_array($leases) ? ($leases['failover'] ?? []) : [];
+    $data = [];
+    foreach (is_array($groups) ? $groups : [] as $group) {
+        if (!is_array($group) || empty($group['name'])) continue;
+        $data[] = ['{#FAILOVER_GROUP}' => str_replace(' ', '__', (string) $group['name'])];
+    }
+    echo json_encode(['data' => $data], JSON_INVALID_UTF8_SUBSTITUTE);
 }
 
+/** Conta pools ISC DHCP com estados divergentes ou diferentes de normal. */
 function pfz_dhcp_check_failover()
 {
 	// Check DHCP Failover Status
@@ -1129,6 +1302,7 @@ function pfz_dhcp_check_failover()
 	return $ret;
 }
 
+/** Dispatcher local para metricas de DHCP. */
 function pfz_dhcp($section, $valuekey = "")
 {
 	switch ($section) {
@@ -1140,6 +1314,7 @@ function pfz_dhcp($section, $valuekey = "")
 }
 
 //Packages
+/** Conta pacotes cujas versoes instalada e disponivel diferem. */
 function pfz_packages_uptodate()
 {
 	require_once("pkg-utils.inc");
@@ -1157,6 +1332,7 @@ function pfz_packages_uptodate()
 }
 
 
+/** Gerencia o agendamento periodico de atualizacao do cache de versoes. */
 function pfz_syscheck_cron_install($enable = true)
 {
 	//Install Cron Job
@@ -1170,6 +1346,7 @@ function pfz_syscheck_cron_install($enable = true)
 
 // System information takes a long time to get on slower systems. 
 // So it is saved via a cronjob.
+/** Atualiza /tmp/sysversion.json com versoes do sistema e contagem de pacotes. */
 function pfz_syscheck_cron()
 {
 	$filename = "/tmp/sysversion.json";
@@ -1190,40 +1367,35 @@ function pfz_syscheck_cron()
 }
 
 //System Information
+/** Le dados de versao do cache; se ausente, preserva a instalacao automatica do syscheck. */
 function pfz_get_system_value($section)
 {
-	$filename = "/tmp/sysversion.json";
-	if (file_exists($filename)) {
-		$sysVersion = json_decode(file_get_contents($filename), true);
-	} else {
-		// Install the cron script
-		pfz_syscheck_cron_install();
-		if ($section == "new_version_available") {
-			echo "0";
-		} else {
-			echo "";
-		}
-	}
-	switch ($section) {
-		case "script_version":
-			echo SCRIPT_VERSION;
-			break;
-		case "version":
-			echo ($sysVersion['version']);
-			break;
-		case "installed_version":
-			echo ($sysVersion['installed_version']);
-			break;
-		case "new_version_available":
-			if ($sysVersion['version'] == $sysVersion['installed_version'])
-				echo "0";
-			else
-				echo "1";
-			break;
-		case "packages_update":
-			echo $sysVersion["packages_update"];
-			break;
-	}
+    if ($section === 'script_version') {
+        echo SCRIPT_VERSION;
+        return;
+    }
+    $filename = '/tmp/sysversion.json';
+    $sysVersion = [];
+    if (is_file($filename)) {
+        $decoded = json_decode(file_get_contents($filename), true);
+        if (is_array($decoded)) $sysVersion = $decoded;
+    }
+    if (empty($sysVersion)) {
+        // Retain the existing on-demand scheduling behavior.
+        pfz_syscheck_cron_install();
+        if ($section === 'new_version_available') echo 0;
+        return;
+    }
+    switch ($section) {
+        case 'version': echo $sysVersion['version'] ?? ''; break;
+        case 'installed_version': echo $sysVersion['installed_version'] ?? ''; break;
+        case 'new_version_available':
+            $available = $sysVersion['version'] ?? null;
+            $installed = $sysVersion['installed_version'] ?? null;
+            echo ($available === null || $installed === null || $available === $installed) ? 0 : 1;
+            break;
+        case 'packages_update': echo $sysVersion['packages_update'] ?? 0; break;
+    }
 }
 
 
@@ -1237,6 +1409,7 @@ function pfz_get_system_value($section)
  *   1 = Failed
  *   2 = Unknown
  */
+/** Consulta SMART via smartctl; 0 saudavel, 1 falha, 2 desconhecido. */
 function pfz_get_smart_status()
 {
 	$smartctl = '/usr/local/sbin/smartctl';
@@ -1380,19 +1553,27 @@ function pfz_get_smart_status()
 	echo $unknown ? 2 : 0;
 }
 
+
+/** Extrai referencias revogadas sem exigir configuracao CRL. */
 function pfz_get_revoked_cert_refs()
 {
-	global $config;
-	$revoked_cert_refs = [];
-	foreach ($config["crl"] as $crl) {
-		foreach ($crl["cert"] as $revoked_cert) {
-			$revoked_cert_refs[] = $revoked_cert["refid"];
-		}
-	}
-	return $revoked_cert_refs;
+    global $config;
+
+    $revoked_cert_refs = [];
+
+    foreach (($config['crl'] ?? []) as $crl) {
+        foreach (($crl['cert'] ?? []) as $revoked_cert) {
+            if (isset($revoked_cert['refid'])) {
+                $revoked_cert_refs[] = $revoked_cert['refid'];
+            }
+        }
+    }
+
+    return $revoked_cert_refs;
 }
 
 // Certificate discovery
+/** Descobre certificados e autoridades (indice CA = indice original + 65536). */
 function pfz_cert_discovery()
 {
 	global $config;
@@ -1401,7 +1582,7 @@ function pfz_cert_discovery()
 	$dataObject = new \stdClass();
 	$dataObject->data = [];
 	foreach (array("cert", "ca") as $cert_type) {
-		foreach ($config[$cert_type] as $i => $cert) {
+			foreach (($config[$cert_type] ?? []) as $i => $cert) {
 			if (! in_array($cert['refid'], $revoked_cert_refs)) {
 				$certObject = new \stdClass();
 				// Trick to keep using only 3 parameters. 
@@ -1417,121 +1598,140 @@ function pfz_cert_discovery()
 	echo $json_string;
 }
 
+/** Garante diretorio /root/.ssl com modo 0700 e cache preexistente com modo 0600. */
+function pfz_cert_cache_prepare($cacheFile)
+{
+    $cacheDir = '/root/.ssl';
+    if (!is_dir($cacheDir) && !@mkdir($cacheDir, 0700, true) && !is_dir($cacheDir)) {
+        return false;
+    }
+    if (!@chmod($cacheDir, 0700)) {
+        return false;
+    }
+    if (is_file($cacheFile) && !@chmod($cacheFile, 0600)) {
+        return false;
+    }
+    return true;
+}
+
+/** Grava JSON do certificado via arquivo temporario com permissao restrita. */
+function pfz_cert_cache_write($cacheFile, $data)
+{
+    if (!pfz_cert_cache_prepare($cacheFile)) {
+        return;
+    }
+    $json = json_encode($data);
+    if ($json === false) {
+        return;
+    }
+    $tmp = @tempnam('/root/.ssl', 'pfz_cert_');
+    if ($tmp === false) {
+        return;
+    }
+    @chmod($tmp, 0600);
+    if (@file_put_contents($tmp, $json) === false || !@rename($tmp, $cacheFile)) {
+        @unlink($tmp);
+    }
+}
+
+/** Obtem X.509 analisado e utiliza cache temporario de cinco minutos. */
 function pfz_get_cert_info($index)
 {
-	// Use a cache file to speed up multiple requests for certificate things. 
-	$cacheFile = "/root/.ssl/certinfo_{$index}.json";
-	if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
-		return json_decode(file_get_contents($cacheFile), true);
-	}
-	global $config;
-	if ($index >= 0x10000) {
-		$index -= 0x10000;
-		$certType = "ca";
-	} else {
-		$certType = "cert";
-	}
-	$certinfo = openssl_x509_parse(base64_decode($config[$certType][$index]["crt"]));
-	# Don't allow other users access to private keys. 
-	if (file_exists($cacheFile)) {
-		unlink($cacheFile);
-	}
-	touch($cacheFile);
-	chmod($cacheFile, 0600);
-	if (!is_dir('/root/.ssl')) {
-		mkdir('/root/.ssl');
-	}
-	if (!file_put_contents($cacheFile, json_encode($certinfo))) {
-		unlink($cacheFile);
-	}
-	return $certinfo;
+    global $config;
+    $index = filter_var($index, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+    if ($index === false) return [];
+    $cacheFile = "/root/.ssl/certinfo_{$index}.json";
+    if (pfz_cert_cache_prepare($cacheFile) && is_file($cacheFile)) {
+        $age = time() - filemtime($cacheFile);
+        if ($age >= 0 && $age < 300) {
+            $cached = json_decode(file_get_contents($cacheFile), true);
+            if (is_array($cached)) return $cached;
+        }
+    }
+    $type = $index >= 0x10000 ? 'ca' : 'cert';
+    $idx = $type === 'ca' ? $index - 0x10000 : $index;
+    $encoded = $config[$type][$idx]['crt'] ?? null;
+    if (!is_string($encoded) || $encoded === '') return [];
+    $pem = base64_decode($encoded, true);
+    if ($pem === false) return [];
+    $info = @openssl_x509_parse($pem);
+    if (!is_array($info)) return [];
+    pfz_cert_cache_write($cacheFile, $info);
+    return $info;
 }
 
+/** Extrai informacoes da chave publica e utiliza cache separado de cinco minutos. */
 function pfz_get_cert_pkey_info($index)
 {
-	$details = array();
-
-	$cacheFile = "/root/.ssl/certinfo_pk_{$index}.json";
-	if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
-		return json_decode(file_get_contents($cacheFile), true);
-	}
-	global $config;
-	if ($index >= 0x10000) {
-		$index -= 0x10000;
-		$certType = "ca";
-	} else {
-		$certType = "cert";
-	}
-	$cert_key = $config[$certType][$index]["crt"];
-	if ($cert_key != false) {
-		$publicKey = openssl_pkey_get_public(base64_decode($cert_key));
-		$details = openssl_pkey_get_details($publicKey);
-		# Don't allow other users access to private keys. 
-		if (file_exists($cacheFile)) {
-			unlink($cacheFile);
-		}
-		touch($cacheFile);
-		chmod($cacheFile, 0600);
-		if (!is_dir('/root/.ssl')) {
-			mkdir('/root/.ssl');
-		}
-		if (!file_put_contents($cacheFile, json_encode($details))) {
-			unlink($cacheFile);
-		}
-	}
-	return $details;
+    global $config;
+    $index = filter_var($index, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+    if ($index === false) return [];
+    $cacheFile = "/root/.ssl/certinfo_pk_{$index}.json";
+    if (pfz_cert_cache_prepare($cacheFile) && is_file($cacheFile)) {
+        $age = time() - filemtime($cacheFile);
+        if ($age >= 0 && $age < 300) {
+            $cached = json_decode(file_get_contents($cacheFile), true);
+            if (is_array($cached)) return $cached;
+        }
+    }
+    $type = $index >= 0x10000 ? 'ca' : 'cert';
+    $idx = $type === 'ca' ? $index - 0x10000 : $index;
+    $encoded = $config[$type][$idx]['crt'] ?? null;
+    if (!is_string($encoded) || $encoded === '') return [];
+    $pem = base64_decode($encoded, true);
+    if ($pem === false) return [];
+    $key = @openssl_pkey_get_public($pem);
+    if ($key === false) return [];
+    $details = @openssl_pkey_get_details($key);
+    if (!is_array($details)) return [];
+    pfz_cert_cache_write($cacheFile, $details);
+    return $details;
 }
 
+/** Retorna comprimento nominal, em bits, da chave do certificado. */
 function pfz_get_ref_cert_algo_len($index)
 {
-	$pkInfo = pfz_get_cert_pkey_info($index);
-	echo $pkInfo["bits"];
+    $info = pfz_get_cert_pkey_info($index);
+    echo $info['bits'] ?? 0;
 }
 
 # Get the number of bits of security in a cryptographic key. 
+/** Estima os bits de seguranca da chave segundo a formula original. */
 function pfz_get_ref_cert_algo_bits($index)
 {
-	$pkInfo = pfz_get_cert_pkey_info($index);
-	$keyLength = $pkInfo["bits"];
-	switch ($pkInfo["type"]) {
-		case (OPENSSL_KEYTYPE_RSA):
-		case (OPENSSL_KEYTYPE_DSA):
-		case (OPENSSL_KEYTYPE_DH):
-			## See articles on the General Number Field Sieve L-notation complexity.
-			$bits = floor(1 / log(2) * pow(64 / 9, 1 / 3) * pow($keyLength * log(2), 1 / 3) * pow(log(2048 * log(2)), 2 / 3));
-			break;
-		case (OPENSSL_KEYTYPE_EC):
-			## Divide by two, floor, via right-shift.
-			$bits = $keyLength >> 1;
-			break;
-	}
-	echo $bits;
+    $info = pfz_get_cert_pkey_info($index);
+    $length = $info['bits'] ?? 0;
+    if (!is_numeric($length) || $length <= 0) { echo 0; return; }
+    switch ($info['type'] ?? null) {
+        case OPENSSL_KEYTYPE_RSA:
+        case OPENSSL_KEYTYPE_DSA:
+        case OPENSSL_KEYTYPE_DH:
+            $bits = floor(1 / log(2) * pow(64 / 9, 1 / 3) * pow($length * log(2), 1 / 3) * pow(log(2048 * log(2)), 2 / 3));
+            break;
+        case OPENSSL_KEYTYPE_EC: $bits = ((int) $length) >> 1; break;
+        default: $bits = 0;
+    }
+    echo $bits;
 }
 
+/** Identifica o tipo de chave (RSA, DSA, DH ou EC). */
 function pfz_get_ref_cert_algo($index)
 {
-	$pkInfo = pfz_get_cert_pkey_info($index);
-	switch ($pkInfo["type"]) {
-		case (OPENSSL_KEYTYPE_RSA):
-			echo "RSA";
-			break;
-		case (OPENSSL_KEYTYPE_DSA):
-			echo "DSA";
-			break;
-		case (OPENSSL_KEYTYPE_DH):
-			echo "DH";
-			break;
-		case (OPENSSL_KEYTYPE_EC):
-			echo "EC";
-			break;
-	}
+    $info = pfz_get_cert_pkey_info($index);
+    switch ($info['type'] ?? null) {
+        case OPENSSL_KEYTYPE_RSA: echo 'RSA'; break;
+        case OPENSSL_KEYTYPE_DSA: echo 'DSA'; break;
+        case OPENSSL_KEYTYPE_DH: echo 'DH'; break;
+        case OPENSSL_KEYTYPE_EC: echo 'EC'; break;
+    }
 }
 
+/** Estima bits de seguranca do algoritmo de assinatura a partir do nome OpenSSL. */
 function pfz_get_ref_cert_hash_bits($index)
 {
 	// Get the number of bits of security in the hash algorithm.
 	$certinfo = pfz_get_cert_info($index);
-	$sigType = $certinfo["signatureTypeSN"];
+	$sigType = (string) ($certinfo["signatureTypeSN"] ?? '');
 	$upperSigType = strtoupper($sigType);
 	if (str_contains($upperSigType, "MD2")) {
 		echo 63;
@@ -1602,58 +1802,54 @@ function pfz_get_ref_cert_hash_bits($index)
 	return;
 }
 
+/** Retorna o identificador curto do algoritmo de assinatura. */
 function pfz_get_ref_cert_hash($index)
 {
-	$certinfo = pfz_get_cert_info($index);
-	echo $certinfo["signatureTypeSN"];
+    $info = pfz_get_cert_info($index);
+    echo $info['signatureTypeSN'] ?? '';
 }
 
 // Certificate validity for a specific certificate
+/** Retorna inicio ou fim de validade Unix de um certificado pelo indice. */
 function pfz_get_ref_cert_date($valuekey, $index)
 {
-	$certinfo = pfz_get_cert_info($index);
-	switch ($valuekey) {
-		case "validFrom":
-			$value = $certinfo['validFrom_time_t'];
-			break;
-		case "validTo":
-			$value = $certinfo['validTo_time_t'];
-			break;
-	}
-	echo $value;
+    $info = pfz_get_cert_info($index);
+    switch ($valuekey) {
+        case 'validFrom': echo $info['validFrom_time_t'] ?? 0; break;
+        case 'validTo': echo $info['validTo_time_t'] ?? 0; break;
+    }
 }
 
 // Certificats validity date
+/** Calcula a maior data inicial ou menor data final entre certificados nao revogados. */
 function pfz_get_cert_date($valuekey)
 {
-	global $config;
-	// Contains a list of refs that were revoked and should not be considered
-	$revoked_cert_refs = pfz_get_revoked_cert_refs();
-	$value = 0;
-	foreach (array("cert", "ca") as $cert_type) {
-		switch ($valuekey) {
-			case "validFrom.max":
-				foreach ($config[$cert_type] as $cert) {
-					if (! in_array($cert['refid'], $revoked_cert_refs)) {
-						$certinfo = openssl_x509_parse(base64_decode($cert["crt"]));
-						if ($value == 0 or $value < $certinfo['validFrom_time_t']) $value = $certinfo['validFrom_time_t'];
-					}
-				}
-				break;
-			case "validTo.min":
-				foreach ($config[$cert_type] as $cert) {
-					if (! in_array($cert['refid'], $revoked_cert_refs)) {
-						$certinfo = openssl_x509_parse(base64_decode($cert["crt"]));
-						if ($value == 0 or $value > $certinfo['validTo_time_t']) $value = $certinfo['validTo_time_t'];
-					}
-				}
-				break;
-		}
-	}
-	echo $value;
+    global $config;
+    if (!in_array($valuekey, ['validFrom.max', 'validTo.min'], true)) return;
+    $revoked = pfz_get_revoked_cert_refs();
+    $value = null;
+    foreach (['cert', 'ca'] as $type) {
+        foreach (($config[$type] ?? []) as $cert) {
+            if (!is_array($cert) || in_array($cert['refid'] ?? null, $revoked, true)) continue;
+            $encoded = $cert['crt'] ?? null;
+            if (!is_string($encoded) || $encoded === '') continue;
+            $pem = base64_decode($encoded, true);
+            if ($pem === false) continue;
+            $info = @openssl_x509_parse($pem);
+            if (!is_array($info)) continue;
+            $field = $valuekey === 'validFrom.max' ? 'validFrom_time_t' : 'validTo_time_t';
+            if (!is_numeric($info[$field] ?? null)) continue;
+            $timestamp = (int) $info[$field];
+            if ($value === null) $value = $timestamp;
+            elseif ($valuekey === 'validFrom.max') $value = max($value, $timestamp);
+            else $value = min($value, $timestamp);
+        }
+    }
+    echo $value ?? 0;
 }
 
 // File is present
+/** Converte existencia de arquivo em item numerico 1 ou 0. */
 function pfz_file_exists($filename)
 {
 	if (file_exists($filename))
@@ -1665,6 +1861,7 @@ function pfz_file_exists($filename)
 
 // Value mappings
 // Each value map is represented by an associative array
+/** Traduz estados textuais para codigos utilizados nos itens e triggers. */
 function pfz_valuemap($valuename, $value, $default = "0")
 {
 	switch ($valuename) {
@@ -1770,6 +1967,7 @@ function pfz_valuemap($valuename, $value, $default = "0")
 }
 
 //Argument parsers for Discovery
+/** Encaminha tipos de descoberta LLD para as funcoes correspondentes. */
 function pfz_discovery($section)
 {
 	switch (strtolower($section)) {
@@ -1812,6 +2010,8 @@ function pfz_discovery($section)
 	}
 }
 
+// Ponto de entrada CLI: os subcomandos de consulta nao devem modificar o cron.
+// Rotinas terminadas em _cron recebem limite de tempo ampliado.
 //Main Code
 $mainArgument = strtolower($argv[1]);
 if (substr($mainArgument, -4, 4) == "cron") {
@@ -1833,8 +2033,7 @@ switch ($mainArgument) {
 		pfz_gw_rawstatus();
 		break;
 	case "if_speedtest_value":
-		pfz_speedtest_cron_install();
-		pfz_interface_speedtest_value($argv[2], $argv[3]);
+		pfz_interface_speedtest_value($argv[2] ?? "", $argv[3] ?? "");
 		break;
 	case "openvpn_servervalue":
 		pfz_openvpn_servervalue($argv[2], $argv[3]);
@@ -1854,13 +2053,6 @@ switch ($mainArgument) {
 	case "carp_status":
 		pfz_carp_status();
 		break;
-	case "if_name":
-		pfz_get_if_name($argv[2]);
-		break;
-	case "syscheck_cron":
-		pfz_syscheck_cron_install();
-		pfz_syscheck_cron();
-		break;
 	case "system":
 		pfz_get_system_value($argv[2]);
 		break;
@@ -1877,7 +2069,7 @@ switch ($mainArgument) {
 		pfz_file_exists($argv[2]);
 		break;
 	case "speedtest_cron":
-		pfz_speedtest_cron_install();
+		// O agendamento e instalado separadamente; aqui apenas executamos a rotina.
 		pfz_speedtest_cron();
 		break;
 	case "syscheck_cron":
