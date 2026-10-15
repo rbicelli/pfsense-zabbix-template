@@ -930,54 +930,6 @@ zabbix_export:
           item:
             host: 'Template pfSense Active'
             key: 'pfsense.value[gw_value,{#GATEWAY},status]'
-    - uuid: d7e92db090344072910c8334beffb4f0
-      name: IPsec Phase 1 Discovery
-      type: ZABBIX_ACTIVE
-      key: pfsense.discovery[ipsec_ph1]
-      delay: 300s
-      lifetime: 30d
-      enabled_lifetime_type: DISABLE_NEVER
-      description: Configured Phase 1 tunnels discovered by pfz_ipsec_discovery_ph1().
-      item_prototypes:
-      - uuid: 44a89c3e98c84ac794d690ccf9ef1108
-        name: 'IPsec Phase 1 {#NAME} (IKEID {#IKEID}): Status'
-        type: ZABBIX_ACTIVE
-        key: pfsense.value[ipsec_ph1,{#IKEID},status]
-        delay: 60s
-        history: 30d
-        description: 'Status mapping from pfz_ipsec_status(): 0=not established, 1=established/installed, 2=connecting/rekeyed (subject to CARP offsets).'
-        valuemap:
-          name: pfSense IPsec Tunnel Status
-        trigger_prototypes:
-        - uuid: 5076143b80234cc6877b2a0efd92c1cd
-          expression: avg(/Template pfSense Active/pfsense.value[ipsec_ph1,{#IKEID},status],#3)=0
-          name: IPsec Phase 1 {#NAME} is down
-          priority: HIGH
-          description: No established/installed IPsec Security Association was reported for this configured tunnel. Validate tunnel usage and expected always-on behavior.
-    - uuid: 1f794c37db12479899b53f7cf68a8db7
-      name: IPsec Phase 2 Discovery
-      type: ZABBIX_ACTIVE
-      key: pfsense.discovery[ipsec_ph2]
-      delay: 300s
-      lifetime: 30d
-      enabled_lifetime_type: DISABLE_NEVER
-      description: 'Configured Phase 2 tunnels: EXTID = IKEID.REQID.'
-      item_prototypes:
-      - uuid: e98abfdf1e3343d890e911407de66aac
-        name: 'IPsec Phase 2 {#NAME} ({#EXTID}): Status'
-        type: ZABBIX_ACTIVE
-        key: pfsense.value[ipsec_ph2,{#EXTID},status]
-        delay: 60s
-        history: 30d
-        description: 'Status mapping from pfz_ipsec_status(): 0=not established, 1=established/installed, 2=connecting/rekeyed (subject to CARP offsets).'
-        valuemap:
-          name: pfSense IPsec Tunnel Status
-        trigger_prototypes:
-        - uuid: 269321b8ff2c46db87d37c1581a1e1f5
-          expression: avg(/Template pfSense Active/pfsense.value[ipsec_ph2,{#EXTID},status],#3)=0
-          name: IPsec Phase 2 {#NAME} is down
-          priority: HIGH
-          description: No established/installed IPsec Security Association was reported for this configured tunnel. Validate tunnel usage and expected always-on behavior.
     - uuid: baa842b8e5bf40b3bfbeb4d3b6507d08
       name: 'Network interface discovery'
       type: ZABBIX_ACTIVE
@@ -1282,54 +1234,6 @@ zabbix_export:
           item:
             host: 'Template pfSense Active'
             key: 'vfs.fs.size[{#FSNAME},used]'
-    - uuid: 28485f0e0283455ea1f60a332e6bc079
-      name: WAN Speedtest Discovery
-      type: ZABBIX_ACTIVE
-      key: pfsense.discovery[wan]
-      delay: 1h
-      lifetime: 30d
-      enabled_lifetime_type: DISABLE_NEVER
-      description: Discover interfaces identified by PHP as WAN. Metric items read cached speedtest-cli JSON; the template does not initiate bandwidth tests. Scheduling and 8-hour cache refresh are controlled separately by the pfSense script/cron.
-      item_prototypes:
-      - uuid: 4c800aa0bb764acaa52e9879507b1ea4
-        name: 'WAN {#IFDESCR} ({#IFNAME}): Speedtest download'
-        type: ZABBIX_ACTIVE
-        key: pfsense.value[if_speedtest_value,{#IFNAME},download]
-        delay: 15m
-        history: 30d
-        trends: 365d
-        value_type: FLOAT
-        units: bps
-        description: Cached Python speedtest-cli download. Download/upload returned in bits/s; ping in milliseconds. Empty value indicates absent/invalid cache. Measurements are produced by scheduled speedtest_cron, not by polling.
-        tags:
-        - tag: Application
-          value: WAN Speedtest
-      - uuid: dd0bad4b48e74f5ba32ea3c3f55f968d
-        name: 'WAN {#IFDESCR} ({#IFNAME}): Speedtest upload'
-        type: ZABBIX_ACTIVE
-        key: pfsense.value[if_speedtest_value,{#IFNAME},upload]
-        delay: 15m
-        history: 30d
-        trends: 365d
-        value_type: FLOAT
-        units: bps
-        description: Cached Python speedtest-cli upload. Download/upload returned in bits/s; ping in milliseconds. Empty value indicates absent/invalid cache. Measurements are produced by scheduled speedtest_cron, not by polling.
-        tags:
-        - tag: Application
-          value: WAN Speedtest
-      - uuid: f8ac961cb0374554ae34ed61a15b8483
-        name: 'WAN {#IFDESCR} ({#IFNAME}): Speedtest latency'
-        type: ZABBIX_ACTIVE
-        key: pfsense.value[if_speedtest_value,{#IFNAME},ping]
-        delay: 15m
-        history: 30d
-        trends: 365d
-        value_type: FLOAT
-        units: ms
-        description: Cached Python speedtest-cli ping. Download/upload returned in bits/s; ping in milliseconds. Empty value indicates absent/invalid cache. Measurements are produced by scheduled speedtest_cron, not by polling.
-        tags:
-        - tag: Application
-          value: WAN Speedtest
     macros:
     - macro: '{$EXPECTED_CARP_STATUS}'
       value: '0'
