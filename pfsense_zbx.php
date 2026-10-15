@@ -1172,7 +1172,11 @@ function pfz_get_smart_status(){
 
 	$devs = get_drive_list();
 	$status = 0;
-	foreach ($devs as $dev)  { ## for each found drive do                
+	foreach ($devs as $dev)  { ## for each found drive do      
+        if(substr($dev, 0, 2) == "cd") {
+            // Skip disk drives. 
+            continue;
+        }    
                 $smartdrive_is_displayed = true;
                 // This does nothing, only beaks the script when you have an NMVE disk
 		//$dev_ident = exec("diskinfo -v /dev/$dev | grep ident   | awk '{print $1}'"); ## get identifier from drive
