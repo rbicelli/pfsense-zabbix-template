@@ -720,6 +720,9 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 
 	$status = ipsec_list_sa();
 	$ipsecconnected = array();
+
+	// Default state when no matching IPsec SA exists
+	$tmp_value = null;
 	
 	$carp_status = pfz_carp_status(false);
 	
@@ -770,7 +773,7 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 	
 	switch($valuekey) {
 					case 'state':
-						$value = pfz_valuemap('ipsec.state', strtolower($tmp_value));
+						$value = pfz_valuemap('ipsec.state', strtolower((string) ($tmp_value ?? '')));
 						if ($carp_status!=0) $value = $value + (10 * ($carp_status-1));						
 						break;
 					default:
