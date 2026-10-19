@@ -62,7 +62,7 @@ if (!function_exists('get_drive_list')){
 
 	function get_drive_list() {
 
-		get_smart_drive_list();
+		return get_smart_drive_list();
 
 	}
 
