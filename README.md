@@ -56,7 +56,7 @@ In Advanced Features-> User Parameters
 ```bash
 AllowRoot=1
 UserParameter=pfsense.states.max,grep "limit states" /tmp/rules.limits | cut -f4 -d ' '
-UserParameter=pfsense.states.current,grep "current entries" /tmp/pfctl_si_out | tr -s ' ' | cut -f4 -d ' '
+UserParameter=pfsense.states.current,pfctl -si | grep "current entries" | tr -s ' ' | cut -f4 -d ' '
 UserParameter=pfsense.mbuf.current,netstat -m | grep "mbuf clusters" | cut -f1 -d ' ' | cut -d '/' -f1
 UserParameter=pfsense.mbuf.cache,netstat -m | grep "mbuf clusters" | cut -f1 -d ' ' | cut -d '/' -f2
 UserParameter=pfsense.mbuf.max,netstat -m | grep "mbuf clusters" | cut -f1 -d ' ' | cut -d '/' -f4
@@ -65,6 +65,8 @@ UserParameter=pfsense.value[*],/usr/local/bin/php /root/scripts/pfsense_zbx.php 
 ```
 
 _Please note that **AllowRoot=1** option is required in order to correctly execute OpenVPN checks and others._
+
+On pfSense 2.9.0 the file `/tmp/pfctl_si_out` is no longer generated, so `pfsense.states.current` queries `pfctl` directly. This also requires **AllowRoot=1**.
 
 Also increase the **Timeout** value at least to **5**, otherwise some checks will fail.
 
