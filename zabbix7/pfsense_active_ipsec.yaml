@@ -1,0 +1,206 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+  - uuid: 4918b88734c54bd094cff7585b5d71fc
+    name: 'Templates/Network Devices'
+  templates:
+  - uuid: 7b956a3e6aa1464781b38a854872a1c6
+    template: 'Template pfSense Active IPsec'
+    name: 'pfSense Active: IPsec'
+    description: |
+      IPsec monitoring extension for pfSense using pfsense_zbx.php.
+      Supports discovery and monitoring of IPsec Phase 1 and Phase 2.
+      Zabbix 7.4 export format.
+      Do not link together with another template containing the same
+      pfsense.discovery[ipsec_ph1] or pfsense.discovery[ipsec_ph2] keys.
+      https://github.com/rbicelli/pfsense-zabbix-template
+    groups:
+    - name: 'Templates/Network Devices'
+    discovery_rules:
+    - uuid: e7526169245d49a6aa6afbcacaa02b18
+      name: 'IPsec Phase 1 Discovery'
+      type: ZABBIX_ACTIVE
+      key: 'pfsense.discovery[ipsec_ph1]'
+      delay: 300s
+      description: 'Configured IPsec Phase 1 tunnels.'
+      item_prototypes:
+      - uuid: 04d6b1d0a32949bfa96cf503f60b6c53
+        name: 'IPsec Phase 1 {#NAME}: Enabled'
+        type: ZABBIX_ACTIVE
+        key: 'pfsense.value[ipsec_ph1,{#IKEID},disabled]'
+        delay: 120s
+        description: 'Administrative setting: 0 = enabled, 1 = disabled.'
+        valuemap:
+          name: 'pfSense IPsec Enabled'
+        tags:
+        - tag: Application
+          value: IPsec
+      - uuid: 810da7b475df4d738c702f373771092e
+        name: 'IPsec Phase 1 {#NAME}: IKE Type'
+        type: ZABBIX_ACTIVE
+        key: 'pfsense.value[ipsec_ph1,{#IKEID},iketype]'
+        delay: 600s
+        valuemap:
+          name: 'pfSense IPsec IKE Type'
+        tags:
+        - tag: Application
+          value: IPsec
+      - uuid: 47b54bc4a08e464b839bcfd5106ec5a9
+        name: 'IPsec Phase 1 {#NAME}: Tunnel Mode'
+        type: ZABBIX_ACTIVE
+        key: 'pfsense.value[ipsec_ph1,{#IKEID},mode]'
+        delay: 600s
+        valuemap:
+          name: 'pfSense IPsec Tunnel Mode'
+        tags:
+        - tag: Application
+          value: IPsec
+      - uuid: a404f5d20988445d8777758b95b02076
+        name: 'IPsec Phase 1 {#NAME}: Protocol'
+        type: ZABBIX_ACTIVE
+        key: 'pfsense.value[ipsec_ph1,{#IKEID},protocol]'
+        delay: 600s
+        valuemap:
+          name: 'pfSense IPsec Protocol'
+        tags:
+        - tag: Application
+          value: IPsec
+      - uuid: ce0d2464361e41018fdd1831db1ec4b3
+        name: 'IPsec Phase 1 {#NAME}: Remote Gateway'
+        type: ZABBIX_ACTIVE
+        key: 'pfsense.value[ipsec_ph1,{#IKEID},remote-gateway]'
+        delay: 600s
+        trends: '0'
+        value_type: TEXT
+        tags:
+        - tag: Application
+          value: IPsec
+      - uuid: 34d7e2395d8b43ec9c0267664be27881
+        name: 'IPsec Phase 1 {#NAME}: Status'
+        type: ZABBIX_ACTIVE
+        key: 'pfsense.value[ipsec_ph1,{#IKEID},status]'
+        delay: 60s
+        history: 30d
+        valuemap:
+          name: 'pfSense IPsec Phase 1 Status'
+        tags:
+        - tag: Application
+          value: IPsec
+      trigger_prototypes:
+      - uuid: d675635e19aa4cd7a7202e983cbe4ce6
+        expression: 'last(/Template pfSense Active IPsec/pfsense.value[ipsec_ph1,{#IKEID},disabled])=0 and max(/Template pfSense Active IPsec/pfsense.value[ipsec_ph1,{#IKEID},status],#3)=0'
+        name: 'IPsec Phase 1 {#NAME} ({#IKEID}) is down'
+        priority: HIGH
+        description: 'Alarm after three consecutive down samples on an administratively enabled Phase 1; review demand-based tunnels.'
+    - uuid: fa934077cae64a049e68e2130e5e1e84
+      name: 'IPsec Phase 2 Discovery'
+      type: ZABBIX_ACTIVE
+      key: 'pfsense.discovery[ipsec_ph2]'
+      delay: 300s
+      description: 'Configured Phase 2 tunnels. EXTID = IKEID.REQID; UNIQID identifies configuration entries.'
+      item_prototypes:
+      - uuid: 1857b124103c4f08b5ed962259fcbe06
+        name: 'IPsec Phase 2 {#NAME} ({#EXTID}): Enabled'
+        type: ZABBIX_ACTIVE
+        key: 'pfsense.value[ipsec_ph2,{#UNIQID},disabled]'
+        delay: 120s
+        valuemap:
+          name: 'pfSense IPsec Enabled'
+        tags:
+        - tag: Application
+          value: IPsec
+      - uuid: 3ac7d6d1be034a3db8afad18791b43aa
+        name: 'IPsec Phase 2 {#NAME} ({#EXTID}): Lifetime'
+        type: ZABBIX_ACTIVE
+        key: 'pfsense.value[ipsec_ph2,{#UNIQID},lifetime]'
+        delay: 600s
+        units: s
+        tags:
+        - tag: Application
+          value: IPsec
+      - uuid: dfbae3fe2bcd45f3ac38c6ea0df5d250
+        name: 'IPsec Phase 2 {#NAME} ({#EXTID}): Mode'
+        type: ZABBIX_ACTIVE
+        key: 'pfsense.value[ipsec_ph2,{#UNIQID},mode]'
+        delay: 600s
+        tags:
+        - tag: Application
+          value: IPsec
+      - uuid: 794565a046ff447ca8ad3a7597ee52f5
+        name: 'IPsec Phase 2 {#NAME} ({#EXTID}): Protocol'
+        type: ZABBIX_ACTIVE
+        key: 'pfsense.value[ipsec_ph2,{#UNIQID},protocol]'
+        delay: 600s
+        valuemap:
+          name: 'pfSense IPsec Phase 2 Protocol'
+        tags:
+        - tag: Application
+          value: IPsec
+      - uuid: 7e1a57d52b15445f9ef12d018a653abc
+        name: 'IPsec Phase 2 {#NAME} ({#EXTID}): Status'
+        type: ZABBIX_ACTIVE
+        key: 'pfsense.value[ipsec_ph2,{#EXTID},status]'
+        delay: 60s
+        history: 30d
+        valuemap:
+          name: 'pfSense IPsec Phase 1 Status'
+        tags:
+        - tag: Application
+          value: IPsec
+      trigger_prototypes:
+      - uuid: 03b21646e3f04b55be6dc610b2768bc1
+        expression: 'last(/Template pfSense Active IPsec/pfsense.value[ipsec_ph2,{#UNIQID},disabled])=0 and max(/Template pfSense Active IPsec/pfsense.value[ipsec_ph2,{#EXTID},status],#3)=0'
+        name: 'IPsec Phase 2 {#NAME} ({#EXTID}) is down'
+        priority: HIGH
+        description: 'Alarm after three consecutive down samples on an administratively enabled Phase 2; review demand-based tunnels.'
+    valuemaps:
+    - uuid: fb66440f3f454b36ae5c5d7b015529a1
+      name: 'pfSense IPsec Enabled'
+      mappings:
+      - value: '0'
+        newvalue: 'Yes'
+      - value: '1'
+        newvalue: 'No'
+    - uuid: 7077365285f14733a55edd9ade5fdfcb
+      name: 'pfSense IPsec IKE Type'
+      mappings:
+      - value: '0'
+        newvalue: Auto
+      - value: '1'
+        newvalue: 'IKE v1'
+      - value: '2'
+        newvalue: 'IKE v2'
+    - uuid: a7a80f8152804c6f882898ca7378c403
+      name: 'pfSense IPsec Phase 1 Status'
+      mappings:
+      - value: '0'
+        newvalue: Down
+      - value: '1'
+        newvalue: Established
+      - value: '2'
+        newvalue: Connecting
+      - value: '10'
+        newvalue: 'Down on CARP Secondary'
+    - uuid: 55e4705203cf4b5996dcd6e10cd508b9
+      name: 'pfSense IPsec Phase 2 Protocol'
+      mappings:
+      - value: '1'
+        newvalue: ESP
+      - value: '2'
+        newvalue: AH
+    - uuid: b72cdb06faec4f9492913ba820677370
+      name: 'pfSense IPsec Protocol'
+      mappings:
+      - value: '0'
+        newvalue: 'Dual Stack (IPv4 & IPv6)'
+      - value: '1'
+        newvalue: IPv4
+      - value: '2'
+        newvalue: IPv6
+    - uuid: 864f6d2be4c544cf8fe38b9a619363b5
+      name: 'pfSense IPsec Tunnel Mode'
+      mappings:
+      - value: '0'
+        newvalue: Main
+      - value: '1'
+        newvalue: Aggressive
