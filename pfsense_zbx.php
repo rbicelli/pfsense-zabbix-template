@@ -63,7 +63,11 @@ if (!function_exists('get_drive_list')){
 	function get_drive_list() {
 
 		// get_smart_drive_list() is not available on every pfSense release
-		return function_exists('get_smart_drive_list') ? get_smart_drive_list() : array();
+		if (function_exists('get_smart_drive_list')) {
+			return get_smart_drive_list();
+		}
+
+		return array();
 
 	}
 
@@ -296,11 +300,13 @@ function pfz_openvpn_serverdiscovery() {
 // Get OpenVPN Server Value
 function pfz_openvpn_servervalue($server_id, $valuekey) {
     $servers = pfz_openvpn_get_all_servers();
-    $value = null;
+    $value = "";
 
     foreach ($servers as $server) {
-        if (($server['vpnid'] ?? null) == $server_id) {
-            $value = $server[$valuekey] ?? null;
+        if (isset($server['vpnid']) && $server['vpnid'] == $server_id) {
+            if (isset($server[$valuekey])) {
+                $value = $server[$valuekey];
+            }
 
             if ($valuekey == "status") {
                 if (
@@ -314,10 +320,11 @@ function pfz_openvpn_servervalue($server_id, $valuekey) {
                 } else if ($server['mode'] == "p2p_tls") {
                     // For p2p_tls, ensure we have one client, and return up if it's the case
                     if ($value == "") {
-                        $value = (
-                            is_array($server["conns"] ?? null) &&
-                            count($server["conns"]) > 0
-                        ) ? "up" : "down";
+                        $value = "down";
+
+                        if (isset($server["conns"]) && is_array($server["conns"]) && count($server["conns"]) > 0) {
+                            $value = "up";
+                        }
                     }
                 }
             }
@@ -329,20 +336,27 @@ function pfz_openvpn_servervalue($server_id, $valuekey) {
     switch ($valuekey) {
         case "conns":
             // Client Connections: is an array so it is sufficient to count elements
-            $value = is_array($value) ? count($value) : 0;
+            if (is_array($value)) {
+                $value = count($value);
+            } else {
+                $value = 0;
+            }
             break;
 
         case "status":
-            $value = pfz_valuemap("openvpn.server.status", $value ?? "");
+            $value = pfz_valuemap("openvpn.server.status", $value);
             break;
 
         case "mode":
-            $value = pfz_valuemap("openvpn.server.mode", $value ?? "");
+            $value = pfz_valuemap("openvpn.server.mode", $value);
             break;
 
         case "bytes_recv":
         case "bytes_sent":
-            $value = is_numeric($value) ? $value : 0;
+            // Unavailable counters are reported as 0 for numeric items
+            if (!is_numeric($value)) {
+                $value = 0;
+            }
             break;
     }
 
@@ -437,27 +451,32 @@ function pfz_replacespecialchars($inputstr,$reverse=false){
 
 function pfz_openvpn_clientvalue($client_id, $valuekey, $default="none") {
     $clients = openvpn_get_active_clients();
-    $value = null;
+    $value = "";
 
     foreach ($clients as $client) {
-        if (($client['vpnid'] ?? null) == $client_id) {
-            $value = $client[$valuekey] ?? null;
+        if (isset($client['vpnid']) && $client['vpnid'] == $client_id) {
+            if (isset($client[$valuekey])) {
+                $value = $client[$valuekey];
+            }
             break;
         }
     }
 
     switch ($valuekey) {
         case "status":
-            $value = pfz_valuemap("openvpn.client.status", $value ?? "");
+            $value = pfz_valuemap("openvpn.client.status", $value);
             break;
 
         case "bytes_recv":
         case "bytes_sent":
-            $value = is_numeric($value) ? $value : 0;
+            // Unavailable counters are reported as 0 for numeric items
+            if (!is_numeric($value)) {
+                $value = 0;
+            }
             break;
     }
 
-    if ($value === null || $value === "") {
+    if ($value === "") {
         $value = $default;
     }
 
@@ -796,7 +815,7 @@ function pfz_ipsec_status($ikeid,$reqid=-1,$valuekey='state'){
 	
 	switch($valuekey) {
 					case 'state':
-						$value = pfz_valuemap('ipsec.state', strtolower((string) ($tmp_value ?? '')));
+						$value = pfz_valuemap('ipsec.state', strtolower((string) $tmp_value));
 						if ($carp_status!=0) $value = $value + (10 * ($carp_status-1));						
 						break;
 					default:
@@ -1262,8 +1281,12 @@ function pfz_get_smart_status() {
     }
 
     // Discover NVMe controllers.
-    foreach (glob('/dev/nvme[0-9]*') ?: [] as $path) {
-        $add_device($path, 'nvme');
+    $nvme_paths = glob('/dev/nvme[0-9]*');
+
+    if (is_array($nvme_paths)) {
+        foreach ($nvme_paths as $path) {
+            $add_device($path, 'nvme');
+        }
     }
 
     // Additional discovery using smartctl.
@@ -1355,7 +1378,11 @@ function pfz_get_smart_status() {
     // All disks healthy = 0
     // Any failure = 1
     // Any unknown without failure = 2
-    echo $unknown ? 2 : 0;
+    if ($unknown) {
+        echo 2;
+    } else {
+        echo 0;
+    }
 }
 
 function pfz_get_revoked_cert_refs() {
