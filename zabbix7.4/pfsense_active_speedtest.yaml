@@ -1,0 +1,133 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+  - uuid: 4918b88734c54bd094cff7585b5d71fc
+    name: 'Templates/Network Devices'
+  templates:
+  - uuid: 1c7cba22540d4c10a5ee14c2b25223ca
+    template: 'pfSense Active Speedtest'
+    name: 'pfSense Active: Speedtest'
+    description: |
+      Speedtest monitoring extension for pfSense Active and Zabbix 7.4.
+      Requires pfsense_zbx.php and Python speedtest-cli.
+      WAN measurements run via the pfSense cron job installed by
+      pfsense_zbx.php, independently from Zabbix, and are exposed to
+      Zabbix through cached JSON results.
+      Download and upload are in bits per second; ping is in milliseconds.
+      client.ip is the public address seen by Speedtest and may reflect NAT.
+
+      https://github.com/rbicelli/pfsense-zabbix-template
+    groups:
+    - name: 'Templates/Network Devices'
+    discovery_rules:
+    - uuid: 40288914aa9742adb93120c367263690
+      name: 'WAN Interfaces'
+      type: ZABBIX_ACTIVE
+      key: 'pfsense.discovery[wan]'
+      delay: 1h
+      description: 'Discover WAN interfaces available for cached Speedtest monitoring.'
+      item_prototypes:
+      - uuid: 07312f1cfd424a0eb65b5b45c2c2582d
+        name: 'Speedtest public IP address on {#IFDESCR}'
+        type: ZABBIX_ACTIVE
+        key: 'pfsense.value[if_speedtest_value,{#IFNAME},client.ip]'
+        delay: 1h
+        history: 30d
+        trends: '0'
+        value_type: TEXT
+        description: 'Public IP detected by Speedtest; may be the upstream NAT public address.'
+        tags:
+        - tag: Application
+          value: Speedtest
+        - tag: Component
+          value: 'WAN information'
+        trigger_prototypes:
+        - uuid: d7f05a232f004f0b8c2a974666a31c55
+          expression: 'last(/pfSense Active Speedtest/pfsense.value[if_speedtest_value,{#IFNAME},client.ip],#1)<>last(/pfSense Active Speedtest/pfsense.value[if_speedtest_value,{#IFNAME},client.ip],#2)'
+          name: 'Public IP address on {#IFDESCR} has changed'
+          priority: INFO
+          description: 'The Speedtest-observed public address changed between cached measurements.'
+      - uuid: b1bef62fecb840c2bf9eb081da8fa3f7
+        name: 'Speedtest ISP name on {#IFDESCR}'
+        type: ZABBIX_ACTIVE
+        key: 'pfsense.value[if_speedtest_value,{#IFNAME},client.isp]'
+        delay: 1h
+        history: 30d
+        trends: '0'
+        value_type: TEXT
+        description: 'ISP name reported by the cached Speedtest result.'
+        tags:
+        - tag: Application
+          value: Speedtest
+        - tag: Component
+          value: 'WAN information'
+      - uuid: a79d28cf3f3b4981b59f571117e64d24
+        name: 'Speedtest Download on {#IFDESCR}'
+        type: ZABBIX_ACTIVE
+        key: 'pfsense.value[if_speedtest_value,{#IFNAME},download]'
+        delay: 15m
+        history: 30d
+        trends: 365d
+        value_type: FLOAT
+        units: bps
+        description: 'Cached download speed in bits per second, measured with Python speedtest-cli.'
+        tags:
+        - tag: Application
+          value: Speedtest
+        - tag: Component
+          value: Download
+      - uuid: 52b640fcdf484b538f85bf32d2afbcf3
+        name: 'Speedtest Ping on {#IFDESCR}'
+        type: ZABBIX_ACTIVE
+        key: 'pfsense.value[if_speedtest_value,{#IFNAME},ping]'
+        delay: 15m
+        history: 30d
+        trends: 365d
+        value_type: FLOAT
+        units: ms
+        description: 'Cached Speedtest ping latency in milliseconds; distinct from dpinger gateway RTT.'
+        tags:
+        - tag: Application
+          value: Speedtest
+        - tag: Component
+          value: Latency
+      - uuid: 4bd063f24e554832b59bfa2231d53bf1
+        name: 'Speedtest Upload on {#IFDESCR}'
+        type: ZABBIX_ACTIVE
+        key: 'pfsense.value[if_speedtest_value,{#IFNAME},upload]'
+        delay: 15m
+        history: 30d
+        trends: 365d
+        value_type: FLOAT
+        units: bps
+        description: 'Cached upload speed in bits per second, measured with Python speedtest-cli.'
+        tags:
+        - tag: Application
+          value: Speedtest
+        - tag: Component
+          value: Upload
+      graph_prototypes:
+      - uuid: 74cdea0b8136495496bb90593bd78a59
+        name: 'Speedtest Throughput on {#IFDESCR}'
+        graph_items:
+        - sortorder: '0'
+          color: 199C0D
+          calc_fnc: ALL
+          item:
+            host: 'pfSense Active Speedtest'
+            key: 'pfsense.value[if_speedtest_value,{#IFNAME},download]'
+        - sortorder: '1'
+          color: 0040FF
+          calc_fnc: ALL
+          item:
+            host: 'pfSense Active Speedtest'
+            key: 'pfsense.value[if_speedtest_value,{#IFNAME},upload]'
+      - uuid: 0d56a9d30bf14a15a36c15ea20fbd834
+        name: 'Speedtest Latency on {#IFDESCR}'
+        graph_items:
+        - sortorder: '0'
+          color: FFFF00
+          calc_fnc: ALL
+          item:
+            host: 'pfSense Active Speedtest'
+            key: 'pfsense.value[if_speedtest_value,{#IFNAME},ping]'
