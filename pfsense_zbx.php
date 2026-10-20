@@ -181,50 +181,63 @@ function pfz_interface_discovery($is_wan=false,$is_cron=false) {
 
 
 //Interface Speedtest
-function pfz_interface_speedtest_value($ifname, $value){	
-    $tvalue = explode(".", $value);    
-    
-    if (count($tvalue)>1) {
-    	$value = $tvalue[0];
-    	$subvalue = $tvalue[1];
-    }        
-    
-	//If the interface has a gateway is considered WAN, so let's do the speedtest
+// Reads a value from the cached speedtest result; never runs a speedtest.
+function pfz_interface_speedtest_value($ifname, $value){
+	$parts = explode(".", $value, 2);
+	$key = $parts[0];
+	$subvalue = $parts[1] ?? null;
+
 	$filename = "/tmp/speedtest-$ifname";
-	
-	if (file_exists($filename)) {
-		$speedtest_data = json_decode(file_get_contents($filename), true) ?? [];
-		
-		if (array_key_exists($value, $speedtest_data)) {
-			if ($subvalue == false) 
-				echo $speedtest_data[$value];
-			else
-				echo $speedtest_data[$value][$subvalue];
-		}	
+
+	if (!is_file($filename)) {
+		return;
 	}
-			
+
+	$speedtest_data = json_decode((string) @file_get_contents($filename), true);
+
+	if (!is_array($speedtest_data) || !array_key_exists($key, $speedtest_data)) {
+		return;
+	}
+
+	$result = $speedtest_data[$key];
+
+	if ($subvalue !== null) {
+		if (!is_array($result) || !array_key_exists($subvalue, $result)) {
+			return;
+		}
+		$result = $result[$subvalue];
+	}
+
+	if (is_scalar($result)) {
+		echo $result;
+	}
 }
 
 // This is supposed to run via cron job
 function pfz_speedtest_cron(){
 	require_once("services.inc");
 	$ifdescrs = get_configured_interface_with_descr(true);
-    $ifaces = get_interface_arr();
-    $pf_interface_name='';
-    $subvalue=false;    
-		                       
-    $ifcs = pfz_interface_discovery(true, true);    
-    
-    foreach ($ifcs as $ifname) {
-          foreach ($ifdescrs as $ifn => $ifd){
-		      $ifinfo = get_interface_info($ifn);
-		      if($ifinfo['hwif']==$ifname) {
-		      	$pf_interface_name = $ifn;
-		      	break;
-		      }
-    	  }	
-		  pfz_speedtest_exec($ifname, $ifinfo['ipaddr']);
-    }
+
+	$ifcs = pfz_interface_discovery(true, true);
+
+	foreach ($ifcs as $ifname) {
+		$ipaddr = null;
+
+		foreach ($ifdescrs as $ifn => $ifd) {
+			$ifinfo = get_interface_info($ifn);
+			if (($ifinfo['hwif'] ?? null) === $ifname) {
+				$ipaddr = $ifinfo['ipaddr'] ?? null;
+				break;
+			}
+		}
+
+		// Only run the speedtest from a valid IPv4 source address
+		if (!filter_var($ipaddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+			continue;
+		}
+
+		pfz_speedtest_exec($ifname, $ipaddr);
+	}
 }
 
 //installs a cron job for speedtests
@@ -237,32 +250,83 @@ function pfz_speedtest_cron_install($enable=true){
 
 // 2023-02-26:
 // Fixed issue #127
+// Runs speedtest only when the cached result is missing, invalid or older
+// than SPEEDTEST_INTERVAL. The cache is replaced only by a valid result.
 function pfz_speedtest_exec ($ifname, $ipaddr){
-	
+	$speedtest = "/usr/local/bin/speedtest";
 	$filename = "/tmp/speedtest-$ifname";
-	$filetemp = "$filename.tmp";
-	$filerun = "/tmp/speedtest-run"; 
-	
-	// Issue #82
-	// Sleep random delay in order to avoid problem when 2 pfSense on the same Internet line
-	sleep (rand ( 1, 90));
-	
-	if ( (time()-filemtime($filename) > SPEEDTEST_INTERVAL * 3600) || (file_exists($filename)==false) ) {
-	  	// file is older than SPEEDTEST_INTERVAL
-	  	if ( (time()-filemtime($filerun) > 180 ) ) @unlink($filerun);
+	$filerun = "/tmp/speedtest-run";
 
-		if (file_exists($filerun)==false) {	  			  		
-	  		touch($filerun);
-	  		$st_command = "/usr/local/bin/speedtest --secure --source $ipaddr --json > $filetemp";
-			exec ($st_command);
-			rename($filetemp,$filename);
-			@unlink($filerun);
+	if (!is_executable($speedtest) || !filter_var($ipaddr, FILTER_VALIDATE_IP)) {
+		return false;
+	}
+
+	if (is_file($filename) && (time() - filemtime($filename) < SPEEDTEST_INTERVAL * 3600)) {
+		$cached = json_decode((string) @file_get_contents($filename), true);
+		if (pfz_speedtest_result_valid($cached)) {
+			return true;
 		}
-	}	
-	
-	return true;
+	}
+
+	// Prevent concurrent runs on the same firewall
+	$lock = @fopen($filerun, "c");
+	if ($lock === false) {
+		return false;
+	}
+	if (!flock($lock, LOCK_EX | LOCK_NB)) {
+		fclose($lock);
+		return false;
+	}
+
+	try {
+		// Issue #82
+		// Sleep random delay in order to avoid problem when 2 pfSense on the same Internet line
+		sleep(rand(1, 90));
+
+		$filetemp = tempnam("/tmp", "speedtest-tmp-");
+		if ($filetemp === false) {
+			return false;
+		}
+
+		$st_command = escapeshellarg($speedtest)
+			. " --secure --source " . escapeshellarg($ipaddr)
+			. " --json > " . escapeshellarg($filetemp) . " 2>/dev/null";
+
+		$output = [];
+		$exit_code = 0;
+		exec($st_command, $output, $exit_code);
+
+		$data = json_decode((string) @file_get_contents($filetemp), true);
+
+		if ($exit_code !== 0 || !pfz_speedtest_result_valid($data)) {
+			@unlink($filetemp);
+			return false;
+		}
+
+		// tempnam() creates the file as 0600; keep the cache readable as before
+		@chmod($filetemp, 0644);
+
+		// Atomic replacement of the cached result
+		if (!@rename($filetemp, $filename)) {
+			@unlink($filetemp);
+			return false;
+		}
+
+		return true;
+	} finally {
+		flock($lock, LOCK_UN);
+		fclose($lock);
+	}
 }
 
+// A speedtest result is valid if it has numeric download, upload and ping values
+function pfz_speedtest_result_valid($data){
+	return is_array($data)
+		&& isset($data['download'], $data['upload'], $data['ping'])
+		&& is_numeric($data['download'])
+		&& is_numeric($data['upload'])
+		&& is_numeric($data['ping']);
+}
 
 // OpenVPN Server Discovery
 function pfz_openvpn_get_all_servers(){
