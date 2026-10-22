@@ -4,7 +4,7 @@
 
 This is a pfSense active template for Zabbix, based on Standard Agent and a php script using pfSense functions library for monitoring specific data.
 
-Tested with pfSense 2.7.x, Zabbix 6.0.
+Tested with pfSense 2.9.x , Zabbix 6.0.
 
 I'm actively maintaning template only for the current Zabbix LTS Release. Newest features will be explicitily added on current LTS.
 
@@ -51,12 +51,12 @@ curl --create-dirs -o /root/scripts/pfsense_zbx.php https://raw.githubuserconten
 
 Then install package "Zabbix Agent 6" (or "Zabbix Agent 5") on your pfSense Box
 
-In Advanced Features-> User Parameters
+In Advanced Features-> User Parameters, add: 
 
 ```bash
 AllowRoot=1
-UserParameter=pfsense.states.max,grep "limit states" /tmp/rules.limits | cut -f4 -d ' '
-UserParameter=pfsense.states.current,grep "current entries" /tmp/pfctl_si_out | tr -s ' ' | cut -f4 -d ' '
+UserParameter=pfsense.states.max,pfctl -sm | grep "states" | tr -s ' ' | cut -f4 -d ' '
+UserParameter=pfsense.states.current,pfctl -si | grep "current entries" | tr -s ' ' | cut -f4 -d ' '
 UserParameter=pfsense.mbuf.current,netstat -m | grep "mbuf clusters" | cut -f1 -d ' ' | cut -d '/' -f1
 UserParameter=pfsense.mbuf.cache,netstat -m | grep "mbuf clusters" | cut -f1 -d ' ' | cut -d '/' -f2
 UserParameter=pfsense.mbuf.max,netstat -m | grep "mbuf clusters" | cut -f1 -d ' ' | cut -d '/' -f4
@@ -126,6 +126,7 @@ Speedtest template creates a cron job and check for entry everytime Zabbix reque
 ```bash
 /usr/local/bin/php /root/scripts/pfsense_zbx.php cron_cleanup
 ```
+
 
 ## Credits
 
