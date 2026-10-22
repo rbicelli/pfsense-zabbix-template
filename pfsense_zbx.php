@@ -1165,12 +1165,73 @@ function pfz_get_system_value($section){
           	break;
      }
 }
+/**
+* Copied from util.inc and patched. 
+*/
+function get_drive_list_nocd(bool $check_controller = true) {
+	// list of drives to return
+	$drive_list = [];
+
+	/* SMART supports some disks directly, and some controllers directly,
+	 * See https://redmine.pfsense.org/issues/9042 */
+	$supported_controllers = [
+		'nvme'
+	];
+
+	// get disk devices; ignore sub-devices
+	$devices = [];
+	preg_match_all('/\b(?P<disks>[[:alpha:]]+\d+)\b/', get_single_sysctl("kern.disks"), $devices);
+	if (!empty($devices['disks']) && is_array($devices['disks'])) {
+		// ignore duplicate matches
+		$devices = array_unique($devices['disks']);
+		foreach ($devices as $device) {
+            // Patch: Ignore optical drives.
+            if(substr($device, 0, 2) === "cd") {
+                continue;
+            }
+			// get device info
+			$output = shell_exec("/usr/sbin/diskinfo -v /dev/{$device}");
+			if (empty($output)) {
+				continue;
+			}
+
+			// don't check the controller
+			if (!$check_controller) {
+				$drive_list[] = $device;
+				continue;
+			}
+
+			// get device controller
+			$device_controller = [];
+			preg_match('/^\s+(?P<controller>[\w\-]+)\s+# Attachment/im', $output, $device_controller);
+			if (!empty($device_controller['controller']) && is_string($device_controller['controller'])) {
+				$device_controller = $device_controller['controller'];
+
+				// supported controllers are queried directly
+				$regex_pattern = implode('|', array_values($supported_controllers));
+				$regex_pattern = "/\b(?:{$regex_pattern})\d+\b/";
+				if (preg_match($regex_pattern, $device_controller)) {
+					$drive_list[] = $device_controller;
+					// skip further processing for this device
+					continue;
+				}
+			}
+
+			// no attachment, or other controller
+			$drive_list[] = $device;
+		}
+	}
+
+	return $drive_list;
+}
+
+
 
 //S.M.A.R.T Status
 // Taken from /usr/local/www/widgets/widgets/smart_status.widget.php
 function pfz_get_smart_status(){
 
-	$devs = get_drive_list();
+	$devs = get_drive_list_nocd();
 	$status = 0;
 	foreach ($devs as $dev)  { ## for each found drive do      
         if(substr($dev, 0, 2) == "cd") {
